@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace TraderTools.Core.UI.Views
 {
@@ -17,9 +18,8 @@ namespace TraderTools.Core.UI.Views
         Broker = 32,
         Comments = 64,
         ResultR = 128,
-        ViewTrade = 256,
-        OrderPrice = 512,
-        ClosePrice = 1024
+        OrderPrice = 256,
+        ClosePrice = 512
     }
 
     /// <summary>
@@ -128,14 +128,37 @@ namespace TraderTools.Core.UI.Views
             c.MainDataGrid.Columns.First(x => (string)x.Header == "Profit").Visibility = (bool)e.NewValue ? Visibility.Collapsed : Visibility.Visible;
             c.MainDataGrid.Columns.First(x => (string)x.Header == "Result R").Visibility = (bool)e.NewValue ? Visibility.Collapsed : Visibility.Visible;
             c.MainDataGrid.Columns.First(x => (string)x.Header == "Status").Visibility = (bool)e.NewValue ? Visibility.Collapsed : Visibility.Visible;
-            c.MainDataGrid.Columns.First(x => (string)x.Header == "Entry date").Visibility = (bool)e.NewValue ? Visibility.Collapsed : Visibility.Visible;
-            c.MainDataGrid.Columns.First(x => (string)x.Header == "Close date").Visibility = (bool)e.NewValue ? Visibility.Collapsed : Visibility.Visible;
+            //c.MainDataGrid.Columns.First(x => (string)x.Header == "Entry date").Visibility = (bool)e.NewValue ? Visibility.Collapsed : Visibility.Visible;
+            //c.MainDataGrid.Columns.First(x => (string)x.Header == "Close date").Visibility = (bool)e.NewValue ? Visibility.Collapsed : Visibility.Visible;
         }
 
         public bool ShowTradeEntryOnly
         {
             get { return (bool)GetValue(ShowTradeEntryOnlyProperty); }
             set { SetValue(ShowTradeEntryOnlyProperty, value); }
+        }
+
+        public static readonly DependencyProperty DisableMouseWheelScrollProperty = DependencyProperty.Register(
+            "DisableMouseWheelScroll", typeof(bool), typeof(TradeListControl), new PropertyMetadata(false));
+
+        public bool DisableMouseWheelScroll
+        {
+            get { return (bool) GetValue(DisableMouseWheelScrollProperty); }
+            set { SetValue(DisableMouseWheelScrollProperty, value); }
+        }
+
+        private void MainDataGrid_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (DisableMouseWheelScroll)
+            {
+                e.Handled = true;
+                var eventArg = new MouseWheelEventArgs(e.MouseDevice, e.Timestamp, e.Delta)
+                {
+                    RoutedEvent = UIElement.MouseWheelEvent, Source = sender
+                };
+                var parent = ((Control) sender).Parent as UIElement;
+                parent.RaiseEvent(eventArg);
+            }
         }
     }
 }

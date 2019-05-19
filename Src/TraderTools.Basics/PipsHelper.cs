@@ -92,6 +92,7 @@ namespace TraderTools.Basics
             if (marketPairForCalculation != "GBP")
             {
                 var gbpCandle = marketPairForCalculation != "GBP/MXN" && marketPairForCalculation != "GBP/SEK"
+                                && marketPairForCalculation != "GBP/CNH"
                     ? candleService.GetFirstCandleThatClosesBeforeDateTime(marketPairForCalculation, broker, Timeframe.D1, date, updateCandles)
                     : null;
 

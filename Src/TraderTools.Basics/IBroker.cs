@@ -8,8 +8,8 @@ namespace TraderTools.Basics
         None,
         Connecting,
         Connected,
+        Disconnecting,
         Disconnected
-
     }
 
     public enum BrokerKind
@@ -33,7 +33,7 @@ namespace TraderTools.Basics
         bool UpdateAccount(IBrokerAccount account);
         bool UpdateCandles(List<ICandle> candles, string market, Timeframe timeframe, DateTime start);
         void Connect();
-        ConnectStatus Status { get; set; }
+        ConnectStatus Status { get; }
         BrokerKind Kind { get; }
         List<TickData> GetTickData(IBroker broker, string market, DateTime utcStart, DateTime utcEnd);
     }

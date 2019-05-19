@@ -107,7 +107,7 @@ namespace TraderTools.Core.UI.ChartModifiers
                 Tag = "Added_" + id,
                 StrokeThickness = 2,
                 Opacity = 0.6,
-                Stroke = Brushes.Black,
+                Stroke = Brushes.Gold,
                 X1 = x,
                 Y1 = y,
                 X2 = x,

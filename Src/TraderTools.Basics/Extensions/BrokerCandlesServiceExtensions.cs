@@ -19,10 +19,11 @@ namespace TraderTools.Basics.Extensions
             return CandlesHelper.GetFirstCandleThatClosesBeforeDateTime(candles, dateTime);
         }
 
-        public static List<ICandle> GetCandlesUptoSpecificTime(this IBrokersCandlesService brokerCandles, IBroker broker, string market, Timeframe timeframe, bool updateCandles, DateTime? startUtc, DateTime? endUtc)
+        public static List<ICandle> GetCandlesUptoSpecificTime(this IBrokersCandlesService brokerCandles, IBroker broker, string market,
+            Timeframe timeframe, bool updateCandles, DateTime? startUtc, DateTime? endUtc, Timeframe smallestTimeframeForPartialCandle = Timeframe.M1)
         {
-            var allLargeChartCandles = brokerCandles.GetCandles(broker, market, timeframe != Timeframe.D1Tiger ? timeframe : Timeframe.D1, updateCandles, cacheData: false, minOpenTimeUtc: startUtc, maxCloseTimeUtc: endUtc);
-            var smallestTimeframeCandles = brokerCandles.GetCandles(broker, market, Timeframe.M1, updateCandles, cacheData: false, maxCloseTimeUtc: endUtc);
+            var allLargeChartCandles = brokerCandles.GetCandles(broker, market, timeframe, updateCandles, cacheData: false, minOpenTimeUtc: startUtc, maxCloseTimeUtc: endUtc);
+            var smallestTimeframeCandles = brokerCandles.GetCandles(broker, market, smallestTimeframeForPartialCandle, updateCandles, cacheData: false, maxCloseTimeUtc: endUtc);
 
             var largeChartCandles = new List<ICandle>();
             var endTicks = endUtc?.Ticks ?? -1;
@@ -76,21 +77,6 @@ namespace TraderTools.Basics.Extensions
                     OpenTimeTicks = openTimeTicks.Value,
                     IsComplete = 0
                 });
-            }
-
-            if (timeframe == Timeframe.D1Tiger)
-            {
-                largeChartCandles = TigerHelper.GetCandles(largeChartCandles, market, 13)
-                    .Select(c => (ICandle)new Candle
-                    {
-                        High = c.High,
-                        Low = c.Low,
-                        Close = c.Close,
-                        Open = c.Open,
-                        CloseTimeTicks = c.CloseTimeTicks,
-                        OpenTimeTicks = c.OpenTimeTicks,
-                        IsComplete = c.IsComplete
-                    }).ToList();
             }
 
             return largeChartCandles;

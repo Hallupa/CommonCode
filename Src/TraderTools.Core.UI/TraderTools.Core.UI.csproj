@@ -71,7 +71,7 @@
   <ItemGroup>
     <Reference Include="Abt.Controls.SciChart.Wpf, Version=3.5.0.7128, Culture=neutral, PublicKeyToken=b55dd9efe817e823, processorArchitecture=MSIL" />
     <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.12.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\..\Src\packages\Newtonsoft.Json.12.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -79,16 +79,17 @@
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
     <Reference Include="System.Reactive, Version=4.1.0.0, Culture=neutral, PublicKeyToken=94bc3704cddfc263, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Reactive.4.1.2\lib\net46\System.Reactive.dll</HintPath>
+      <HintPath>..\..\..\Src\packages\System.Reactive.4.1.5\lib\net46\System.Reactive.dll</HintPath>
     </Reference>
     <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.5.0\lib\netstandard2.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+      <HintPath>..\..\..\Src\packages\System.Runtime.CompilerServices.Unsafe.4.5.2\lib\netstandard2.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Threading.Tasks.Extensions.4.5.1\lib\netstandard2.0\System.Threading.Tasks.Extensions.dll</HintPath>
+      <HintPath>..\..\..\Src\packages\System.Threading.Tasks.Extensions.4.5.2\lib\netstandard2.0\System.Threading.Tasks.Extensions.dll</HintPath>
     </Reference>
-    <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.ValueTuple.4.4.0\lib\net47\System.ValueTuple.dll</HintPath>
+    <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\..\..\Src\packages\System.ValueTuple.4.5.0\lib\net47\System.ValueTuple.dll</HintPath>
     </Reference>
     <Reference Include="System.Windows" />
     <Reference Include="System.Windows.Forms" />
@@ -117,15 +118,18 @@
     </Compile>
     <Compile Include="Converters\BoolToValueConverter.cs" />
     <Compile Include="Converters\EnumToIntConverter.cs" />
+    <Compile Include="Converters\CloseStatusToColourConverter.cs" />
+    <Compile Include="Converters\ProfitToColourConverter.cs" />
     <Compile Include="DoubleChartView.xaml.cs">
       <DependentUpon>DoubleChartView.xaml</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\ChartingService.cs" />
     <Compile Include="ViewModels\DoubleChartViewModel.cs" />
-    <Compile Include="ViewModels\TradesResult.cs" />
+    <Compile Include="ViewModels\TradesResultViewModel.cs" />
     <Compile Include="ViewModels\TradeDetailsViewModel.cs" />
     <Compile Include="ViewModels\TradesResultsViewModel.cs" />
+    <Compile Include="ViewModels\TradesWithStrategiesResultsViewModel.cs" />
     <Compile Include="ViewModels\TradeViewModelBase.cs" />
     <Compile Include="Views\TradeDetailsView.xaml.cs">
       <DependentUpon>TradeDetailsView.xaml</DependentUpon>
@@ -176,12 +180,17 @@
       <Project>{610CED3A-FFEF-45D5-B0C0-B4F79F320509}</Project>
       <Name>TraderTools.Basics</Name>
     </ProjectReference>
+    <ProjectReference Include="..\TraderTools.Core\TraderTools.Core.csproj">
+      <Project>{DF376238-6A60-4FA6-AF06-00982E7CD525}</Project>
+      <Name>TraderTools.Core</Name>
+    </ProjectReference>
     <ProjectReference Include="..\TraderTools.Indicators\TraderTools.Indicators.csproj">
       <Project>{687880C4-A3AB-4874-95BB-5222870B74B4}</Project>
       <Name>TraderTools.Indicators</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -94,7 +94,7 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="1.5*"/>
             <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="2.5*"/>
         </Grid.ColumnDefinitions>
 
         <Grid.RowDefinitions>
@@ -103,10 +103,10 @@
         </Grid.RowDefinitions>
 
         <!-- s:ThemeManager.Theme="BlackSteel" -->
-        <Label Grid.Row="0" Grid.Column="0" FontWeight="Bold">D1</Label>
+        <Label Grid.Row="0" Grid.Column="0" FontWeight="Bold">Day chart</Label>
 
         <Border Grid.Column="0" Grid.Row="1" BorderBrush="DarkGray" BorderThickness="1" Margin="5,5,0,5" Padding="5">
-            <s:SciChartGroup ItemsSource="{Binding ChartViewModelSmaller1.ChartPaneViewModels}" 
+            <s:SciChartGroup ItemsSource="{Binding ChartViewModelSmaller1.ChartPaneViewModels}"
                          x:Name="SmallerChartGroup" x:FieldModifier="public"
                          s:ThemeManager.Theme="Chrome" ItemContainerStyle="{StaticResource ChartPaneStyle}"
                          Cursor="{Binding ChartCursor, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=charting:DoubleChartView}}">
@@ -121,7 +121,7 @@
                             <s:SciStockChart x:Name="PART_ChartPaneView" Padding="0" BorderThickness="0,0,1,1" IsAxisMarkersEnabled="True" IsRolloverEnabled="False"
                                          IsCursorEnabled="True" IsXAxisVisible="{Binding IsFirstChartPane}" IsPanEnabled="{Binding ParentViewModel.IsPanEnabled}"
                                          ViewportManager="{Binding ViewportManager}" SeriesSource="{Binding ChartSeriesViewModels}"
-                                         Annotations="{Binding TradeAnnotations}">
+                                         Annotations="{Binding TradeAnnotations}" s:ThemeManager.Theme="Chrome">
 
                                 <s:SciStockChart.XAxisStyle>
                                     <Style TargetType="s:CategoryDateTimeAxis">
@@ -172,7 +172,7 @@
 
         <GridSplitter Grid.Column="1" HorizontalAlignment="Center" Grid.RowSpan="2" VerticalAlignment="Stretch" Background="DarkGray" Width="7" />
 
-        <Label Grid.Row="0" Grid.Column="2" FontWeight="Bold">2H</Label>
+        <Label Grid.Row="0" Grid.Column="2" FontWeight="Bold">2H chart</Label>
 
         <Border Grid.Row="1" Grid.Column="2" BorderBrush="DarkGray" BorderThickness="1" Margin="5" Padding="5">
             <s:SciChartGroup ItemsSource="{Binding ChartViewModel.ChartPaneViewModels}"
@@ -189,7 +189,7 @@
                             <s:SciStockChart x:Name="PART_ChartPaneView" Padding="0" BorderThickness="0,0,1,1" IsAxisMarkersEnabled="True" IsRolloverEnabled="False"
                                          IsCursorEnabled="True" IsXAxisVisible="{Binding IsFirstChartPane}" IsPanEnabled="{Binding ParentViewModel.IsPanEnabled}"
                                          ViewportManager="{Binding ViewportManager}" SeriesSource="{Binding ChartSeriesViewModels}"
-                                         Annotations="{Binding TradeAnnotations}">
+                                         Annotations="{Binding TradeAnnotations}" s:ThemeManager.Theme="Chrome">
 
                                 <s:SciStockChart.XAxisStyle>
                                     <Style TargetType="s:CategoryDateTimeAxis">

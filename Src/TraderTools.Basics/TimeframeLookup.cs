@@ -50,8 +50,6 @@ namespace TraderTools.Basics
                     return 6;
                 case Timeframe.D1:
                     return 7;
-                case Timeframe.D1Tiger:
-                    return 8;
             }
 
             throw new ApplicationException($"TimeframeLookup - {timeframe} not supported");
@@ -77,8 +75,6 @@ namespace TraderTools.Basics
                     return Timeframe.H8;
                 case 7:
                     return Timeframe.D1;
-                case 8:
-                    return Timeframe.D1Tiger;
             }
 
             throw new ApplicationException($"TimeframeLookup - {index} not supported");

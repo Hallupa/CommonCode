@@ -46,7 +46,7 @@ namespace TraderTools.Basics
 
         public TradeDetails(decimal entryOrder, DateTime entryOrderTime,
             TradeDirection direction, decimal amount, string market, DateTime? orderExpireTime,
-            decimal? stop, decimal? limit, Timeframe timeframe, string comments, int custom1,
+            decimal? stop, decimal? limit, Timeframe timeframe, string strategies, string comments, int custom1,
             int custom2, int custom3, int custom4, bool alert)
         {
             SetOrder(entryOrderTime, entryOrder, market, timeframe, direction, amount, orderExpireTime);
@@ -55,6 +55,7 @@ namespace TraderTools.Basics
             Timeframe = timeframe;
             Alert = alert;
             Comments = comments;
+            Strategies = strategies;
             Custom1 = custom1;
             Custom2 = custom2;
             Custom3 = custom3;
@@ -62,6 +63,8 @@ namespace TraderTools.Basics
         }
 
         public string Comments { get; set; }
+
+        public string Strategies { get; set; }
 
         public DateTime? EntryDateTime
         {
@@ -321,22 +324,52 @@ namespace TraderTools.Basics
                     return Profit / RiskAmount;
                 }
 
-                if (ClosePrice == null || StopPrices.Count == 0 || EntryPrice == null)
+                if (StopPrices == null || ClosePrice == null || StopPrices.Count == 0 || (EntryPrice == null && OrderPrice == null))
                 {
                     return null;
                 }
 
-                var risk = Math.Abs(StopPrices[0].Price.Value - EntryPrice.Value);
-                if (TradeDirection == Basics.TradeDirection.Long)
+                /* This calculates the RMultiple for trades that have an order but not entered. Perhaps move this into a separate property?
+                 if (EntryPrice == null && OrderPrice != null && LimitPrice != null && StopPrice != null)
+                 {
+                    var risk = Math.Abs(StopPrice.Value - OrderPrice.Value);
+                    if (TradeDirection == Basics.TradeDirection.Long)
+                    {
+                        var gainOrLoss = Math.Abs(LimitPrice.Value - OrderPrice.Value);
+                        return (gainOrLoss / risk) * (LimitPrice.Value > OrderPrice.Value ? 1 : -1);
+                    }
+                    else
+                    {
+                        var gainOrLoss = Math.Abs(LimitPrice.Value - OrderPrice.Value);
+                        return (gainOrLoss / risk) * (LimitPrice.Value > OrderPrice.Value ? -1 : 1);
+                    }
+                }*/
+
+                if (EntryPrice != null)
                 {
-                    var gainOrLoss = Math.Abs(ClosePrice.Value - EntryPrice.Value);
-                    return (gainOrLoss / risk) * (ClosePrice.Value > EntryPrice.Value ? 1 : -1);
+                    // Get stop price at entry point
+                    var stop = StopPrices[0];
+                    for (var i = 1; i < StopPrices.Count; i++)
+                    {
+                        if (StopPrices[i].Date > EntryDateTime.Value) break;
+                        stop = StopPrices[i];
+                    }
+
+                    var risk = Math.Abs(stop.Price.Value - EntryPrice.Value);
+                    if (TradeDirection == Basics.TradeDirection.Long)
+                    {
+                        var gainOrLoss = Math.Abs(ClosePrice.Value - EntryPrice.Value);
+                        return (gainOrLoss / risk) * (ClosePrice.Value > EntryPrice.Value ? 1 : -1);
+                    }
+                    else
+                    {
+                        var gainOrLoss = Math.Abs(ClosePrice.Value - EntryPrice.Value);
+                        return (gainOrLoss / risk) * (ClosePrice.Value > EntryPrice.Value ? -1 : 1);
+                    }
+
                 }
-                else
-                {
-                    var gainOrLoss = Math.Abs(ClosePrice.Value - EntryPrice.Value);
-                    return (gainOrLoss / risk) * (ClosePrice.Value > EntryPrice.Value ? -1 : 1);
-                }
+
+                return null;
             }
         }
 

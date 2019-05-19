@@ -5,11 +5,17 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:converters="clr-namespace:Hallupa.Library.UI.Converters;assembly=Hallupa.Library.UI"
              xmlns:views="clr-namespace:TraderTools.Core.UI.Views"
+             xmlns:ui="clr-namespace:Hallupa.Library.UI;assembly=Hallupa.Library.UI"
+             xmlns:system="clr-namespace:System;assembly=mscorlib"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
         <Grid.Resources>
+            <system:Int32 x:Key="Zero">0</system:Int32>
+            <system:Int32 x:Key="One">1</system:Int32>
             <converters:BoolToVisibilityConverter x:Key="BoolToVis"/>
+            <converters:ObjectToVisibilityConverter x:Key="ObjToVis"/>
+            <ui:BindingProxy x:Key="Proxy" Data="{Binding}" />
         </Grid.Resources>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -17,13 +23,22 @@
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <Label Content="Results type:" VerticalAlignment="Center" Visibility="{Binding ResultsViewModel.ShowOptions, Converter={StaticResource BoolToVis}}"/>
-        <ComboBox Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left" Margin="2" Width="150" ItemsSource="{Binding ResultsViewModel.ResultOptions}" SelectedItem="{Binding ResultsViewModel.SelectedResultOption}" Visibility="{Binding ResultsViewModel.ShowOptions, Converter={StaticResource BoolToVis}}"/>
+        <Label Content="Results type:" VerticalAlignment="Center" Visibility="{Binding ShowOptions, Converter={StaticResource BoolToVis}}"/>
+        <ComboBox Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left" Margin="2" Width="200" ItemsSource="{Binding ResultOptions}" SelectedItem="{Binding SelectedResultOption}" Visibility="{Binding ShowOptions, Converter={StaticResource BoolToVis}}"/>
+        <Label Grid.Column="2" Content="Sub-items:" VerticalAlignment="Center" Visibility="{Binding ShowOptions, Converter={StaticResource BoolToVis}}"/>
+        <ComboBox Grid.Row="0" Grid.Column="3" HorizontalAlignment="Left" Margin="2" Width="150" SelectedIndex="{Binding SubItemsIndex}" Visibility="{Binding ShowOptions, Converter={StaticResource BoolToVis}}">
+            <ComboBoxItem Content="Trades"></ComboBoxItem>
+            <ComboBoxItem Content="Strategies"></ComboBoxItem>
+        </ComboBox>
 
-        <DataGrid Grid.Row="1" Grid.ColumnSpan="2" ScrollViewer.CanContentScroll="False" AutoGenerateColumns="False" ClipboardCopyMode="IncludeHeader" ItemsSource="{Binding ResultsViewModel.Results}" CanUserAddRows="False" RowDetailsVisibilityMode="Collapsed">
+
+        <DataGrid Grid.Row="1" Grid.ColumnSpan="4" ScrollViewer.CanContentScroll="False" AutoGenerateColumns="False" ClipboardCopyMode="IncludeHeader"
+                  ItemsSource="{Binding Results}" CanUserAddRows="False" RowDetailsVisibilityMode="Collapsed" PreviewMouseWheel="UIElement_OnPreviewMouseWheel">
             <DataGrid.RowStyle>
                 <Style TargetType="{x:Type DataGridRow}">
                     <EventSetter Event="MouseDoubleClick" Handler="RowDoubleClick"/>
@@ -31,9 +46,10 @@
             </DataGrid.RowStyle>
             <DataGrid.Columns>
                 <DataGridTextColumn Binding="{Binding Name}" Header="Name" Width="100" IsReadOnly="True"/>
-                <DataGridTextColumn Binding="{Binding CompletedOrOpenTrades}" Header="#Completed/open trades" IsReadOnly="True"/>
-                <DataGridTextColumn Binding="{Binding Profit, StringFormat={}£{0:0.0}}" Header="Profit" IsReadOnly="True" Width="100" Visibility="{Binding ShowProfit, Converter={StaticResource BoolToVis}}"/>
-                <DataGridTextColumn Binding="{Binding PercentSuccessfulTrades, StringFormat={}{0:0.0}%}" Header="Successful trades" Width="100" IsReadOnly="True"/>
+                <DataGridTextColumn Binding="{Binding TradesCount}" Header="# trades" IsReadOnly="True"/>
+                <DataGridTextColumn Binding="{Binding OpenTradesCount}" Header="# open trades" IsReadOnly="True"/>
+                <DataGridTextColumn Binding="{Binding Profit, StringFormat={}£{0:0.0}}" Header="Current profit" IsReadOnly="True" Width="100" Visibility="{Binding ShowProfit, Converter={StaticResource BoolToVis}}"/>
+                <DataGridTextColumn Binding="{Binding PercentSuccessfulTrades, StringFormat={}{0:0.0}%}" Header="Profitable trades" Width="100" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding AvRWinningTrades, StringFormat={}{0:0.000}}" Header="Average win R" Width="140" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding AvRLosingTrades, StringFormat={}{0:0.000}}" Header="Average lose R" Width="140" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding RExpectancy, StringFormat={}{0:0.000}}" Header="Expectancy R" Width="140" IsReadOnly="True"/>
@@ -41,7 +57,10 @@
             </DataGrid.Columns>
             <DataGrid.RowDetailsTemplate>
                 <DataTemplate>
-                    <views:TradeListControl/>
+                    <Grid>
+                        <views:TradeListControl DisableMouseWheelScroll="True" Margin="35,15,15,15" Visibility="{Binding Data.SubItemsIndex, Converter={StaticResource ObjToVis}, ConverterParameter={StaticResource Zero}, Mode=OneWay, Source={StaticResource Proxy}}"/>
+                        <views:TradesResultsControl DisableMouseWheelScroll="True" Margin="35,15,15,15" DataContext="{Binding StrategyResults}" Visibility="{Binding Data.SubItemsIndex, Converter={StaticResource ObjToVis}, ConverterParameter={StaticResource One}, Mode=OneWay, Source={StaticResource Proxy}}" />
+                    </Grid>
                 </DataTemplate>
             </DataGrid.RowDetailsTemplate>
         </DataGrid>

@@ -16,6 +16,7 @@ using Hallupa.Library.UI;
 using Newtonsoft.Json;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
+using TraderTools.Core.Extensions;
 using TraderTools.Core.UI.Services;
 using TraderTools.Core.UI.Views;
 using TraderTools.Indicators;
@@ -46,15 +47,12 @@ namespace TraderTools.Core.UI.ViewModels
         private int _selectedMainIndicatorsIndex;
         private Dispatcher _dispatcher;
 
-        public string DataDirectory { get; set; }
-
         protected TradeViewModelBase()
         {
             DependencyContainer.ComposeParts(this);
 
             TimeFrameItems = new List<Timeframe>
             {
-                Timeframe.D1Tiger,
                 Timeframe.D1,
                 Timeframe.H8,
                 Timeframe.H4,
@@ -85,8 +83,7 @@ namespace TraderTools.Core.UI.ViewModels
                                                      | TradeListDisplayOptionsFlag.OrderDate
                                                      | TradeListDisplayOptionsFlag.Comments
                                                      | TradeListDisplayOptionsFlag.ResultR
-                                                     | TradeListDisplayOptionsFlag.Broker
-                                                     | TradeListDisplayOptionsFlag.ViewTrade;
+                                                     | TradeListDisplayOptionsFlag.Broker;
 
         protected TradeDetails TradeShowingOnChart { get; private set; }
         public DelegateCommand ViewTradeCommand { get; private set; }
@@ -125,15 +122,6 @@ namespace TraderTools.Core.UI.ViewModels
 
         public TradeDetails SelectedTrade { get; set; }
 
-        public static readonly DependencyProperty IsViewTradeEnabledProperty = DependencyProperty.Register(
-            "IsViewTradeEnabled", typeof(bool), typeof(TradeViewModelBase), new PropertyMetadata(true));
-
-        public bool IsViewTradeEnabled
-        {
-            get { return (bool)GetValue(IsViewTradeEnabledProperty); }
-            set { SetValue(IsViewTradeEnabledProperty, value); }
-        }
-
         public static readonly DependencyProperty ShowOpenTradesOnlyProperty = DependencyProperty.Register(
             "ShowOpenTradesOnly", typeof(bool), typeof(TradeViewModelBase), new PropertyMetadata(default(bool), ShowOpenTradesOnlyChanged));
 
@@ -153,31 +141,18 @@ namespace TraderTools.Core.UI.ViewModels
         {
         }
 
-
         public void ViewTrade(TradeDetails tradeDetails)
         {
-            if (!IsViewTradeEnabled) return;
-            IsViewTradeEnabled = false;
+            if (tradeDetails == null) return;
 
-            Task.Run(() =>
-            {
-                ShowTrade(tradeDetails, true);
-
-                _dispatcher.Invoke(() => { IsViewTradeEnabled = true; });
-            });
+            ShowTrade(tradeDetails, true);
         }
 
         public void ViewTradeSetup(TradeDetails tradeDetails)
         {
-            if (!IsViewTradeEnabled) return;
-            IsViewTradeEnabled = false;
+            if (tradeDetails == null) return;
 
-            Task.Run(() =>
-            {
-                ShowTradeSetup(tradeDetails, true);
-
-                _dispatcher.Invoke(() => { IsViewTradeEnabled = true; });
-            });
+            ShowTradeSetup(tradeDetails, true);
         }
 
         private void EditTrade(object obj)
@@ -232,19 +207,6 @@ namespace TraderTools.Core.UI.ViewModels
                         new SimpleMovingAverage(200), Colors.LightBlue, largeChartTimeframe, largeChartCandles);
                 }
 
-                if (largeChartTimeframe != Timeframe.D1Tiger)
-                {
-                    var macdPane = new ChartPaneViewModel(ChartViewModel, ChartViewModel.ViewportManager)
-                    {
-                        IsFirstChartPane = false,
-                        IsLastChartPane = true,
-                        Height = 140
-                    };
-                    ChartViewModel.ChartPaneViewModels.Add(macdPane);
-                    ChartHelper.AddIndicator(macdPane, trade.Market, new MovingAverageConvergenceDivergence(), Colors.Red, largeChartTimeframe, largeChartCandles);
-                    ChartHelper.AddIndicator(macdPane, trade.Market, new MovingAverageConvergenceDivergenceSignal(), Colors.Blue, largeChartTimeframe, largeChartCandles);
-                }
-
                 ChartHelper.SetChartViewModelVisibleRange(trade, ChartViewModel, largeChartCandles,
                     largeChartTimeframe);
 
@@ -281,10 +243,11 @@ namespace TraderTools.Core.UI.ViewModels
                     ChartHelper.CreateTradeAnnotations(ChartViewModelSmaller1, TradeAnnotationsToShow.All, smallChartTimeframe,
                         smallChartCandles, trade);
 
-                AddCustomAnnotations(trade, ChartViewModel);
-                AddCustomAnnotations(trade, ChartViewModelSmaller1);
+                TradeShown?.Invoke(trade);
             }));
         }
+
+        protected event Action<TradeDetails> TradeShown;
 
         protected void ShowTrade(TradeDetails trade, bool updateCandles = false)
         {
@@ -303,12 +266,10 @@ namespace TraderTools.Core.UI.ViewModels
             }
             else
             {
-                end = trade.CloseDateTime?.AddDays(5);
+                end = trade.CloseDateTime?.AddDays(20);
             }
 
-            var largeChartCandles = largeChartTimeframe != Timeframe.D1Tiger
-                ? BrokerCandles.GetCandles(Broker, trade.Market, largeChartTimeframe, updateCandles, cacheData: false, minOpenTimeUtc: start, maxCloseTimeUtc: end)
-                : BrokerCandles.GetCandlesUptoSpecificTime(Broker, trade.Market, Timeframe.D1Tiger, updateCandles, null, trade.CloseDateTime);
+            var largeChartCandles = BrokerCandles.GetCandles(Broker, trade.Market, largeChartTimeframe, updateCandles, cacheData: false, minOpenTimeUtc: start, maxCloseTimeUtc: end);
             var smallChartCandles = BrokerCandles.GetCandles(Broker, trade.Market, smallChartTimeframe, updateCandles, maxCloseTimeUtc: trade.CloseDateTime?.AddDays(30));
 
             ShowTrade(trade, smallChartTimeframe, smallChartCandles, largeChartTimeframe, largeChartCandles);
@@ -328,66 +289,10 @@ namespace TraderTools.Core.UI.ViewModels
                 start = trade.StartDateTime.Value.AddMinutes(-20);
             }
 
-            var tradeStartTime = trade.StartDateTime.Value;
-            var smallChartCandles = BrokerCandles.GetCandles(Broker, trade.Market, smallChartTimeframe != Timeframe.D1Tiger ? smallChartTimeframe : Timeframe.D1, updateCandles, maxCloseTimeUtc: trade.CloseDateTime?.AddDays(5));
-            var largeChartCandles = BrokerCandles.GetCandlesUptoSpecificTime(Broker, trade.Market, largeChartTimeframe, updateCandles, start, trade.StartDateTime.Value);
+            var smallChartCandles = BrokerCandles.GetCandlesUptoSpecificTime(Broker, trade.Market, smallChartTimeframe, updateCandles, start, trade.StartDateTime.Value, Timeframe.M15);
+            var largeChartCandles = BrokerCandles.GetCandlesUptoSpecificTime(Broker, trade.Market, largeChartTimeframe, updateCandles, start, trade.StartDateTime.Value, Timeframe.M15);
 
             ShowTrade(trade, smallChartTimeframe, smallChartCandles, largeChartTimeframe, largeChartCandles);
-        }
-
-        private void AddCustomAnnotations(TradeDetails trade, ChartViewModel cvm)
-        {
-            var path = GetTradeAnnotationsPath(trade, cvm);
-
-            if (File.Exists(path))
-            {
-                var annotationDetails = JsonConvert.DeserializeObject<List<AnnotationDetails>>(File.ReadAllText(path));
-
-                foreach (var annotationDetail in annotationDetails)
-                {
-                    IComparable x1;
-                    if (int.TryParse(annotationDetail.X1, out var x1Int))
-                    {
-                        x1 = x1Int;
-                    }
-                    else
-                    {
-                        x1 = DateTime.Parse(annotationDetail.X1);
-                    }
-
-                    IComparable x2;
-                    if (int.TryParse(annotationDetail.X2, out var x2Int))
-                    {
-                        x2 = x2Int;
-                    }
-                    else
-                    {
-                        x2 = DateTime.Parse(annotationDetail.X2);
-                    }
-
-                    var annotation = new LineAnnotation
-                    {
-                        Tag = "Added",
-                        IsEditable = true,
-                        StrokeThickness = 3,
-                        Opacity = 0.7,
-                        Stroke = Brushes.Black,
-                        X1 = x1,
-                        X2 = x2,
-                        Y1 = double.Parse(annotationDetail.Y1),
-                        Y2 = double.Parse(annotationDetail.Y2)
-                    };
-
-                    cvm.ChartPaneViewModels[0].TradeAnnotations.Add(annotation);
-                }
-            }
-        }
-
-        protected string GetTradeAnnotationsPath(TradeDetails trade, ChartViewModel cvm)
-        {
-            var chartName = cvm == ChartViewModel ? "Main" : "Secondary";
-            var annotationsDirectory = Path.Combine(DataDirectory, "TradeAnnotations");
-            return Path.Combine(annotationsDirectory, $"{trade.UniqueId}_{chartName}.json");
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

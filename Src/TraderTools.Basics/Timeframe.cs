@@ -2,7 +2,6 @@
 {
     public enum Timeframe
     {
-        D1Tiger = -1,
         T1 = 0,
         M1 = 60,
         M5 = 60 * 5,
