@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using com.fxcm.report;
 using fxcore2;
 using Hallupa.Library;
@@ -966,8 +967,6 @@ namespace TraderTools.Brokers.FXCM
 
                 if (_session != null)
                 {
-                    _sessionStatusListener.Reset();
-
                     if (_session.getChartSessionStatus() == O2GChartSessionStatusCode.Connected)
                     {
                         Disconnect();

@@ -62,9 +62,25 @@ namespace TraderTools.Basics
             Custom4 = custom4;
         }
 
-        public string Comments { get; set; }
+        public string Comments
+        {
+            get => _comments;
+            set
+            {
+                _comments = value;
+                OnPropertyChanged();
+            }
+        }
 
-        public string Strategies { get; set; }
+        public string Strategies
+        {
+            get => _strategies;
+            set
+            {
+                _strategies = value;
+                OnPropertyChanged();
+            }
+        }
 
         public DateTime? EntryDateTime
         {
@@ -411,6 +427,8 @@ namespace TraderTools.Basics
         private DateTime? _orderExpireTime;
         private OrderKind _orderKind;
         private DateTime? _entryDateTime;
+        private string _comments;
+        private string _strategies;
 
         public void AddStopPrice(DateTime date, decimal? price)
         {

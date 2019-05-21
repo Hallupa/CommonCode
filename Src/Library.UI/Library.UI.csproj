@@ -92,6 +92,7 @@
   <ItemGroup>
     <Compile Include="AttachedProperties\ListBoxExtensions.cs" />
     <Compile Include="Behaviours\ListBoxSelectionBehavior.cs" />
+    <Compile Include="Behaviours\WindowBehaviour.cs" />
     <Compile Include="BindingProxy.cs" />
     <Compile Include="Converters\BoolMultiConverter.cs" />
     <Compile Include="Converters\BoolToVisibilityConverter.cs" />

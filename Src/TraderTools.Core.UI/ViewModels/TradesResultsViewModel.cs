@@ -166,16 +166,15 @@ namespace TraderTools.Core.UI.ViewModels
         {
             if (AdvStrategyNaming)
             {
-                var regex = new Regex("#[a-zA-Z0-9&]*");
-                return trades.Where(t => t.RMultiple != null).SelectMany(t =>
+                return trades.SelectMany(t =>
                 {
                     var ret = new List<(string Name, TradeDetails Trade)>();
 
                     if (!string.IsNullOrEmpty(t.Strategies))
                     {
-                        foreach (Match match in regex.Matches(t.Strategies))
+                        foreach (var strategy in t.Strategies.Split(','))
                         {
-                            ret.Add((match.Value, t));
+                            ret.Add((strategy.Trim(), t));
                         }
                     }
                     else

@@ -10,7 +10,7 @@
 
     <Path Data="m 3.5 0.5 4 0 0 8 3 0 -5 5 -5 -5 3 0 z"
             Fill="#57B22020"
-            Stroke="#FF990000"
+            Stroke="{Binding StrokeBrush}"
             StrokeThickness="1"/>
 
     <!-- Creating the tooltip. In the TradeOverlayExampleViewModel we set a Trade object as datacontext of this annotation -->
@@ -37,12 +37,12 @@
                 <TextBlock Grid.Row="4" Grid.Column="0" Text="TradeDate: " />
                 <TextBlock Grid.Row="5" Grid.Column="0" Text="Total: " />
 
-                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding BuySell}" Foreground="#FF990000"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding BuySell}"/>
                 <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Quantity}" />
                 <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Instrument}" />
-                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding DealPrice, StringFormat=$\{0:0.000\}}" Foreground="#FF990000"/>
+                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding DealPrice, StringFormat=$\{0:0.000\}}"/>
                 <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding TradeDate}" />
-                <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding TotalPrice, StringFormat=$\{0:0.000\}}" Foreground="#FF990000"/>
+                <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding TotalPrice, StringFormat=$\{0:0.000\}}"/>
             </Grid>
         </ToolTip>
     </ToolTipService.ToolTip>

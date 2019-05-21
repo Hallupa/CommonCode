@@ -126,27 +126,21 @@ namespace TraderTools.Core.UI
 
             var dataSeries = cvm.ChartPaneViewModels[0].ChartSeriesViewModels[0].DataSeries;
             var startTime = trade.StartDateTimeLocal;
-            var endTimeLocal = trade.CloseDateTimeLocal ?? DateTime.Now;
 
             if (startTime != null && (trade.OrderPrice != null || trade.EntryPrice != null))
             {
-                var price = trade.OrderPrice != null
-                    ? trade.OrderPrice.Value
-                    : trade.EntryPrice.Value;
-
-                if (trade.OrderPrice != null && (annotationsToShow.HasFlag(TradeAnnotationsToShow.All) || annotationsToShow.HasFlag(TradeAnnotationsToShow.OrderMarker)))
-                {
-                    AddBuySellMarker(trade.TradeDirection.Value, annotations, trade, trade.OrderDateTimeLocal.Value, trade.OrderPrice.Value, 0.6, false);
-                }
-
                 if (trade.EntryPrice != null && (annotationsToShow.HasFlag(TradeAnnotationsToShow.All) || annotationsToShow.HasFlag(TradeAnnotationsToShow.EntryMarker)))
                 {
-                    AddBuySellMarker(trade.TradeDirection.Value, annotations, trade, trade.EntryDateTimeLocal.Value, trade.EntryPrice.Value, 0.7);
+                    var colour = trade.Profit != null && trade.Profit < 0 ? Colors.DarkRed : Colors.Green;
+                    AddBuySellMarker(trade.TradeDirection.Value, annotations, trade, trade.EntryDateTimeLocal.Value, trade.EntryPrice.Value, 0.9, colour: colour);
                 }
 
                 if (annotationsToShow.HasFlag(TradeAnnotationsToShow.All) || annotationsToShow.HasFlag(TradeAnnotationsToShow.OrderOrEntryLines))
                 {
-                    AddHorizontalLine(price, startTime.Value, endTimeLocal, dataSeries, annotations, trade, Colors.Gray, true);
+                    if (trade.OrderPrice != null && trade.OrderDateTimeLocal != null)
+                    {
+                        AddHorizontalLine(trade.OrderPrice.Value, trade.OrderDateTimeLocal.Value, trade.EntryDateTimeLocal ?? trade.CloseDateTimeLocal ?? DateTime.Now, dataSeries, annotations, trade, Colors.Gray, false);
+                    }
                 }
             }
 
@@ -159,7 +153,8 @@ namespace TraderTools.Core.UI
 
                 if (annotationsToShow.HasFlag(TradeAnnotationsToShow.All) || annotationsToShow.HasFlag(TradeAnnotationsToShow.CloseMarker))
                 {
-                    AddBuySellMarker(oppositeTradeDirection, annotations, trade, trade.CloseDateTimeLocal.Value, trade.ClosePrice.Value, 0.7);
+                    var colour = trade.Profit != null && trade.Profit < 0 ? Colors.DarkRed : Colors.Green;
+                    AddBuySellMarker(oppositeTradeDirection, annotations, trade, trade.CloseDateTimeLocal.Value, trade.ClosePrice.Value, 0.9, colour: colour);
                 }
 
                 if (annotationsToShow.HasFlag(TradeAnnotationsToShow.All) || annotationsToShow.HasFlag(TradeAnnotationsToShow.CloseLine))
@@ -179,8 +174,7 @@ namespace TraderTools.Core.UI
                         ? trade.CloseDateTime.Value.ToLocalTime()
                         : new DateTime(candles[candles.Count - 1].CloseTimeTicks, DateTimeKind.Utc).ToLocalTime(), null));
 
-                    AddLineAnnotations(stopPrices, cvm.ChartPaneViewModels[0].ChartSeriesViewModels[0].DataSeries,
-                        annotations, Colors.Red);
+                    AddLineAnnotations(stopPrices, cvm.ChartPaneViewModels[0].ChartSeriesViewModels[0].DataSeries, annotations, Colors.Red);
                 }
             }
 
@@ -192,34 +186,37 @@ namespace TraderTools.Core.UI
                 {
                     limitPrices.Add(new DatePrice(trade.CloseDateTime?.ToLocalTime() ?? new DateTime(candles[candles.Count - 1].CloseTimeTicks, DateTimeKind.Utc), null));
 
-                    AddLineAnnotations(limitPrices, cvm.ChartPaneViewModels[0].ChartSeriesViewModels[0].DataSeries,
-                        annotations, Colors.DodgerBlue);
+                    AddLineAnnotations(limitPrices, cvm.ChartPaneViewModels[0].ChartSeriesViewModels[0].DataSeries, annotations, Colors.DarkGreen);
                 }
             }
 
             return annotations;
         }
 
-        private static void AddBuySellMarker(TradeDirection direction, AnnotationCollection annotations, TradeDetails trade, DateTime timeLocal, decimal price, double opacity, bool isFilled = true)
+        private static void AddBuySellMarker(TradeDirection direction, AnnotationCollection annotations, TradeDetails trade, DateTime timeLocal, decimal price, double opacity, bool isFilled = true, Color? colour = null)
         {
-            var annotation = direction == TradeDirection.Long ? new BuyMarkerAnnotation() : (CustomAnnotation)new SellMarkerAnnotation();
-            annotation.Width = 18;
-            annotation.Height = 18;
+            var buyMarker = new BuyMarkerAnnotation();
+            var sellMarker = new SellMarkerAnnotation();
+            var annotation = direction == TradeDirection.Long ? buyMarker : (CustomAnnotation)sellMarker;
+            annotation.Width = 24;
+            annotation.Height = 24;
             ((Path)annotation.Content).Stretch = Stretch.Fill;
             annotation.Margin = new Thickness(0, direction == TradeDirection.Long ? 5 : -5, 0, 0);
             annotation.DataContext = trade;
 
+            var brush = new SolidColorBrush
+            {
+                Color = colour ?? (direction == TradeDirection.Long ? Colors.Green : Colors.DarkRed),
+                Opacity = opacity
+            };
+
             if (isFilled)
             {
-                var brush = new SolidColorBrush
-                {
-                    Color = direction == TradeDirection.Long ? Colors.Green : Colors.DarkRed,
-                    Opacity = opacity
-                };
-
                 ((Path)annotation.Content).Fill = brush;
             }
 
+            buyMarker.StrokeBrush = brush;
+            sellMarker.StrokeBrush = brush;
             annotation.X1 = timeLocal;
             annotation.BorderThickness = new Thickness(20);
             annotation.Y1 = (double)price;
@@ -288,10 +285,7 @@ namespace TraderTools.Core.UI
                         annotations.Add(annotation);
                     }
 
-                    var first = startIndex == null;
                     startIndex = series.FindIndex(p.Date.ToLocalTime(), SearchMode.Nearest);
-                    if (first) startIndex -= 4;
-                    if (startIndex < 0) startIndex = 0;
                     currentPrice = p.Price;
                 }
             }

@@ -144,7 +144,13 @@
                                 </Grid.RowDefinitions>
 
                                 <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,4,0">Strategies</TextBlock>
-                                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Strategies, UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Strategies, UpdateSourceTrigger=PropertyChanged}">
+                                    <TextBox.ToolTip>
+                                        <ToolTip>
+                                            Strategies separated by commas e.g. 8 EMA bounce,Channel
+                                        </ToolTip>
+                                    </TextBox.ToolTip>
+                                </TextBox>
 
                                 <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,4,0">Comments</TextBlock>
                                 <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Comments, UpdateSourceTrigger=PropertyChanged}"/>
@@ -166,16 +172,20 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
-                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0" Padding="0">Entry:</TextBlock>
-                                <TextBlock Grid.Row="0" Grid.Column="1" Margin="0" Padding="0" Text="{Binding EntryDateTimeLocal, StringFormat={}{0:dd-MM-yy HH:mm}, Mode=OneWay}"/>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0" Padding="0">Order:</TextBlock>
+                                <TextBlock Grid.Row="0" Grid.Column="1" Margin="0" Padding="0" Text="{Binding OrderDateTimeLocal, StringFormat={}{0:dd-MM-yy HH:mm}, Mode=OneWay}"/>
 
                                 <TextBlock Grid.Row="1" Grid.Column="0" Margin="0" Padding="0">Expiry:</TextBlock>
                                 <TextBlock Grid.Row="1" Grid.Column="1" Margin="0" Padding="0" Text="{Binding OrderExpireTimeLocal, StringFormat={}{0:dd-MM-yy HH:mm}, Mode=OneWay}"/>
 
-                                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0" Padding="0">Close:</TextBlock>
-                                <TextBlock Grid.Row="2" Grid.Column="1" Margin="0" Padding="0" Text="{Binding CloseDateTimeLocal, StringFormat={}{0:dd-MM-yy HH:mm}, Mode=OneWay}"/>
+                                <TextBlock Grid.Row="2" Grid.Column="0" Margin="0" Padding="0">Entry:</TextBlock>
+                                <TextBlock Grid.Row="2" Grid.Column="1" Margin="0" Padding="0" Text="{Binding EntryDateTimeLocal, StringFormat={}{0:dd-MM-yy HH:mm}, Mode=OneWay}"/>
+
+                                <TextBlock Grid.Row="3" Grid.Column="0" Margin="0" Padding="0">Close:</TextBlock>
+                                <TextBlock Grid.Row="3" Grid.Column="1" Margin="0" Padding="0" Text="{Binding CloseDateTimeLocal, StringFormat={}{0:dd-MM-yy HH:mm}, Mode=OneWay}"/>
 
                             </Grid>
                         </DataTemplate>

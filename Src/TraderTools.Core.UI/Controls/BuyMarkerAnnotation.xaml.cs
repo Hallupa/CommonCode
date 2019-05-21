@@ -1,4 +1,6 @@
-﻿using Abt.Controls.SciChart.Visuals.Annotations;
+﻿using System.Windows;
+using System.Windows.Media;
+using Abt.Controls.SciChart.Visuals.Annotations;
 
 namespace TraderTools.Core.UI.Controls
 {
@@ -10,6 +12,15 @@ namespace TraderTools.Core.UI.Controls
         public BuyMarkerAnnotation()
         {
             InitializeComponent();
+        }
+
+        public static readonly DependencyProperty StrokeBrushProperty = DependencyProperty.Register(
+            "StrokeBrush", typeof(Brush), typeof(BuyMarkerAnnotation), new PropertyMetadata(Brushes.Green));
+
+        public Brush StrokeBrush
+        {
+            get { return (Brush) GetValue(StrokeBrushProperty); }
+            set { SetValue(StrokeBrushProperty, value); }
         }
     }
 }
