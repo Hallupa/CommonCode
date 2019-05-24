@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
@@ -14,14 +13,14 @@ namespace TraderTools.Core.UI.ViewModels
     {
         private readonly Func<List<TradeDetails>> _getTradesFunc;
         private readonly bool _createStrategiesSubResults;
-        private string _selectedResultOption = "Summary";
+        private string _selectedResultOption = "All";
         private Dispatcher _dispatcher;
 
         public ObservableCollection<TradesResultViewModel> Results { get; } = new ObservableCollection<TradesResultViewModel>();
 
         public List<string> ResultOptions { get; private set; } = new List<string>
         {
-            "Summary",
+            "All",
             "Market",
             "Month (Using entry date)",
             "Timeframe",
@@ -136,7 +135,7 @@ namespace TraderTools.Core.UI.ViewModels
 
             switch (SelectedResultOption)
             {
-                case "Summary":
+                case "All":
                     groupedTrades = trades.GroupBy(x => "All trades").ToList();
                     break;
                 case "Market":

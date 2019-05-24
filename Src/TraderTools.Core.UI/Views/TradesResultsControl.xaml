@@ -28,7 +28,7 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <Label Content="Results type:" VerticalAlignment="Center" Visibility="{Binding ShowOptions, Converter={StaticResource BoolToVis}}"/>
+        <Label Content="Group results by:" VerticalAlignment="Center" Visibility="{Binding ShowOptions, Converter={StaticResource BoolToVis}}"/>
         <ComboBox Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left" Margin="2" Width="200" ItemsSource="{Binding ResultOptions}" SelectedItem="{Binding SelectedResultOption}" Visibility="{Binding ShowOptions, Converter={StaticResource BoolToVis}}"/>
         <Label Grid.Column="2" Content="Sub-items:" VerticalAlignment="Center" Visibility="{Binding ShowOptions, Converter={StaticResource BoolToVis}}"/>
         <ComboBox Grid.Row="0" Grid.Column="3" HorizontalAlignment="Left" Margin="2" Width="150" SelectedIndex="{Binding SubItemsIndex}" Visibility="{Binding ShowOptions, Converter={StaticResource BoolToVis}}">
