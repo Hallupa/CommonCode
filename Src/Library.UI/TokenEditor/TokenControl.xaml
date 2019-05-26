@@ -1,0 +1,31 @@
+﻿<UserControl x:Class="Hallupa.Library.UI.TokenEditor.TokenControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:converters="clr-namespace:Hallupa.Library.UI.Converters"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid>
+        <Grid.Resources>
+            <converters:BoolToVisibilityConverter x:Key="BoolToVis" UseHidden="True"/>
+        </Grid.Resources>
+        <Border BorderBrush="#FF000000" BorderThickness="1" CornerRadius="8" Margin="2"  x:Name="MainGrid" Background="Transparent">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Label Content="{Binding}"/>
+                <Button Grid.Column="1" Padding="5" Style="{StaticResource {x:Static ToolBar.ButtonStyleKey}}" Background="Transparent"
+                        Visibility="{Binding Path=IsMouseOver, ElementName=MainGrid, Converter={StaticResource BoolToVis}}"
+                        Command="{Binding DeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        CommandParameter="{Binding}">
+                    <Path Data="M0,0 L1,1 M0,1 L1,0" Stretch="Fill" Stroke="Black" StrokeThickness="3" Width="12" Height="12" />
+                </Button>
+            </Grid>
+        </Border>
+    </Grid>
+
+</UserControl>
