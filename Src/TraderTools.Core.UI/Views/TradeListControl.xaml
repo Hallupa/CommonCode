@@ -7,6 +7,7 @@
              xmlns:views="clr-namespace:TraderTools.Core.UI.Views"
              xmlns:converters="clr-namespace:Hallupa.Library.UI.Converters;assembly=Hallupa.Library.UI"
              xmlns:converters1="clr-namespace:TraderTools.Core.UI.Converters"
+             xmlns:tokenEditor="clr-namespace:Hallupa.Library.UI.TokenEditor;assembly=Hallupa.Library.UI"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
@@ -144,13 +145,8 @@
                                 </Grid.RowDefinitions>
 
                                 <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,4,0">Strategies</TextBlock>
-                                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Strategies, UpdateSourceTrigger=PropertyChanged}">
-                                    <TextBox.ToolTip>
-                                        <ToolTip>
-                                            Strategies separated by commas e.g. 8 EMA bounce,Channel
-                                        </ToolTip>
-                                    </TextBox.ToolTip>
-                                </TextBox>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,4,0">Strategies</TextBlock>
+                                <tokenEditor:TokenContainerControl SelectedItemsCSV="{Binding Path=Strategies, Mode=TwoWay}" Grid.Row="0" Grid.Column="1" Margin="0,0,4,0"/> 
 
                                 <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,4,0">Comments</TextBlock>
                                 <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Comments, UpdateSourceTrigger=PropertyChanged}"/>

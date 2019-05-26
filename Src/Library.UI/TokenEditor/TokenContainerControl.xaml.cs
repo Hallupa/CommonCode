@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -9,28 +12,21 @@ namespace Hallupa.Library.UI.TokenEditor
     /// <summary>
     /// Interaction logic for TokenContainerControl.xaml
     /// </summary>
-    public partial class TokenContainerControl : UserControl
+    public partial class TokenContainerControl
     {
         public TokenContainerControl()
         {
             InitializeComponent();
 
             DeleteTokenCommand = new DelegateCommand(DeleteToken);
+
+            Loaded += (sender, args) => StopEdit(this);
         }
 
         private void DeleteToken(object obj)
         {
-            var items = SelectedItems as IList;
-            items?.Remove(obj);
-        }
-
-        public static readonly DependencyProperty ItemsSourceProperty = DependencyProperty.Register(
-            "ItemsSource", typeof(IEnumerable), typeof(TokenContainerControl), new PropertyMetadata(default(IEnumerable)));
-
-        public IEnumerable ItemsSource
-        {
-            get { return (IEnumerable)GetValue(ItemsSourceProperty); }
-            set { SetValue(ItemsSourceProperty, value); }
+            var item = (string)obj;
+            SelectedItemsCSV = string.Join(",", SelectedItems.Cast<string>().Where(c => c != item));
         }
 
         public static readonly DependencyProperty DeleteTokenCommandProperty = DependencyProperty.Register(
@@ -45,107 +41,111 @@ namespace Hallupa.Library.UI.TokenEditor
             set { SetValue(SelectedItemsProperty, value); }
         }
 
+        public static readonly DependencyProperty SelectedItemsCSVProperty = DependencyProperty.Register(
+            "SelectedItemsCSV", typeof(string), typeof(TokenContainerControl),
+            new PropertyMetadata(default(string), SelectedItemsCSVChanged));
+
+        private static void SelectedItemsCSVChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var control = (TokenContainerControl)d;
+            control.SelectedItems = control.SelectedItemsCSV != null 
+                ? control.SelectedItemsCSV.Split(',').Where(x => !string.IsNullOrEmpty(x)).ToList()
+                : new List<string>();
+        }
+
+        public string SelectedItemsCSV
+        {
+            get { return (string) GetValue(SelectedItemsCSVProperty); }
+            set { SetValue(SelectedItemsCSVProperty, value); }
+        }
+
         public ICommand DeleteTokenCommand
         {
             get { return (ICommand)GetValue(DeleteTokenCommandProperty); }
             set { SetValue(DeleteTokenCommandProperty, value); }
         }
 
-        public static readonly DependencyProperty ComboBoxSelectedItemProperty = DependencyProperty.Register(
-            "ComboBoxSelectedItem", typeof(object), typeof(TokenContainerControl), new PropertyMetadata(default(object), ComboBoxSelectedItemChanged));
+        public static readonly DependencyProperty TextBoxTextProperty = DependencyProperty.Register(
+            "TextBoxText", typeof(string), typeof(TokenContainerControl),
+            new PropertyMetadata(default(string)));
 
-        private static void ComboBoxSelectedItemChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+
+        public string TextBoxText
         {
-            var userControl = (TokenContainerControl)d;
-            if (userControl.ComboBoxSelectedItem == null) return;
-
-            AddItem(userControl, userControl.ComboBoxSelectedItem);
+            get { return (string)GetValue(TextBoxTextProperty); }
+            set { SetValue(TextBoxTextProperty, value); }
         }
 
-        public static readonly DependencyProperty ComboBoxTextProperty = DependencyProperty.Register(
-            "ComboBoxText", typeof(string ), typeof(TokenContainerControl), new PropertyMetadata(default(string), PropertyChangedCallback));
-
-        private static void PropertyChangedCallback(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        private void TextBoxOnKeyDown(object sender, KeyEventArgs e)
         {
-        }
-
-        public string ComboBoxText
-        {
-            get { return (string ) GetValue(ComboBoxTextProperty); }
-            set { SetValue(ComboBoxTextProperty, value); }
-        }
-
-        public object ComboBoxSelectedItem
-        {
-            get { return (object)GetValue(ComboBoxSelectedItemProperty); }
-            set { SetValue(ComboBoxSelectedItemProperty, value); }
-        }
-
-        private void PART_EditableTextBox_OnGotFocus(object sender, RoutedEventArgs e)
-        {
-            MainComboBox.IsDropDownOpen = true;
-        }
-
-        private void PART_EditableTextBox_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            MainComboBox.IsDropDownOpen = true;
-        }
-
-        private void PART_EditableTextBox_OnKeyUp(object sender, KeyEventArgs e)
-        {
-            var tb = (TextBox)sender;
+            //var tb = (TextBox)sender;
 
             if (e.Key == Key.Enter)
             {
-                AddItem(this, tb.Text);
-                tb.Text = string.Empty;
+                Debug.WriteLine("Enter pressed");
+                AddItem(this);
+                //tb.Text = string.Empty;
+                TextBoxText = string.Empty;
+                StopEdit(this);
             }
-
-            /*
-            var itemsViewOriginal = (CollectionView)CollectionViewSource.GetDefaultView(ItemsSource);
-
-            itemsViewOriginal.Filter = ((o) =>
-            {
-                if (o == null)
-                {
-                    return true;
-                }
-
-                if (String.IsNullOrEmpty(tb.Text)) return true;
-                else
-                {
-                    if (((string)o).Contains(tb.Text)) return true;
-                    else return false;
-                }
-            });
-
-            itemsViewOriginal.Refresh();*/
         }
 
-        private void PART_EditableTextBox_OnLostFocus(object sender, RoutedEventArgs e)
+        private static void AddItem(TokenContainerControl userControl)
         {
-            var tb = (TextBox)sender;
-            AddItem(this, tb.Text);
-        }
-
-        private static void AddItem(TokenContainerControl userControl, object item)
-        {
-            if (item == null || (item is string str && string.IsNullOrEmpty(str)))
+            var tb = VisualHelper.FindChild<TextBox>(userControl, "MainTextBox");
+            var item = tb.Text;
+            Debug.WriteLine($"Add item {item}");
+            if (string.IsNullOrEmpty(item))
             {
                 return;
             }
 
             // Add token
-            if (userControl.SelectedItems is IList selectedItemsList && !selectedItemsList.Contains(item))
-            {
-                selectedItemsList.Add(item);
+            var currentItems = userControl.SelectedItemsCSV != null ? userControl.SelectedItemsCSV.Split(',') : new string[] { };
+            if (!currentItems.Contains(item))
+            { 
+                userControl.SelectedItemsCSV =
+                    string.Join(",", currentItems.Union(new List<string> {item}));
             }
 
             System.Windows.Threading.Dispatcher.CurrentDispatcher.BeginInvoke((Action)(() =>
             {
-                userControl.ComboBoxSelectedItem = null;
-                userControl.ComboBoxText = string.Empty;
+                userControl.TextBoxText = string.Empty;
             }));
+        }
+
+        private void TextBoxLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            Debug.WriteLine("Lost keyboard focus");
+            StopEdit(this);
+        }
+
+        private static void StartEdit(TokenContainerControl control)
+        {
+            Debug.WriteLine("Start edit");
+            var tb = control.MainTextBox;
+            var grid = (Grid)tb.Parent;
+
+            grid.ColumnDefinitions[0].Width = new GridLength(3, GridUnitType.Star);
+            grid.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Star);
+
+            tb.Focus();
+        }
+
+        private static void StopEdit(TokenContainerControl control)
+        {
+            Debug.WriteLine("Stop edit");
+            var tb = VisualHelper.FindChild<TextBox>(control, "MainTextBox");
+            var grid = (Grid)tb.Parent;
+            grid.ColumnDefinitions[0].Width = new GridLength(0);
+            grid.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Star);
+        }
+
+        private void TokenContainerControl_OnMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            Debug.WriteLine("Mouse down");
+            var control = (TokenContainerControl)sender;
+            StartEdit(control);
         }
     }
 }

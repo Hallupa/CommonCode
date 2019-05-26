@@ -75,6 +75,7 @@
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <Reference Include="PresentationFramework.Aero2" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Windows.Interactivity, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
@@ -108,12 +109,26 @@
     <Compile Include="LogControlAppender.cs" />
     <Compile Include="ObservableCollectionEx.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TokenEditor\TokenContainerControl.xaml.cs">
+      <DependentUpon>TokenContainerControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="TokenEditor\TokenControl.xaml.cs">
+      <DependentUpon>TokenControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="VisualHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="LogControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="TokenEditor\TokenContainerControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="TokenEditor\TokenControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
   </ItemGroup>
   <ItemGroup>
