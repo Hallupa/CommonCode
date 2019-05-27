@@ -12,14 +12,15 @@ namespace TraderTools.Core.UI.Views
         None = 0,
         PoundsPerPip = 1,
         Quantity = 2,
-        InitialStop = 4,
-        InitialLimit = 8,
+        Stop = 4,
+        Limit = 8,
         OrderDate = 16,
         Broker = 32,
         Comments = 64,
         ResultR = 128,
         OrderPrice = 256,
-        ClosePrice = 512
+        ClosePrice = 512,
+        Timeframe = 1024
     }
 
     /// <summary>

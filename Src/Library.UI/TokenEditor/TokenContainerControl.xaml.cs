@@ -33,7 +33,7 @@ namespace Hallupa.Library.UI.TokenEditor
             "DeleteTokenCommand", typeof(ICommand), typeof(TokenContainerControl), new PropertyMetadata(default(ICommand)));
 
         public static readonly DependencyProperty SelectedItemsProperty = DependencyProperty.Register(
-            "SelectedItems", typeof(IEnumerable), typeof(TokenContainerControl), new PropertyMetadata(default(IEnumerable)));
+            "SelectedItems", typeof(IEnumerable), typeof(TokenContainerControl), new FrameworkPropertyMetadata(default(IEnumerable), FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
 
         public IEnumerable SelectedItems
         {
@@ -48,14 +48,14 @@ namespace Hallupa.Library.UI.TokenEditor
         private static void SelectedItemsCSVChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var control = (TokenContainerControl)d;
-            control.SelectedItems = control.SelectedItemsCSV != null 
+            control.SelectedItems = control.SelectedItemsCSV != null
                 ? control.SelectedItemsCSV.Split(',').Where(x => !string.IsNullOrEmpty(x)).ToList()
                 : new List<string>();
         }
 
         public string SelectedItemsCSV
         {
-            get { return (string) GetValue(SelectedItemsCSVProperty); }
+            get { return (string)GetValue(SelectedItemsCSVProperty); }
             set { SetValue(SelectedItemsCSVProperty, value); }
         }
 
@@ -103,9 +103,8 @@ namespace Hallupa.Library.UI.TokenEditor
             // Add token
             var currentItems = userControl.SelectedItemsCSV != null ? userControl.SelectedItemsCSV.Split(',') : new string[] { };
             if (!currentItems.Contains(item))
-            { 
-                userControl.SelectedItemsCSV =
-                    string.Join(",", currentItems.Union(new List<string> {item}));
+            {
+                userControl.SelectedItemsCSV = string.Join(",", currentItems.Where(x => !string.IsNullOrEmpty(x)).Union(new List<string> { item }));
             }
 
             System.Windows.Threading.Dispatcher.CurrentDispatcher.BeginInvoke((Action)(() =>

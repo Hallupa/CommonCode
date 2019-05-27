@@ -77,13 +77,14 @@ namespace TraderTools.Core.UI.ViewModels
         public List<Timeframe> TimeFrameItems { get; set; }
 
         public TradeListDisplayOptionsFlag TradeListDisplayOptions { get; set; } =
-            TradeListDisplayOptionsFlag.PoundsPerPip | TradeListDisplayOptionsFlag.InitialStop
-                                                     | TradeListDisplayOptionsFlag.InitialLimit
+            TradeListDisplayOptionsFlag.PoundsPerPip | TradeListDisplayOptionsFlag.Stop
+                                                     | TradeListDisplayOptionsFlag.Limit
                                                      | TradeListDisplayOptionsFlag.OrderPrice
                                                      | TradeListDisplayOptionsFlag.OrderDate
                                                      | TradeListDisplayOptionsFlag.Comments
                                                      | TradeListDisplayOptionsFlag.ResultR
-                                                     | TradeListDisplayOptionsFlag.Broker;
+                                                     | TradeListDisplayOptionsFlag.Broker
+                                                     | TradeListDisplayOptionsFlag.Timeframe;
 
         protected TradeDetails TradeShowingOnChart { get; private set; }
         public DelegateCommand ViewTradeCommand { get; private set; }

@@ -124,6 +124,10 @@ namespace TraderTools.Basics
                 OnPropertyChanged();
                 OnPropertyChanged("InitialStopInPips");
                 OnPropertyChanged("InitialLimitInPips");
+                OnPropertyChanged("StopInPips");
+                OnPropertyChanged("StopPrice");
+                OnPropertyChanged("LimitInPips");
+                OnPropertyChanged("LimitPrice");
                 OnPropertyChanged("Status");
             }
         }
@@ -245,6 +249,10 @@ namespace TraderTools.Basics
                 OnPropertyChanged();
                 OnPropertyChanged("InitialStopInPips");
                 OnPropertyChanged("InitialLimitInPips");
+                OnPropertyChanged("StopInPips");
+                OnPropertyChanged("StopPrice");
+                OnPropertyChanged("LimitInPips");
+                OnPropertyChanged("LimitPrice");
                 OnPropertyChanged("Status");
             }
         }
@@ -300,6 +308,49 @@ namespace TraderTools.Basics
                 }
 
                 return _currentStopPrice;
+            }
+        }
+
+        public decimal? StopInPips
+        {
+            get
+            {
+                if (EntryPrice == null && OrderPrice == null)
+                {
+                    return null;
+                }
+
+                var usedPrice = EntryPrice != null ? EntryPrice.Value : OrderPrice.Value;
+                var stopPrice = StopPrice;
+                if (stopPrice != null)
+                {
+                    var stopInPips = Math.Abs(PipsHelper.GetPriceInPips(stopPrice.Value, Market) -
+                                              PipsHelper.GetPriceInPips(usedPrice, Market));
+                    return stopInPips;
+                }
+
+                return null;
+            }
+        }
+
+        public decimal? LimitInPips
+        {
+            get
+            {
+                if (EntryPrice == null && OrderPrice == null)
+                {
+                    return null;
+                }
+
+                var usedPrice = EntryPrice != null ? EntryPrice.Value : OrderPrice.Value;
+                var limitPrice = LimitPrice;
+                if (limitPrice != null)
+                {
+                    var stopInPips = Math.Abs(PipsHelper.GetPriceInPips(limitPrice.Value, Market) - PipsHelper.GetPriceInPips(usedPrice, Market));
+                    return stopInPips;
+                }
+
+                return null;
             }
         }
 
@@ -437,6 +488,8 @@ namespace TraderTools.Basics
             _currentStopPrice = null;
             OnPropertyChanged("InitialStop");
             OnPropertyChanged("InitialStopInPips");
+            OnPropertyChanged("StopInPips");
+            OnPropertyChanged("StopPrice");
         }
 
         public void ClearStopPrices()
@@ -445,6 +498,8 @@ namespace TraderTools.Basics
             _currentStopPrice = null;
             OnPropertyChanged("InitialStop");
             OnPropertyChanged("InitialStopInPips");
+            OnPropertyChanged("StopInPips");
+            OnPropertyChanged("StopPrice");
         }
 
         public List<DatePrice> GetStopPrices()
@@ -463,6 +518,8 @@ namespace TraderTools.Basics
             _currentStopPrice = null;
             OnPropertyChanged("InitialStop");
             OnPropertyChanged("InitialStopInPips");
+            OnPropertyChanged("StopInPips");
+            OnPropertyChanged("StopPrice");
         }
 
         public void AddLimitPrice(DateTime date, decimal? price)
@@ -471,6 +528,8 @@ namespace TraderTools.Basics
             LimitPrices = LimitPrices.OrderBy(x => x.Date).ToList();
             OnPropertyChanged("InitialLimit");
             OnPropertyChanged("InitialLimitInPips");
+            OnPropertyChanged("LimitInPips");
+            OnPropertyChanged("LimitPrice");
         }
 
         public void ClearLimitPrices()
@@ -478,6 +537,8 @@ namespace TraderTools.Basics
             LimitPrices.Clear();
             OnPropertyChanged("InitialLimit");
             OnPropertyChanged("InitialLimitInPips");
+            OnPropertyChanged("LimitInPips");
+            OnPropertyChanged("LimitPrice");
         }
 
         public List<DatePrice> GetLimitPrices()
@@ -495,6 +556,8 @@ namespace TraderTools.Basics
             LimitPrices.RemoveAt(index);
             OnPropertyChanged("InitialLimit");
             OnPropertyChanged("InitialLimitInPips");
+            OnPropertyChanged("LimitInPips");
+            OnPropertyChanged("LimitPrice");
         }
 
         public void SetClose(DateTime dateTime, decimal price, TradeCloseReason reason)
