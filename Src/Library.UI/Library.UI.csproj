@@ -91,6 +91,9 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\CommonAssemblyInfo.cs">
+      <Link>Properties\CommonAssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="AttachedProperties\ListBoxExtensions.cs" />
     <Compile Include="Behaviours\ListBoxSelectionBehavior.cs" />
     <Compile Include="Behaviours\WindowBehaviour.cs" />
