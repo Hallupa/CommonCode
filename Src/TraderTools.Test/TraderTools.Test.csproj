@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\..\Src\packages\NUnit.3.12.0\build\NUnit.props" Condition="Exists('..\..\..\Src\packages\NUnit.3.12.0\build\NUnit.props')" />
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{3DCB4253-AC23-4D4C-A574-8BE49F71ACFF}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>TraderTools.Test</RootNamespace>
+    <AssemblyName>TraderTools.Test</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="fxcore2, Version=1.5.0.0, Culture=neutral, PublicKeyToken=440355e023152e83, processorArchitecture=AMD64">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\3rd Party\FXCM\fxcore2.dll</HintPath>
+    </Reference>
+    <Reference Include="nunit.framework, Version=3.12.0.0, Culture=neutral, PublicKeyToken=2638cd05610744eb, processorArchitecture=MSIL">
+      <HintPath>..\..\..\Src\packages\NUnit.3.12.0\lib\net45\nunit.framework.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="FakeCandlesService.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Library\Library.csproj">
+      <Project>{EE1CEA5C-3FF1-45DD-9F3B-8043F71BFB76}</Project>
+      <Name>Library</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TraderTools.Basics\TraderTools.Basics.csproj">
+      <Project>{610CED3A-FFEF-45D5-B0C0-B4F79F320509}</Project>
+      <Name>TraderTools.Basics</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TraderTools.Brokers.FXCM\TraderTools.Brokers.FXCM.csproj">
+      <Project>{89047D98-156E-4BA0-B71E-121F7E26806E}</Project>
+      <Name>TraderTools.Brokers.FXCM</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TraderTools.Core.UI\TraderTools.Core.UI.csproj">
+      <Project>{2A2CF3F9-24AD-46E9-A341-75BDD4B191D1}</Project>
+      <Name>TraderTools.Core.UI</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TraderTools.Core\TraderTools.Core.csproj">
+      <Project>{DF376238-6A60-4FA6-AF06-00982E7CD525}</Project>
+      <Name>TraderTools.Core</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\..\..\Src\packages\NUnit.3.12.0\build\NUnit.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\Src\packages\NUnit.3.12.0\build\NUnit.props'))" />
+  </Target>
+  <PropertyGroup>
+    <PostBuildEvent>copy "C:\Program Files\Candleworks\ForexConnectAPIx64\bin\*.dll" "$(TargetDir)"
+copy "C:\Program Files\Candleworks\ForexConnectAPIx64\bin\net\dotnet45\*.dll" "$(TargetDir)"</PostBuildEvent>
+  </PropertyGroup>
+</Project>

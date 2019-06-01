@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using TraderTools.Basics;
-using TraderTools.Core.Broker;
 
 namespace TraderTools.Core.Extensions
 {

@@ -74,6 +74,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
     <Reference Include="System.Reactive, Version=4.1.0.0, Culture=neutral, PublicKeyToken=94bc3704cddfc263, processorArchitecture=MSIL">
       <HintPath>..\..\..\Src\packages\System.Reactive.4.1.5\lib\net46\System.Reactive.dll</HintPath>
@@ -117,7 +118,7 @@
     <Compile Include="Indicator.cs" />
     <Compile Include="ISimpleCandle.cs" />
     <Compile Include="Market.cs" />
-    <Compile Include="PipsHelper.cs" />
+    <Compile Include="Extensions\BrokerExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services.cs" />
     <Compile Include="Signal.cs" />
@@ -131,6 +132,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Library\Library.csproj">
+      <Project>{EE1CEA5C-3FF1-45DD-9F3B-8043F71BFB76}</Project>
+      <Name>Library</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

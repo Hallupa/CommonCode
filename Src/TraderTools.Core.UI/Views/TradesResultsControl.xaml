@@ -30,14 +30,16 @@
 
         <Label Content="Group results by:" VerticalAlignment="Center" Visibility="{Binding ShowOptions, Converter={StaticResource BoolToVis}}"/>
         <ComboBox Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left" Margin="2" Width="200" ItemsSource="{Binding ResultOptions}" SelectedItem="{Binding SelectedResultOption}" Visibility="{Binding ShowOptions, Converter={StaticResource BoolToVis}}"/>
-        <Label Grid.Column="2" Content="Sub-items:" VerticalAlignment="Center" Visibility="{Binding ShowOptions, Converter={StaticResource BoolToVis}}"/>
-        <ComboBox Grid.Row="0" Grid.Column="3" HorizontalAlignment="Left" Margin="2" Width="150" SelectedIndex="{Binding SubItemsIndex}" Visibility="{Binding ShowOptions, Converter={StaticResource BoolToVis}}">
+        <Label Grid.Column="2" Content="Sub-items:" VerticalAlignment="Center" Visibility="{Binding ShowSubOptions, Converter={StaticResource BoolToVis}}"/>
+        <ComboBox Grid.Row="0" Grid.Column="3" HorizontalAlignment="Left" Margin="2" Width="150"
+                  SelectedIndex="{Binding SubItemsIndex}" Visibility="{Binding ShowSubOptions, Converter={StaticResource BoolToVis}}">
             <ComboBoxItem Content="Trades"></ComboBoxItem>
             <ComboBoxItem Content="Strategies"></ComboBoxItem>
         </ComboBox>
 
 
         <DataGrid Grid.Row="1" Grid.ColumnSpan="4" ScrollViewer.CanContentScroll="False" AutoGenerateColumns="False" ClipboardCopyMode="IncludeHeader"
+                  FontSize="16"
                   ItemsSource="{Binding Results}" CanUserAddRows="False" RowDetailsVisibilityMode="Collapsed" PreviewMouseWheel="UIElement_OnPreviewMouseWheel">
             <DataGrid.RowStyle>
                 <Style TargetType="{x:Type DataGridRow}">
@@ -45,7 +47,7 @@
                 </Style>
             </DataGrid.RowStyle>
             <DataGrid.Columns>
-                <DataGridTextColumn Binding="{Binding Name}" Header="Name" Width="100" IsReadOnly="True"/>
+                <DataGridTextColumn Binding="{Binding Name}" Header="Name" Width="200" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding TradesCount}" Header="# trades" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding OpenTradesCount}" Header="# open trades" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding Profit, StringFormat={}£{0:0.0}}" Header="Current profit" IsReadOnly="True" Width="100" Visibility="{Binding ShowProfit, Converter={StaticResource BoolToVis}}"/>

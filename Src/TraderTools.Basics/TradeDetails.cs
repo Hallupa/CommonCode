@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using TraderTools.Basics.Extensions;
 
 namespace TraderTools.Basics
 {
@@ -40,28 +41,6 @@ namespace TraderTools.Basics
 
     public class TradeDetails : INotifyPropertyChanged
     {
-        public TradeDetails()
-        {
-        }
-
-        public TradeDetails(decimal entryOrder, DateTime entryOrderTime,
-            TradeDirection direction, decimal amount, string market, DateTime? orderExpireTime,
-            decimal? stop, decimal? limit, Timeframe timeframe, string strategies, string comments, int custom1,
-            int custom2, int custom3, int custom4, bool alert)
-        {
-            SetOrder(entryOrderTime, entryOrder, market, timeframe, direction, amount, orderExpireTime);
-            if (stop != null) SetStop(stop.Value, entryOrderTime);
-            if (limit != null) SetLimit(limit.Value, entryOrderTime);
-            Timeframe = timeframe;
-            Alert = alert;
-            Comments = comments;
-            Strategies = strategies;
-            Custom1 = custom1;
-            Custom2 = custom2;
-            Custom3 = custom3;
-            Custom4 = custom4;
-        }
-
         public string Comments
         {
             get => _comments;
@@ -125,9 +104,7 @@ namespace TraderTools.Basics
                 OnPropertyChanged("InitialStopInPips");
                 OnPropertyChanged("InitialLimitInPips");
                 OnPropertyChanged("StopInPips");
-                OnPropertyChanged("StopPrice");
                 OnPropertyChanged("LimitInPips");
-                OnPropertyChanged("LimitPrice");
                 OnPropertyChanged("Status");
             }
         }
@@ -313,44 +290,21 @@ namespace TraderTools.Basics
 
         public decimal? StopInPips
         {
-            get
+            get => _stopInPips;
+            set
             {
-                if (EntryPrice == null && OrderPrice == null)
-                {
-                    return null;
-                }
-
-                var usedPrice = EntryPrice != null ? EntryPrice.Value : OrderPrice.Value;
-                var stopPrice = StopPrice;
-                if (stopPrice != null)
-                {
-                    var stopInPips = Math.Abs(PipsHelper.GetPriceInPips(stopPrice.Value, Market) -
-                                              PipsHelper.GetPriceInPips(usedPrice, Market));
-                    return stopInPips;
-                }
-
-                return null;
+                _stopInPips = value;
+                OnPropertyChanged();
             }
         }
 
         public decimal? LimitInPips
         {
-            get
+            get => _limitInPips;
+            set
             {
-                if (EntryPrice == null && OrderPrice == null)
-                {
-                    return null;
-                }
-
-                var usedPrice = EntryPrice != null ? EntryPrice.Value : OrderPrice.Value;
-                var limitPrice = LimitPrice;
-                if (limitPrice != null)
-                {
-                    var stopInPips = Math.Abs(PipsHelper.GetPriceInPips(limitPrice.Value, Market) - PipsHelper.GetPriceInPips(usedPrice, Market));
-                    return stopInPips;
-                }
-
-                return null;
+                _limitInPips = value;
+                OnPropertyChanged();
             }
         }
 
@@ -395,22 +349,6 @@ namespace TraderTools.Basics
                 {
                     return null;
                 }
-
-                /* This calculates the RMultiple for trades that have an order but not entered. Perhaps move this into a separate property?
-                 if (EntryPrice == null && OrderPrice != null && LimitPrice != null && StopPrice != null)
-                 {
-                    var risk = Math.Abs(StopPrice.Value - OrderPrice.Value);
-                    if (TradeDirection == Basics.TradeDirection.Long)
-                    {
-                        var gainOrLoss = Math.Abs(LimitPrice.Value - OrderPrice.Value);
-                        return (gainOrLoss / risk) * (LimitPrice.Value > OrderPrice.Value ? 1 : -1);
-                    }
-                    else
-                    {
-                        var gainOrLoss = Math.Abs(LimitPrice.Value - OrderPrice.Value);
-                        return (gainOrLoss / risk) * (LimitPrice.Value > OrderPrice.Value ? -1 : 1);
-                    }
-                }*/
 
                 if (EntryPrice != null)
                 {
@@ -480,6 +418,10 @@ namespace TraderTools.Basics
         private DateTime? _entryDateTime;
         private string _comments;
         private string _strategies;
+        private decimal? _stopInPips;
+        private decimal? _limitInPips;
+        private decimal? _initialStopInPips;
+        private decimal? _initialLimitInPips;
 
         public void AddStopPrice(DateTime date, decimal? price)
         {
@@ -487,8 +429,6 @@ namespace TraderTools.Basics
             StopPrices = StopPrices.OrderBy(x => x.Date).ToList();
             _currentStopPrice = null;
             OnPropertyChanged("InitialStop");
-            OnPropertyChanged("InitialStopInPips");
-            OnPropertyChanged("StopInPips");
             OnPropertyChanged("StopPrice");
         }
 
@@ -497,8 +437,6 @@ namespace TraderTools.Basics
             StopPrices.Clear();
             _currentStopPrice = null;
             OnPropertyChanged("InitialStop");
-            OnPropertyChanged("InitialStopInPips");
-            OnPropertyChanged("StopInPips");
             OnPropertyChanged("StopPrice");
         }
 
@@ -517,8 +455,6 @@ namespace TraderTools.Basics
             StopPrices.RemoveAt(index);
             _currentStopPrice = null;
             OnPropertyChanged("InitialStop");
-            OnPropertyChanged("InitialStopInPips");
-            OnPropertyChanged("StopInPips");
             OnPropertyChanged("StopPrice");
         }
 
@@ -528,7 +464,6 @@ namespace TraderTools.Basics
             LimitPrices = LimitPrices.OrderBy(x => x.Date).ToList();
             OnPropertyChanged("InitialLimit");
             OnPropertyChanged("InitialLimitInPips");
-            OnPropertyChanged("LimitInPips");
             OnPropertyChanged("LimitPrice");
         }
 
@@ -536,8 +471,6 @@ namespace TraderTools.Basics
         {
             LimitPrices.Clear();
             OnPropertyChanged("InitialLimit");
-            OnPropertyChanged("InitialLimitInPips");
-            OnPropertyChanged("LimitInPips");
             OnPropertyChanged("LimitPrice");
         }
 
@@ -555,8 +488,6 @@ namespace TraderTools.Basics
 
             LimitPrices.RemoveAt(index);
             OnPropertyChanged("InitialLimit");
-            OnPropertyChanged("InitialLimitInPips");
-            OnPropertyChanged("LimitInPips");
             OnPropertyChanged("LimitPrice");
         }
 
@@ -573,16 +504,6 @@ namespace TraderTools.Basics
             CloseReason = reason;
         }
 
-        public void SetStop(decimal price, DateTime dateTime)
-        {
-            AddStopPrice(dateTime, price);
-        }
-
-        public void SetLimit(decimal price, DateTime dateTime)
-        {
-            AddLimitPrice(dateTime, price);
-        }
-
         public void SetExpired(DateTime dateTime)
         {
             CloseDateTime = dateTime;
@@ -591,45 +512,21 @@ namespace TraderTools.Basics
 
         public decimal? InitialStopInPips
         {
-            get
+            get => _initialStopInPips;
+            set
             {
-                if (EntryPrice == null && OrderPrice == null)
-                {
-                    return null;
-                }
-
-                var usedPrice = EntryPrice != null ? EntryPrice.Value : OrderPrice.Value;
-                if (StopPrices.Count > 0)
-                {
-                    var stop = GetStopPrices().First();
-                    var stopInPips = Math.Abs(PipsHelper.GetPriceInPips(stop.Price.Value, Market) -
-                                              PipsHelper.GetPriceInPips(usedPrice, Market));
-                    return stopInPips;
-                }
-
-                return null;
+                _initialStopInPips = value;
+                OnPropertyChanged();
             }
         }
 
         public decimal? InitialLimitInPips
         {
-            get
+            get => _initialLimitInPips;
+            set
             {
-                if (EntryPrice == null && OrderPrice == null)
-                {
-                    return null;
-                }
-
-                var usedPrice = EntryPrice != null ? EntryPrice.Value : OrderPrice.Value;
-                if (LimitPrices.Count > 0)
-                {
-                    var limit = GetLimitPrices().First();
-                    var limitInPips = Math.Abs(PipsHelper.GetPriceInPips(limit.Price.Value, Market) -
-                                              PipsHelper.GetPriceInPips(usedPrice, Market));
-                    return limitInPips;
-                }
-
-                return null;
+                _initialLimitInPips = value;
+                OnPropertyChanged();
             }
         }
 
@@ -665,21 +562,6 @@ namespace TraderTools.Basics
             }
 
             RiskPercentOfBalance = (RiskAmount * 100M) / brokerAccount.GetBalance(StartDateTime);
-        }
-
-        public void UpdatePricePerPip(IBroker broker, IBrokersCandlesService candleService, bool updateCandles)
-        {
-            if (broker.Kind == BrokerKind.Trade ||
-                (PricePerPip != null && (EntryQuantity == 0
-                                         || EntryQuantity == null) && (OrderAmount == 0 || OrderAmount == null)))
-            {
-                return;
-            }
-
-            var amount = OrderAmount != null && OrderAmount.Value != 0 ? OrderAmount.Value : EntryQuantity.Value;
-            var date = OrderDateTime != null ? OrderDateTime.Value : EntryDateTime.Value;
-
-            PricePerPip = PipsHelper.ConvertLotSizeToGBPPerPip(amount, Market, date, candleService, broker, updateCandles);
         }
 
         public override string ToString()

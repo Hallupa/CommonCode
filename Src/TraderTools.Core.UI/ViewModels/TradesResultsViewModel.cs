@@ -34,6 +34,15 @@ namespace TraderTools.Core.UI.ViewModels
             _createStrategiesSubResults = createStrategiesSubResults;
         }
 
+        public static readonly DependencyProperty ShowSubOptionsProperty = DependencyProperty.Register(
+            "ShowSubOptions", typeof(bool), typeof(TradesResultsViewModel), new PropertyMetadata(true));
+
+        public bool ShowSubOptions
+        {
+            get { return (bool) GetValue(ShowSubOptionsProperty); }
+            set { SetValue(ShowSubOptionsProperty, value); }
+        }
+
         public static readonly DependencyProperty ShowOptionsProperty = DependencyProperty.Register(
             "ShowOptions", typeof(bool), typeof(TradesResultsViewModel), new PropertyMetadata(true));
 

@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.ComponentModel.Composition;
 using System.Runtime.CompilerServices;
 using Hallupa.Library;
 using TraderTools.Basics;
+using TraderTools.Basics.Extensions;
+using TraderTools.Core.Services;
 
 namespace TraderTools.Core.UI.ViewModels
 {
@@ -11,6 +14,9 @@ namespace TraderTools.Core.UI.ViewModels
     {
         #region Fields
         private TradeDetails _trade;
+        [Import] private BrokersService _brokersService;
+        private IBroker _broker;
+
         #endregion
 
         #region Constructors
@@ -24,6 +30,8 @@ namespace TraderTools.Core.UI.ViewModels
                 : DateTime.UtcNow.ToString("dd/MM/yy HH:mm");
 
             RefreshDetails();
+
+            _broker = _brokersService.GetBroker(trade.Broker);
 
             AddLimitCommand= new DelegateCommand(AddLimit);
             AddStopCommand = new DelegateCommand(AddStop);
@@ -84,6 +92,7 @@ namespace TraderTools.Core.UI.ViewModels
             }
 
             Trade.RemoveLimitPrice(SelectedLimitIndex);
+            _broker.UpdateTradeStopLimitPips(Trade);
             RefreshDetails();
         }
 
@@ -95,18 +104,21 @@ namespace TraderTools.Core.UI.ViewModels
             }
 
             Trade.RemoveStopPrice(SelectedStopIndex);
+            _broker.UpdateTradeStopLimitPips(Trade);
             RefreshDetails();
         }
 
         private void AddLimit(object obj)
         {
             Trade.AddLimitPrice(GetDatetime(), Trade.TradeDirection == TradeDirection.Long ? GetPrice(PipsChange.Add) : GetPrice(PipsChange.Minus));
+            _broker.UpdateTradeStopLimitPips(Trade);
             RefreshDetails();
         }
 
         private void AddStop(object obj)
         {
             Trade.AddStopPrice(GetDatetime(), Trade.TradeDirection == TradeDirection.Long ? GetPrice(PipsChange.Minus) : GetPrice(PipsChange.Add));
+            _broker.UpdateTradeStopLimitPips(Trade);
             RefreshDetails();
         }
 
@@ -132,10 +144,11 @@ namespace TraderTools.Core.UI.ViewModels
             if (UsePips)
             {
                 var price = Trade.OrderPrice ?? Trade.EntryPrice.Value;
-                var priceInPips = PipsHelper.GetPriceInPips(price, Trade.Market);
+                var broker = _brokersService.GetBroker(Trade.Broker);
+                var priceInPips = broker.GetPriceInPips(price, Trade.Market);
                 priceInPips += pipsChange == PipsChange.Add ? decimal.Parse(Price) : -decimal.Parse(Price);
 
-                return PipsHelper.GetPriceFromPips(priceInPips, Trade.Market);
+                return broker.GetPriceFromPips(priceInPips, Trade.Market);
             }
 
             return decimal.Parse(Price);

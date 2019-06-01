@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
+using System.Linq;
 using System.Reflection;
 using log4net;
 using TraderTools.Basics;
@@ -39,7 +40,7 @@ namespace TraderTools.Core.Services
         {
             foreach (var broker in Brokers)
             {
-                var account = BrokerAccount.LoadAccount(DataDirectory, broker.Name);
+                var account = BrokerAccount.LoadAccount(DataDirectory, broker);
                 
                 if (account == null)
                 {
@@ -51,6 +52,11 @@ namespace TraderTools.Core.Services
 
                 AccountsLookup[broker] = account;
             }
+        }
+
+        public IBroker GetBroker(string broker)
+        {
+            return Brokers.FirstOrDefault(b => b.Name == broker);
         }
 
         #region IDisposable

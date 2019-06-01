@@ -41,9 +41,9 @@ namespace TraderTools.Core.Broker
 
         public IObservable<BrokerAccountUpdated> AccountUpdatedObservable => _brokerAccountUpdatedSubject.AsObservable();
 
-        public static BrokerAccount LoadAccount(string dataPath, string brokerName)
+        public static BrokerAccount LoadAccount(string dataPath, IBroker broker)
         {
-            var accountPath = Path.Combine(dataPath, "BrokerAccounts", $"{brokerName}_Account.json");
+            var accountPath = Path.Combine(dataPath, "BrokerAccounts", $"{broker.Name}_Account.json");
 
             if (!File.Exists(accountPath))
             {
@@ -137,14 +137,13 @@ namespace TraderTools.Core.Broker
 
             Log.Info($"Updating {broker.Name} account");
 
-            broker.UpdateAccount(this);
+            broker.UpdateAccount(this, candleService);
 
             AccountLastUpdated = DateTime.UtcNow;
 
             foreach (var trade in Trades)
             {
                 trade.Initialise();
-                trade.UpdatePricePerPip(broker, candleService, true);
                 trade.UpdateRisk(this);
             }
 
