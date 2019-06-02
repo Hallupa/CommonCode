@@ -41,6 +41,29 @@ namespace TraderTools.Basics
 
     public class TradeDetails : INotifyPropertyChanged
     {
+        public TradeDetails()
+        {
+        }
+
+        public TradeDetails(decimal entryOrder, DateTime entryOrderTime,
+            TradeDirection direction, decimal amount, string market, DateTime? orderExpireTime,
+            decimal? stop, decimal? limit, Timeframe timeframe, string strategies, string comments, int custom1,
+            int custom2, int custom3, int custom4, bool alert)
+        {
+            SetOrder(entryOrderTime, entryOrder, market, timeframe, direction, amount, orderExpireTime);
+            if (stop != null) AddStopPrice(entryOrderTime, stop.Value);
+            if (limit != null) AddLimitPrice(entryOrderTime, limit.Value);
+            Timeframe = timeframe;
+            Alert = alert;
+            Comments = comments;
+            Strategies = strategies;
+            Custom1 = custom1;
+            Custom2 = custom2;
+            Custom3 = custom3;
+            Custom4 = custom4;
+        }
+
+
         public string Comments
         {
             get => _comments;

@@ -188,7 +188,7 @@
       <Name>TraderTools.Core</Name>
     </ProjectReference>
     <ProjectReference Include="..\TraderTools.Indicators\TraderTools.Indicators.csproj">
-      <Project>{687880C4-A3AB-4874-95BB-5222870B74B4}</Project>
+      <Project>{A5A59813-A3D3-4AF5-9923-EC5B0879BE9C}</Project>
       <Name>TraderTools.Indicators</Name>
     </ProjectReference>
   </ItemGroup>

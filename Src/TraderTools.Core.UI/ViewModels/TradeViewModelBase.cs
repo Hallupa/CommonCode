@@ -13,7 +13,6 @@ using System.Windows.Threading;
 using Abt.Controls.SciChart.Visuals.Annotations;
 using Hallupa.Library;
 using Hallupa.Library.UI;
-using Newtonsoft.Json;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
 using TraderTools.Core.Extensions;
