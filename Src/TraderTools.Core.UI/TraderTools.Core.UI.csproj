@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{2A2CF3F9-24AD-46E9-A341-75BDD4B191D1}</ProjectGuid>
+    <ProjectGuid>{5E885F6A-3461-4D96-BCF8-D4A50F526726}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>TraderTools.Core.UI</RootNamespace>

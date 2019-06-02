@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{B4226072-15E4-4CE4-BC3A-387F14112F9F}</ProjectGuid>
+    <ProjectGuid>{38ECC387-7BB9-4152-B60E-54B697D2B708}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Hallupa.Library.UI</RootNamespace>

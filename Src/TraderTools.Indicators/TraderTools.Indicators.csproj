@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{687880C4-A3AB-4874-95BB-5222870B74B4}</ProjectGuid>
+    <ProjectGuid>{A5A59813-A3D3-4AF5-9923-EC5B0879BE9C}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>TraderTools.Indicators</RootNamespace>

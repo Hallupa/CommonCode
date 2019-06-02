@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{610CED3A-FFEF-45D5-B0C0-B4F79F320509}</ProjectGuid>
+    <ProjectGuid>{089CE7BD-EAB1-498C-A6BD-A41F14860ACA}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>TraderTools.Basics</RootNamespace>
     <AssemblyName>TraderTools.Basics</AssemblyName>
