@@ -110,12 +110,17 @@ namespace TraderTools.Core.UI.ViewModels
         {
             var t = (TradeDetails)obj;
 
-            if (!ShowOpenTradesOnly)
+            if (ShowOpenTradesOnly)
             {
-                return true;
+                return t.EntryPrice != null && t.CloseDateTime == null;
             }
 
-            return t.EntryPrice != null && t.CloseDateTime == null;
+            if (ShowOrdersOnly)
+            {
+                return t.OrderPrice != null && t.EntryPrice == null && t.CloseDateTime == null;
+            }
+
+            return true;
         }
 
         [Import] public ChartingService ChartingService { get; private set; }
@@ -128,6 +133,12 @@ namespace TraderTools.Core.UI.ViewModels
         private static void ShowOpenTradesOnlyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var tvm = (TradeViewModelBase)d;
+
+            if (tvm.ShowOpenTradesOnly)
+            {
+                tvm.ShowOrdersOnly = false;
+            }
+
             tvm.TradesView.Refresh();
         }
 
@@ -135,6 +146,27 @@ namespace TraderTools.Core.UI.ViewModels
         {
             get { return (bool)GetValue(ShowOpenTradesOnlyProperty); }
             set { SetValue(ShowOpenTradesOnlyProperty, value); }
+        }
+
+        public static readonly DependencyProperty ShowOrdersOnlyProperty = DependencyProperty.Register(
+            "ShowOrdersOnly", typeof(bool), typeof(TradeViewModelBase), new PropertyMetadata(default(bool), ShowOrdersOnlyChanged));
+
+        private static void ShowOrdersOnlyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var tvm = (TradeViewModelBase)d;
+
+            if (tvm.ShowOrdersOnly)
+            {
+                tvm.ShowOpenTradesOnly = false;
+            }
+
+            tvm.TradesView.Refresh();
+        }
+
+        public bool ShowOrdersOnly
+        {
+            get { return (bool) GetValue(ShowOrdersOnlyProperty); }
+            set { SetValue(ShowOrdersOnlyProperty, value); }
         }
 
         protected virtual void DeleteTrade()

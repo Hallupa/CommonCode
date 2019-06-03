@@ -78,13 +78,10 @@ namespace Hallupa.Library.UI.TokenEditor
 
         private void TextBoxOnKeyDown(object sender, KeyEventArgs e)
         {
-            //var tb = (TextBox)sender;
-
             if (e.Key == Key.Enter)
             {
                 Debug.WriteLine("Enter pressed");
                 AddItem(this);
-                //tb.Text = string.Empty;
                 TextBoxText = string.Empty;
                 StopEdit(this);
             }
@@ -116,6 +113,8 @@ namespace Hallupa.Library.UI.TokenEditor
         private void TextBoxLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
             Debug.WriteLine("Lost keyboard focus");
+            AddItem(this);
+            TextBoxText = string.Empty;
             StopEdit(this);
         }
 

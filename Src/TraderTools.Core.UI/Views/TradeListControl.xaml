@@ -36,11 +36,11 @@
                               x:Name="MainContextMenuDeleteMenuItem"/>
                     <Separator />
                     <MenuItem Header="Show open trades only" IsCheckable="True" IsChecked="{Binding Data.ShowOpenTradesOnly, Source={StaticResource Proxy}}"/>
+                    <MenuItem Header="Show orders only" IsCheckable="True" IsChecked="{Binding Data.ShowOrdersOnly, Source={StaticResource Proxy}}"/>
                 </ContextMenu>
             </DataGrid.ContextMenu>
 
             <DataGrid.Columns>
-                <!--<DataGridTextColumn Header="ID" Binding="{Binding Id, Mode=OneWay}" IsReadOnly="True" Width="100"/>-->
                 <DataGridTextColumn Header="Status" Binding="{Binding Status, Mode=OneWay}" IsReadOnly="True" Width="65">
                     <DataGridTextColumn.CellStyle>
                         <Style TargetType="{x:Type DataGridCell}">
@@ -150,7 +150,7 @@
                                         Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.Comments}, Mode=OneWay}">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBox Text="{Binding Comments, UpdateSourceTrigger=PropertyChanged}"/>
+                            <TextBox Text="{Binding Comments, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>

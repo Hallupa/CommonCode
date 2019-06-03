@@ -512,9 +512,9 @@ namespace TraderTools.Brokers.FXCM
             var connection = "GBREAL";
             var account = _user;
             var report = "REPORT_NAME_CUSTOMER_ACCOUNT_STATEMENT";
-            var startDate = "2/30/2017";
+            var startDate = "1/1/2013";
             var endDate = DateTime.UtcNow.ToString("m/d/yyyy");
-            var outputFormat = "csv-web";// "pdf-web";
+            var outputFormat = "csv-web";
             var locale = "enu";
             var extra = "";
 
@@ -639,12 +639,6 @@ namespace TraderTools.Brokers.FXCM
                 }
                 else
                 {
-                    if ((trade.CloseDateTime != null && trade.CloseDateTime.Value.Year <= 1950)
-                        || (trade.OrderExpireTime != null && trade.OrderExpireTime.Value.Year <= 1950))
-                    {
-
-                    }
-
                     if (trade.EntryQuantity != existingTrade.EntryQuantity)
                     {
                         existingTrade.EntryQuantity = trade.EntryQuantity;
