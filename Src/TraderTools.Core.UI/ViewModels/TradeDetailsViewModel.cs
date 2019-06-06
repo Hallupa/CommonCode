@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
 using System.Runtime.CompilerServices;
+using System.Windows;
 using Hallupa.Library;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
@@ -13,6 +14,7 @@ namespace TraderTools.Core.UI.ViewModels
     public class TradeDetailsViewModel : INotifyPropertyChanged
     {
         #region Fields
+        private readonly Action _closeWindow;
         private TradeDetails _trade;
         [Import] private BrokersService _brokersService;
         private IBroker _broker;
@@ -20,14 +22,15 @@ namespace TraderTools.Core.UI.ViewModels
         #endregion
 
         #region Constructors
-        public TradeDetailsViewModel(TradeDetails trade)
+        public TradeDetailsViewModel(TradeDetails trade, Action closeWindow)
         {
+            _closeWindow = closeWindow;
             DependencyContainer.ComposeParts(this);
 
             Trade = trade;
-            Date = Trade.StartDateTime != null
-                ? Trade.StartDateTime.Value.ToString("dd/MM/yy HH:mm")
-                : DateTime.UtcNow.ToString("dd/MM/yy HH:mm");
+            Date = Trade.StartDateTimeLocal != null
+                ? Trade.StartDateTimeLocal.Value.ToString("dd/MM/yy HH:mm")
+                : DateTime.Now.ToString("dd/MM/yy HH:mm");
 
             RefreshDetails();
 
@@ -38,7 +41,9 @@ namespace TraderTools.Core.UI.ViewModels
             RemoveLimitCommand = new DelegateCommand(RemoveLimit);
             RemoveStopCommand = new DelegateCommand(RemoveStop);
             SetOrderDateTimePriceCommand = new DelegateCommand(SetOrderDateTimePrice);
+            DoneCommand = new DelegateCommand(o => Done());
         }
+
         #endregion
 
         #region Properties
@@ -57,6 +62,7 @@ namespace TraderTools.Core.UI.ViewModels
         public ObservableCollection<DatePrice> StopPrices { get; } = new ObservableCollection<DatePrice>();
         public DelegateCommand AddLimitCommand { get; }
         public DelegateCommand AddStopCommand { get; }
+        public DelegateCommand DoneCommand { get; }
         public DelegateCommand RemoveLimitCommand { get; }
         public DelegateCommand RemoveStopCommand { get; }
         public DelegateCommand SetOrderDateTimePriceCommand { get; }
@@ -74,13 +80,13 @@ namespace TraderTools.Core.UI.ViewModels
             LimitPrices.Clear();
             foreach (var limitPrice in Trade.GetLimitPrices())
             {
-                LimitPrices.Add(new DatePrice(limitPrice.Date, limitPrice.Price));
+                LimitPrices.Add(new DatePrice(limitPrice.Date.ToLocalTime(), limitPrice.Price));
             }
 
             StopPrices.Clear();
             foreach (var stopPrice in Trade.GetStopPrices())
             {
-                StopPrices.Add(new DatePrice(stopPrice.Date, stopPrice.Price));
+                StopPrices.Add(new DatePrice(stopPrice.Date.ToLocalTime(), stopPrice.Price));
             }
         }
 
@@ -108,16 +114,37 @@ namespace TraderTools.Core.UI.ViewModels
             RefreshDetails();
         }
 
+        private void Done()
+        {
+            _closeWindow();
+        }
+
         private void AddLimit(object obj)
         {
-            Trade.AddLimitPrice(GetDatetime(), Trade.TradeDirection == TradeDirection.Long ? GetPrice(PipsChange.Add) : GetPrice(PipsChange.Minus));
+            var date = GetDatetime();
+            var price = Trade.TradeDirection == TradeDirection.Long ? GetPrice(PipsChange.Add) : GetPrice(PipsChange.Minus);
+            if (date == null || price == null)
+            {
+                MessageBox.Show("Invalid details", "Invalid details", MessageBoxButton.OK);
+                return;
+            }
+
+            Trade.AddLimitPrice(date.Value, price.Value);
             _broker.UpdateTradeStopLimitPips(Trade);
             RefreshDetails();
         }
 
         private void AddStop(object obj)
         {
-            Trade.AddStopPrice(GetDatetime(), Trade.TradeDirection == TradeDirection.Long ? GetPrice(PipsChange.Minus) : GetPrice(PipsChange.Add));
+            var date = GetDatetime();
+            var price = Trade.TradeDirection == TradeDirection.Long ? GetPrice(PipsChange.Minus) : GetPrice(PipsChange.Add);
+            if (date == null || price == null)
+            {
+                MessageBox.Show("Invalid details", "Invalid details", MessageBoxButton.OK);
+                return;
+            }
+
+            Trade.AddStopPrice(date.Value, price.Value);
             _broker.UpdateTradeStopLimitPips(Trade);
             RefreshDetails();
         }
@@ -139,19 +166,24 @@ namespace TraderTools.Core.UI.ViewModels
             Minus
         }
 
-        private decimal GetPrice(PipsChange pipsChange = PipsChange.Add)
+        private decimal? GetPrice(PipsChange pipsChange = PipsChange.Add)
         {
+            if (!decimal.TryParse(Price, out var decimalPrice))
+            {
+                return null;
+            }
+
             if (UsePips)
             {
-                var price = Trade.OrderPrice ?? Trade.EntryPrice.Value;
+                var tradeStartPrice = Trade.OrderPrice ?? Trade.EntryPrice.Value;
                 var broker = _brokersService.GetBroker(Trade.Broker);
-                var priceInPips = broker.GetPriceInPips(price, Trade.Market);
-                priceInPips += pipsChange == PipsChange.Add ? decimal.Parse(Price) : -decimal.Parse(Price);
+                var priceInPips = broker.GetPriceInPips(tradeStartPrice, Trade.Market);
+                priceInPips += pipsChange == PipsChange.Add ? decimalPrice : -decimalPrice;
 
                 return broker.GetPriceFromPips(priceInPips, Trade.Market);
             }
 
-            return decimal.Parse(Price);
+            return decimalPrice;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -161,12 +193,14 @@ namespace TraderTools.Core.UI.ViewModels
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        private DateTime GetDatetime()
+        private DateTime? GetDatetime()
         {
-            var initialDate = DateTime.Parse(Date);
+            if (DateTime.TryParse(Date, out var date))
+            {
+                return date.ToUniversalTime();
+            }
 
-            return new DateTime(initialDate.Year, initialDate.Month, initialDate.Day, initialDate.Hour, initialDate.Minute,
-                initialDate.Second, DateTimeKind.Utc);
+            return null;
         }
     }
 }

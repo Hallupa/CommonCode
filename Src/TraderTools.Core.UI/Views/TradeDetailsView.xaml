@@ -5,41 +5,46 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TraderTools.UI.Views"
         mc:Ignorable="d"
-        Title="TradeDetailsView" Height="750" Width="850" WindowStartupLocation="CenterScreen">
-    <Grid>
+        Title="Trade details" Height="500" Width="700" WindowStartupLocation="CenterOwner">
+    <Grid Margin="5">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Label Grid.Row="0" Grid.Column="0" Content="Market"/>
-        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Trade.Market}" IsReadOnly="True"/>
+        <Label Grid.Row="0" Grid.Column="0" Content="Market" Margin="1,1,20,1"/>
+        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Trade.Market}" IsReadOnly="True" VerticalContentAlignment="Center"/>
 
-        <Label Grid.Row="1" Grid.Column="0" Content="Order date/time"/>
-        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Trade.OrderDateTime, StringFormat=yyyy-MM-dd HH:mm}" IsReadOnly="True"/>
+        <Label Grid.Row="1" Grid.Column="0" Content="Order date" Margin="1,1,20,1"/>
+        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Trade.OrderDateTimeLocal, Mode=OneWay}" VerticalContentAlignment="Center" IsReadOnly="True"/>
 
-        <Label Grid.Row="2" Grid.Column="0" Content="Order price"/>
-        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Trade.OrderPrice}" IsReadOnly="True"/>
+        <Label Grid.Row="1" Grid.Column="2" Content="Entry date" Margin="1,1,20,1"/>
+        <TextBox Grid.Row="1" Grid.Column="3" Text="{Binding Trade.EntryDateTimeLocal, Mode=OneWay}" IsReadOnly="True" VerticalContentAlignment="Center"/>
 
-        <Label Grid.Row="3" Grid.Column="0" Content="Limit"/>
-        <ListBox Grid.Row="3" Grid.Column="1" Height="200px" ItemsSource="{Binding LimitPrices}" SelectedIndex="{Binding SelectedLimitIndex}">
+        <Label Grid.Row="2" Grid.Column="0" Content="Order price" Margin="1,1,20,1"/>
+        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Trade.OrderPrice}" VerticalContentAlignment="Center" IsReadOnly="True"/>
+
+        <Label Grid.Row="2" Grid.Column="2" Content="Entry price" Margin="1,1,20,1"/>
+        <TextBox Grid.Row="2" Grid.Column="3" Text="{Binding Trade.EntryPrice}" IsReadOnly="True" VerticalContentAlignment="Center"/>
+
+        <Label Grid.Row="3" Grid.Column="0" Content="Limits" Margin="1,10,1,1"/>
+        <ListBox Grid.Row="3" Grid.Column="1" ItemsSource="{Binding LimitPrices}" Margin="1,15,1,1"
+                 SelectedIndex="{Binding SelectedLimitIndex}">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <StackPanel Orientation="Horizontal">
-                        <Label Content="{Binding Date}" Width="150px"/>
+                        <Label Content="{Binding Date}" ContentStringFormat="dd/MM/yy HH:mm" Width="120px"/>
                         <Label Content="{Binding Price}"/>
                     </StackPanel>
                 </DataTemplate>
@@ -47,38 +52,54 @@
         </ListBox>
 
         <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal">
-            <Button Content="Remove" Margin="2" Padding="4" Command="{Binding RemoveLimitCommand}"/>
+            <Button Content="Remove limit" Margin="2" Padding="4" Command="{Binding RemoveLimitCommand}"/>
         </StackPanel>
 
-        <Label Grid.Row="5" Grid.Column="0" Content="Stop"/>
-        <ListBox Grid.Row="5" Grid.Column="1" Height="200px" ItemsSource="{Binding StopPrices}"  SelectedIndex="{Binding SelectedPriceIndex}">
+        <Label Grid.Row="3" Grid.Column="2" Content="Stops" Margin="1,15,1,1"/>
+        <ListBox Grid.Row="3" Grid.Column="3" ItemsSource="{Binding StopPrices}"  SelectedIndex="{Binding SelectedPriceIndex}" Margin="1,15,1,1">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <StackPanel Orientation="Horizontal">
-                        <Label Content="{Binding Date}" Width="150px"/>
+                        <Label Content="{Binding Date}" ContentStringFormat="dd/MM/yy HH:mm" Width="120px"/>
                         <Label Content="{Binding Price}"/>
                     </StackPanel>
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <StackPanel Grid.Row="6" Grid.Column="1" Orientation="Horizontal">
-            <Button Content="Remove" Margin="2" Padding="4" Command="{Binding RemoveStopCommand}"/>
+        <StackPanel Grid.Row="4" Grid.Column="3" Orientation="Horizontal">
+            <Button Content="Remove stop" Margin="2" Padding="4" Command="{Binding RemoveStopCommand}"/>
         </StackPanel>
 
-        <Label Content="Date" Grid.Row="7" Grid.Column="0"/>
-        <TextBox Width="150px" Text="{Binding Date}" Grid.Row="7" Grid.Column="1" HorizontalAlignment="Left" Height="28px"/>
+        <Border Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="4" Margin="50,50,50,10" BorderBrush="DarkGray" BorderThickness="2">
+            <Grid Margin="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="150"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="150"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
 
-        <Label Content="Price" Grid.Row="8" Grid.Column="0"/>
-        <StackPanel Grid.Row="8" Grid.Column="1" HorizontalAlignment="Left" Orientation="Horizontal">
-            <TextBox Width="150px" Text="{Binding Price}" Height="28px"/>
-            <CheckBox Content="Use pips from order price" VerticalAlignment="Center" IsChecked="{Binding UsePips}"/>
-        </StackPanel>
+                <Label Content="Date" Grid.Column="0" Margin="1,1,20,1"/>
+                <TextBox Text="{Binding Date}" Grid.Column="1" HorizontalAlignment="Stretch" Margin="1,1,30,1" VerticalContentAlignment="Center" />
 
-        <StackPanel Grid.Row="9" Grid.Column="1" Orientation="Horizontal">
-            <Button Content="Add limit" Margin="2" Padding="4" Command="{Binding AddLimitCommand}"/>
-            <Button Content="Add stop" Margin="2" Padding="4" Command="{Binding AddStopCommand}"/>
-            <Button Content="Set order date/time/price" Margin="2" Padding="4" Command="{Binding SetOrderDateTimePriceCommand}"/>
-        </StackPanel>
+                <Label Content="Price" Grid.Column="2"/>
+                <TextBox Grid.Column="3" Text="{Binding Price}" Margin="1,1,20,1" VerticalContentAlignment="Center" />
+                <CheckBox Grid.Column="4" Content="Use pips" VerticalAlignment="Center" IsChecked="{Binding UsePips}"/>
+
+                <StackPanel Grid.Column="0" Grid.ColumnSpan="5" Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button Content="Add as limit" HorizontalAlignment="Left" Padding="10" Margin="5" Command="{Binding AddLimitCommand}"/>
+                    <Button Content="Add as stop"  HorizontalAlignment="Left" Padding="10" Margin="5" Command="{Binding AddStopCommand}"/>
+
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Button Content="Done" Grid.Row="6" Grid.ColumnSpan="4" HorizontalAlignment="Center" Margin="5" Padding="30,10,30,10" IsDefault="True" Command="{Binding DoneCommand}"/>
     </Grid>
 </Window>

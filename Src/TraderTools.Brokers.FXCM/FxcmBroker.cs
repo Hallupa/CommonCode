@@ -73,7 +73,7 @@ namespace TraderTools.Brokers.FXCM
                     // Get candle price, if it exists
                     if (_instrumentDetails.ContainsKey(marketForPrice))
                     {
-                        price = (decimal) candleService.GetFirstCandleThatClosesBeforeDateTime(marketForPrice, broker, Timeframe.D1, date, updateCandles).Open;
+                        price = (decimal)candleService.GetFirstCandleThatClosesBeforeDateTime(marketForPrice, broker, Timeframe.D1, date, updateCandles).Open;
                     }
                     else
                     {
@@ -405,9 +405,9 @@ namespace TraderTools.Brokers.FXCM
                 var expiry = DateTime.SpecifyKind(orderOrder.ExpireDate, DateTimeKind.Utc);
                 var instrument = orderOffer.Instrument;
                 var orderPrice = orderOrder.Rate;
-                var stop = stopOrder != null ? (decimal?)stopOrder.PegOffset : null;
-                var limit = limitOrder != null ? (decimal?)limitOrder.PegOffset : null;
                 var buySell = orderOrder.BuySell;
+                decimal? stop = GetStopPrice(stopOrder, instrument, (decimal)orderPrice, buySell);
+                decimal? limit = GetLimitPrice(limitOrder, instrument, (decimal)orderPrice, buySell);
                 var amount = orderOrder.Amount;
                 var actualExpiry = orderOrder.ExpireDate.Year >= 1950 ? (DateTime?)expiry : null;
 
@@ -428,19 +428,13 @@ namespace TraderTools.Brokers.FXCM
 
                     if (stop != null)
                     {
-                        trade.AddStopPrice(time, (decimal)orderPrice +
-                                                 (buySell == "B"
-                                                     ? -this.GetPriceFromPips(Math.Abs(stop.Value), instrument)
-                                                     : this.GetPriceFromPips(Math.Abs(stop.Value), instrument)));
+                        trade.AddStopPrice(time, stop);
                         this.UpdateTradeStopLimitPips(trade);
                     }
 
                     if (limit != null)
                     {
-                        trade.AddLimitPrice(time, (decimal)orderPrice +
-                                                  (buySell == "B"
-                                                      ? this.GetPriceFromPips(Math.Abs(limit.Value), instrument)
-                                                      : -this.GetPriceFromPips(Math.Abs(limit.Value), instrument)));
+                        trade.AddLimitPrice(time, limit);
                         this.UpdateTradeStopLimitPips(trade);
                     }
 
@@ -479,10 +473,7 @@ namespace TraderTools.Brokers.FXCM
                     if (stop != null && trade.StopPrice != stop)
                     {
                         trade.ClearStopPrices();
-                        trade.AddStopPrice(time, (decimal) orderPrice +
-                                                 (buySell == "B"
-                                                     ? -this.GetPriceFromPips(Math.Abs(stop.Value), instrument)
-                                                     : this.GetPriceFromPips(Math.Abs(stop.Value), instrument)));
+                        trade.AddStopPrice(time, stop);
                         this.UpdateTradeStopLimitPips(trade);
                         addedOrUpdatedOpenTrade = true;
                     }
@@ -490,10 +481,7 @@ namespace TraderTools.Brokers.FXCM
                     if (limit != null && trade.LimitPrice != limit)
                     {
                         trade.ClearLimitPrices();
-                        trade.AddLimitPrice(time, (decimal)orderPrice +
-                                                  (buySell == "B"
-                                                      ? this.GetPriceFromPips(Math.Abs(limit.Value), instrument)
-                                                      : -this.GetPriceFromPips(Math.Abs(limit.Value), instrument)));
+                        trade.AddLimitPrice(time, limit);
                         this.UpdateTradeStopLimitPips(trade);
                         addedOrUpdatedOpenTrade = true;
                     }
@@ -503,6 +491,54 @@ namespace TraderTools.Brokers.FXCM
             }
 
             return addedOrUpdatedOpenTrade;
+        }
+
+        private decimal? GetStopPrice(O2GOrderTableRow stop, string instrument, decimal orderPrice, string buySell)
+        {
+            if (stop == null)
+            {
+                return null;
+            }
+
+            decimal? ret;
+
+            if (!stop.Rate.Equals(0.0))
+            {
+                ret = (decimal)stop.Rate;
+            }
+            else
+            {
+                ret = (decimal)orderPrice +
+                      (buySell == "B"
+                          ? -this.GetPriceFromPips(Math.Abs((decimal)stop.PegOffset), instrument)
+                          : this.GetPriceFromPips(Math.Abs((decimal)stop.PegOffset), instrument));
+            }
+
+            return ret;
+        }
+
+        private decimal? GetLimitPrice(O2GOrderTableRow limit, string instrument, decimal orderPrice, string buySell)
+        {
+            if (limit == null)
+            {
+                return null;
+            }
+
+            decimal? ret;
+
+            if (!limit.Rate.Equals(0.0))
+            {
+                ret = (decimal)limit.Rate;
+            }
+            else
+            {
+                ret = (decimal)orderPrice +
+                      (buySell == "B"
+                          ? this.GetPriceFromPips(Math.Abs((decimal)limit.PegOffset), instrument)
+                          : -this.GetPriceFromPips(Math.Abs((decimal)limit.PegOffset), instrument));
+            }
+
+            return ret;
         }
 
         private bool GetReportTrades(IBrokerAccount brokerAccount, IBrokersCandlesService candlesService)

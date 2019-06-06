@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
@@ -16,6 +17,7 @@ using Hallupa.Library.UI;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
 using TraderTools.Core.Extensions;
+using TraderTools.Core.Services;
 using TraderTools.Core.UI.Services;
 using TraderTools.Core.UI.Views;
 using TraderTools.Indicators;
@@ -40,6 +42,7 @@ namespace TraderTools.Core.UI.ViewModels
     public abstract class TradeViewModelBase : DoubleChartViewModel, INotifyPropertyChanged
     {
         [Import] public IBrokersCandlesService BrokerCandles { get; private set; }
+        [Import] private BrokersService _brokers;
 
         protected IBroker Broker { get; set; }
 
@@ -60,7 +63,7 @@ namespace TraderTools.Core.UI.ViewModels
                 Timeframe.M1,
             };
 
-            EditCommand = new DelegateCommand(EditTrade);
+            EditCommand = new DelegateCommand(o => EditTrade());
             DeleteCommand = new DelegateCommand(o => DeleteTrade());
             ViewTradeCommand = new DelegateCommand(t => ViewTrade((TradeDetails)t));
             ViewTradeSetupCommand = new DelegateCommand(t => ViewTradeSetup((TradeDetails)t));
@@ -151,6 +154,8 @@ namespace TraderTools.Core.UI.ViewModels
         public static readonly DependencyProperty ShowOrdersOnlyProperty = DependencyProperty.Register(
             "ShowOrdersOnly", typeof(bool), typeof(TradeViewModelBase), new PropertyMetadata(default(bool), ShowOrdersOnlyChanged));
 
+        private Window _parent;
+
         private static void ShowOrdersOnlyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var tvm = (TradeViewModelBase)d;
@@ -187,18 +192,31 @@ namespace TraderTools.Core.UI.ViewModels
             ShowTradeSetup(tradeDetails, true);
         }
 
-        private void EditTrade(object obj)
+        public void SetParentWindow(Window parent)
+        {
+            _parent = parent;
+        }
+
+        protected virtual void EditTrade()
         {
             if (SelectedTrade == null)
             {
                 return;
             }
 
-            var view = new TradeDetailsView();
-            var viewModel = new TradeDetailsViewModel(SelectedTrade);
+            var broker = _brokers.Brokers.First(b => b.Name == SelectedTrade.Broker);
+            if (broker.Status != ConnectStatus.Connected)
+            {
+                MessageBox.Show($"{broker.Name} not logged in - this is needed to calculate pip sizes", "Unable to update account", MessageBoxButton.OK);
+                return;
+            }
+
+
+            var view = new TradeDetailsView { Owner = _parent };
+            var viewModel = new TradeDetailsViewModel(SelectedTrade, () => view.Close());
             view.DataContext = viewModel;
             view.Closing += ViewOnClosing;
-            view.Show();
+            view.ShowDialog();
         }
 
         protected virtual void ViewOnClosing(object sender, CancelEventArgs e)

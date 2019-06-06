@@ -24,8 +24,7 @@ namespace TraderTools.Core.UI
         OrderOrEntryLines = 8,
         OrderMarker = 16,
         EntryMarker = 32,
-        CloseMarker = 64,
-        CloseLine = 128
+        CloseMarker = 64
     }
 
     public static class ChartHelper
@@ -139,7 +138,9 @@ namespace TraderTools.Core.UI
                 {
                     if (trade.OrderPrice != null && trade.OrderDateTimeLocal != null)
                     {
-                        AddHorizontalLine(trade.OrderPrice.Value, trade.OrderDateTimeLocal.Value, trade.EntryDateTimeLocal ?? trade.CloseDateTimeLocal ?? DateTime.Now, dataSeries, annotations, trade, Colors.Gray, false);
+                        AddHorizontalLine(trade.OrderPrice.Value, trade.OrderDateTimeLocal.Value, 
+                            trade.EntryDateTimeLocal ?? trade.CloseDateTimeLocal ?? DateTime.Now, dataSeries, annotations, 
+                            trade, Colors.Gray, extendLeftAndRight: false, extendRightIfZeroLength: true);
                     }
                 }
             }
@@ -155,12 +156,6 @@ namespace TraderTools.Core.UI
                 {
                     var colour = trade.Profit != null && trade.Profit < 0 ? Colors.DarkRed : Colors.Green;
                     AddBuySellMarker(oppositeTradeDirection, annotations, trade, trade.CloseDateTimeLocal.Value, trade.ClosePrice.Value, 0.9, colour: colour);
-                }
-
-                if (annotationsToShow.HasFlag(TradeAnnotationsToShow.All) || annotationsToShow.HasFlag(TradeAnnotationsToShow.CloseLine))
-                {
-                    var time = trade.EntryDateTimeLocal ?? trade.OrderDateTimeLocal.Value;
-                    AddHorizontalLine(trade.ClosePrice.Value, time, trade.CloseDateTimeLocal.Value, dataSeries, annotations, trade, Colors.Red, strokeDashArray: new DoubleCollection(new[] { 2.0, 2.0 }));
                 }
             }
 
@@ -224,7 +219,8 @@ namespace TraderTools.Core.UI
         }
 
         public static void AddHorizontalLine(decimal price, DateTime start, DateTime end, IDataSeries dataSeries,
-            AnnotationCollection annotations, TradeDetails trade, Color colour, bool extendLeftAndRight = false, DoubleCollection strokeDashArray = null)
+            AnnotationCollection annotations, TradeDetails trade, Color colour, bool extendLeftAndRight = false, 
+            bool extendRightIfZeroLength = false, DoubleCollection strokeDashArray = null)
         {
             var dateStartIndex = dataSeries.FindIndex(start, SearchMode.RoundDown);
             var dateEndIndex = dataSeries.FindIndex(end, SearchMode.RoundUp);
@@ -232,6 +228,8 @@ namespace TraderTools.Core.UI
             if (extendLeftAndRight) dateStartIndex -= 4;
             if (dateStartIndex < 0) dateStartIndex = 0;
             if (extendLeftAndRight) dateEndIndex += 4;
+
+            if (extendRightIfZeroLength && dateStartIndex == dateEndIndex) dateEndIndex++;
 
             var lineAnnotation = new LineAnnotation
             {
@@ -241,8 +239,7 @@ namespace TraderTools.Core.UI
                 X2 = dateEndIndex,
                 Y2 = price,
                 StrokeThickness = 3,
-                StrokeDashArray = new DoubleCollection(new[] { 2.0, 2.0 }),
-                Opacity = 0.5,
+                Opacity = 0.8,
                 Stroke = new SolidColorBrush(colour)
             };
 
