@@ -130,8 +130,8 @@ namespace TraderTools.Core.UI.ViewModels
                 return;
             }
 
-            _candlesService.UpdateTradeStopLimitPips(_broker, Trade);
             Trade.AddLimitPrice(date.Value, price.Value);
+            _candlesService.UpdateTradeStopLimitPips(_broker, Trade);
             RefreshDetails();
         }
 
@@ -145,8 +145,8 @@ namespace TraderTools.Core.UI.ViewModels
                 return;
             }
 
-            _candlesService.UpdateTradeStopLimitPips(_broker, Trade);
             Trade.AddStopPrice(date.Value, price.Value);
+            _candlesService.UpdateTradeStopLimitPips(_broker, Trade);
             RefreshDetails();
         }
 
