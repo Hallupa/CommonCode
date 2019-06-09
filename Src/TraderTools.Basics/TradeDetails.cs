@@ -129,6 +129,7 @@ namespace TraderTools.Basics
                 OnPropertyChanged("StopInPips");
                 OnPropertyChanged("LimitInPips");
                 OnPropertyChanged("Status");
+                OnPropertyChanged("RMultiple");
             }
         }
 
@@ -254,6 +255,7 @@ namespace TraderTools.Basics
                 OnPropertyChanged("LimitInPips");
                 OnPropertyChanged("LimitPrice");
                 OnPropertyChanged("Status");
+                OnPropertyChanged("RMultiple");
             }
         }
 
@@ -453,6 +455,7 @@ namespace TraderTools.Basics
             _currentStopPrice = null;
             OnPropertyChanged("InitialStop");
             OnPropertyChanged("StopPrice");
+            OnPropertyChanged("RMultiple");
         }
 
         public void ClearStopPrices()
@@ -461,6 +464,7 @@ namespace TraderTools.Basics
             _currentStopPrice = null;
             OnPropertyChanged("InitialStop");
             OnPropertyChanged("StopPrice");
+            OnPropertyChanged("RMultiple");
         }
 
         public List<DatePrice> GetStopPrices()
@@ -479,6 +483,7 @@ namespace TraderTools.Basics
             _currentStopPrice = null;
             OnPropertyChanged("InitialStop");
             OnPropertyChanged("StopPrice");
+            OnPropertyChanged("RMultiple");
         }
 
         public void AddLimitPrice(DateTime date, decimal? price)
@@ -488,6 +493,7 @@ namespace TraderTools.Basics
             OnPropertyChanged("InitialLimit");
             OnPropertyChanged("InitialLimitInPips");
             OnPropertyChanged("LimitPrice");
+            OnPropertyChanged("RMultiple");
         }
 
         public void ClearLimitPrices()
@@ -495,6 +501,7 @@ namespace TraderTools.Basics
             LimitPrices.Clear();
             OnPropertyChanged("InitialLimit");
             OnPropertyChanged("LimitPrice");
+            OnPropertyChanged("RMultiple");
         }
 
         public List<DatePrice> GetLimitPrices()
@@ -512,6 +519,7 @@ namespace TraderTools.Basics
             LimitPrices.RemoveAt(index);
             OnPropertyChanged("InitialLimit");
             OnPropertyChanged("LimitPrice");
+            OnPropertyChanged("RMultiple");
         }
 
         public void SetClose(DateTime dateTime, decimal price, TradeCloseReason reason)

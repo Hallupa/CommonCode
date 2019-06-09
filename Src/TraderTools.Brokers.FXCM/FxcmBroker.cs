@@ -26,6 +26,7 @@ namespace TraderTools.Brokers.FXCM
         private Random _rnd;
         private string _user;
         private string _password;
+                        price = (decimal) candleService.GetFirstCandleThatClosesBeforeDateTime(marketForPrice, broker, Timeframe.D1, date, updateCandles).Open;
 
         public List<MarketDetails> GetMarketDetailsList()
         {
@@ -329,9 +330,9 @@ namespace TraderTools.Brokers.FXCM
                 var expiry = DateTime.SpecifyKind(orderOrder.ExpireDate, DateTimeKind.Utc);
                 var instrument = orderOffer.Instrument;
                 var orderPrice = orderOrder.Rate;
-                var stop = stopOrder != null ? (decimal?)stopOrder.PegOffset : null;
-                var limit = limitOrder != null ? (decimal?)limitOrder.PegOffset : null;
                 var buySell = orderOrder.BuySell;
+                decimal? stop = GetStopPrice(stopOrder, instrument, (decimal)orderPrice, buySell);
+                decimal? limit = GetLimitPrice(limitOrder, instrument, (decimal)orderPrice, buySell);
                 var amount = orderOrder.Amount;
                 var actualExpiry = orderOrder.ExpireDate.Year >= 1950 ? (DateTime?)expiry : null;
 
@@ -351,19 +352,13 @@ namespace TraderTools.Brokers.FXCM
 
                     if (stop != null)
                     {
-                        trade.AddStopPrice(time, (decimal)orderPrice +
-                                                 (buySell == "B"
-                                                     ? -candlesService.GetPriceFromPips(this, Math.Abs(stop.Value), instrument)
-                                                     : candlesService.GetPriceFromPips(this, Math.Abs(stop.Value), instrument)));
+                        trade.AddStopPrice(time, stop);
                         candlesService.UpdateTradeStopLimitPips(this, trade);
                     }
 
                     if (limit != null)
                     {
-                        trade.AddLimitPrice(time, (decimal)orderPrice +
-                                                  (buySell == "B"
-                                                      ? candlesService.GetPriceFromPips(this, Math.Abs(limit.Value), instrument)
-                                                      : -candlesService.GetPriceFromPips(this, Math.Abs(limit.Value), instrument)));
+                        trade.AddLimitPrice(time, limit);
                         candlesService.UpdateTradeStopLimitPips(this, trade);
                     }
 
@@ -402,10 +397,7 @@ namespace TraderTools.Brokers.FXCM
                     if (stop != null && trade.StopPrice != stop)
                     {
                         trade.ClearStopPrices();
-                        trade.AddStopPrice(time, (decimal) orderPrice +
-                                                 (buySell == "B"
-                                                     ? -candlesService.GetPriceFromPips(this, Math.Abs(stop.Value), instrument)
-                                                     : candlesService.GetPriceFromPips(this, Math.Abs(stop.Value), instrument)));
+                        trade.AddStopPrice(time, stop);
                         candlesService.UpdateTradeStopLimitPips(this, trade);
                         addedOrUpdatedOpenTrade = true;
                     }
@@ -413,10 +405,7 @@ namespace TraderTools.Brokers.FXCM
                     if (limit != null && trade.LimitPrice != limit)
                     {
                         trade.ClearLimitPrices();
-                        trade.AddLimitPrice(time, (decimal)orderPrice +
-                                                  (buySell == "B"
-                                                      ? candlesService.GetPriceFromPips(this, Math.Abs(limit.Value), instrument)
-                                                      : -candlesService.GetPriceFromPips(this, Math.Abs(limit.Value), instrument)));
+                        trade.AddLimitPrice(time, limit);
                         candlesService.UpdateTradeStopLimitPips(this, trade);
                         addedOrUpdatedOpenTrade = true;
                     }
@@ -428,6 +417,54 @@ namespace TraderTools.Brokers.FXCM
             return addedOrUpdatedOpenTrade;
         }
 
+        private decimal? GetStopPrice(O2GOrderTableRow stop, string instrument, decimal orderPrice, string buySell)
+        {
+            if (stop == null)
+            {
+                return null;
+            }
+
+            decimal? ret;
+
+            if (!stop.Rate.Equals(0.0))
+            {
+                ret = (decimal)stop.Rate;
+            }
+            else
+            {
+                ret = (decimal)orderPrice +
+                      (buySell == "B"
+                          ? -this.GetPriceFromPips(Math.Abs((decimal)stop.PegOffset), instrument)
+                          : this.GetPriceFromPips(Math.Abs((decimal)stop.PegOffset), instrument));
+            }
+
+            return ret;
+        }
+
+        private decimal? GetLimitPrice(O2GOrderTableRow limit, string instrument, decimal orderPrice, string buySell)
+        {
+            if (limit == null)
+            {
+                return null;
+            }
+
+            decimal? ret;
+
+            if (!limit.Rate.Equals(0.0))
+            {
+                ret = (decimal)limit.Rate;
+            }
+            else
+            {
+                ret = (decimal)orderPrice +
+                      (buySell == "B"
+                          ? this.GetPriceFromPips(Math.Abs((decimal)limit.PegOffset), instrument)
+                          : -this.GetPriceFromPips(Math.Abs((decimal)limit.PegOffset), instrument));
+            }
+
+            return ret;
+        }
+
         private bool GetReportTrades(IBrokerAccount brokerAccount, IBrokersCandlesService candlesService)
         {
             var updated = false;
@@ -435,9 +472,9 @@ namespace TraderTools.Brokers.FXCM
             var connection = "GBREAL";
             var account = _user;
             var report = "REPORT_NAME_CUSTOMER_ACCOUNT_STATEMENT";
-            var startDate = "2/30/2017";
+            var startDate = "1/1/2013";
             var endDate = DateTime.UtcNow.ToString("m/d/yyyy");
-            var outputFormat = "csv-web";// "pdf-web";
+            var outputFormat = "csv-web";
             var locale = "enu";
             var extra = "";
 
@@ -562,12 +599,6 @@ namespace TraderTools.Brokers.FXCM
                 }
                 else
                 {
-                    if ((trade.CloseDateTime != null && trade.CloseDateTime.Value.Year <= 1950)
-                        || (trade.OrderExpireTime != null && trade.OrderExpireTime.Value.Year <= 1950))
-                    {
-
-                    }
-
                     if (trade.EntryQuantity != existingTrade.EntryQuantity)
                     {
                         existingTrade.EntryQuantity = trade.EntryQuantity;
