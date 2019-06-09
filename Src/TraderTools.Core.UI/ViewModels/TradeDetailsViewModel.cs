@@ -15,6 +15,7 @@ namespace TraderTools.Core.UI.ViewModels
         #region Fields
         private TradeDetails _trade;
         [Import] private BrokersService _brokersService;
+        [Import] private IBrokersCandlesService _candlesService;
         private IBroker _broker;
 
         #endregion
@@ -92,7 +93,7 @@ namespace TraderTools.Core.UI.ViewModels
             }
 
             Trade.RemoveLimitPrice(SelectedLimitIndex);
-            _broker.UpdateTradeStopLimitPips(Trade);
+            _candlesService.UpdateTradeStopLimitPips(_broker, Trade);
             RefreshDetails();
         }
 
@@ -104,21 +105,21 @@ namespace TraderTools.Core.UI.ViewModels
             }
 
             Trade.RemoveStopPrice(SelectedStopIndex);
-            _broker.UpdateTradeStopLimitPips(Trade);
+            _candlesService.UpdateTradeStopLimitPips(_broker, Trade);
             RefreshDetails();
         }
 
         private void AddLimit(object obj)
         {
             Trade.AddLimitPrice(GetDatetime(), Trade.TradeDirection == TradeDirection.Long ? GetPrice(PipsChange.Add) : GetPrice(PipsChange.Minus));
-            _broker.UpdateTradeStopLimitPips(Trade);
+            _candlesService.UpdateTradeStopLimitPips(_broker, Trade);
             RefreshDetails();
         }
 
         private void AddStop(object obj)
         {
             Trade.AddStopPrice(GetDatetime(), Trade.TradeDirection == TradeDirection.Long ? GetPrice(PipsChange.Minus) : GetPrice(PipsChange.Add));
-            _broker.UpdateTradeStopLimitPips(Trade);
+            _candlesService.UpdateTradeStopLimitPips(_broker, Trade);
             RefreshDetails();
         }
 
@@ -145,10 +146,10 @@ namespace TraderTools.Core.UI.ViewModels
             {
                 var price = Trade.OrderPrice ?? Trade.EntryPrice.Value;
                 var broker = _brokersService.GetBroker(Trade.Broker);
-                var priceInPips = broker.GetPriceInPips(price, Trade.Market);
+                var priceInPips = _candlesService.GetPriceInPips(_broker, price, Trade.Market);
                 priceInPips += pipsChange == PipsChange.Add ? decimal.Parse(Price) : -decimal.Parse(Price);
 
-                return broker.GetPriceFromPips(priceInPips, Trade.Market);
+                return _candlesService.GetPriceFromPips(_broker, priceInPips, Trade.Market);
             }
 
             return decimal.Parse(Price);

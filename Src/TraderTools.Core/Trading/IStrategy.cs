@@ -15,7 +15,7 @@ namespace TraderTools.Core.Trading
 
         List<TradeDetails> CreateNewTrades(
             Timeframe timeframe,
-            string market,
+            MarketDetails market,
             TimeframeLookup<List<BasicCandleAndIndicators>> candlesLookup,
             List<TradeDetails> existingTrades);
 

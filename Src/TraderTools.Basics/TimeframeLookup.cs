@@ -11,7 +11,7 @@ namespace TraderTools.Basics
 
     public class TimeframeLookup<T> : IEnumerable<KeyValuePair<Timeframe, T>>
     {
-        private T[] _items = new T[9];
+        private T[] _items = new T[8];
 
         public T this[Timeframe timeframe]
         {

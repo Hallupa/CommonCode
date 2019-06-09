@@ -109,13 +109,14 @@
     <Compile Include="Extensions\CandleExtensions.cs" />
     <Compile Include="Extensions\TradeDetailsExtensions.cs" />
     <Compile Include="Helpers\CandlesHelper.cs" />
+    <Compile Include="Helpers\PipsHelper.cs" />
     <Compile Include="IBroker.cs" />
     <Compile Include="IBrokersCandlesService.cs" />
     <Compile Include="IIndicator.cs" />
     <Compile Include="Indicator.cs" />
     <Compile Include="ISimpleCandle.cs" />
     <Compile Include="Market.cs" />
-    <Compile Include="Extensions\BrokerExtensions.cs" />
+    <Compile Include="MarketDetails.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services.cs" />
     <Compile Include="Signal.cs" />
