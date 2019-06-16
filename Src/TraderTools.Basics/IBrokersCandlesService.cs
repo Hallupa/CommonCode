@@ -10,5 +10,13 @@ namespace TraderTools.Basics
         void UpdateCandles(IBroker broker, string market, Timeframe timeframe);
 
         void UnloadCandles(string market, Timeframe timeframe, IBroker broker);
+
+        MarketDetails GetMarketDetails(string broker, string market);
+
+        void AddMarketDetails(MarketDetails marketDetails);
+
+        bool HasMarketDetails(string broker, string market);
+
+        void SaveMarketDetailsList();
     }
 }

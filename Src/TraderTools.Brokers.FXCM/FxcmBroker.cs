@@ -18,15 +18,6 @@ namespace TraderTools.Brokers.FXCM
 {
     public class FxcmBroker : IDisposable, IBroker
     {
-        private class MarketDetails
-        {
-            public int Digits { get; set; }
-            public double PointSize { get; set; }
-            public int MinLotSize { get; set; }
-            public double ContractMultiplier { get; set; }
-            public string Currency { get; set; }
-        }
-
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private O2GSession _session;
         private bool disposedValue = false;
@@ -35,72 +26,9 @@ namespace TraderTools.Brokers.FXCM
         private Random _rnd;
         private string _user;
         private string _password;
-        private Dictionary<string, MarketDetails> _instrumentDetails = new Dictionary<string, MarketDetails>();
+                        price = (decimal) candleService.GetFirstCandleThatClosesBeforeDateTime(marketForPrice, broker, Timeframe.D1, date, updateCandles).Open;
 
-        public decimal GetGBPPerPip(
-            decimal amount, string market, DateTime date,
-            IBrokersCandlesService candleService, IBroker broker, bool updateCandles)
-        {
-            var marketDetails = _instrumentDetails[market];
-            decimal price = 0M;
-
-            // If market contains GBP, then use the market for the price
-            if (market.Contains("GBP"))
-            {
-                price = (decimal)candleService.GetFirstCandleThatClosesBeforeDateTime(market, broker, Timeframe.D1, date, updateCandles).Open;
-
-                if (market.StartsWith("GBP"))
-                {
-                    price = 1M / price;
-                }
-            }
-            else
-            {
-                // Try to get GBP candle, if it exists
-                var marketForPrice = !market.Contains("/") ? $"GBP/{marketDetails.Currency}" : $"GBP/{market.Split('/')[1]}";
-
-                if (!_instrumentDetails.ContainsKey(marketForPrice))
-                {
-                    marketForPrice = $"{marketForPrice.Split('/')[1]}/{marketForPrice.Split('/')[0]}";
-                }
-
-                if (marketForPrice == "GBP/GBP")
-                {
-                    price = 1M;
-                }
-                else
-                {
-                    // Get candle price, if it exists
-                    if (_instrumentDetails.ContainsKey(marketForPrice))
-                    {
-                        price = (decimal)candleService.GetFirstCandleThatClosesBeforeDateTime(marketForPrice, broker, Timeframe.D1, date, updateCandles).Open;
-                    }
-                    else
-                    {
-                        // Otherwise, try to get the USD candle and convert back to GBP
-                        // Try to get $ candle and convert to £
-                        var usdCandle = candleService.GetFirstCandleThatClosesBeforeDateTime($"USD/{market.Split('/')[1]}", broker, Timeframe.D1, date, updateCandles);
-                        var gbpUSDCandle = candleService.GetFirstCandleThatClosesBeforeDateTime("GBP/USD", broker, Timeframe.D1, date, updateCandles);
-                        price = (decimal)gbpUSDCandle.Open / (decimal)usdCandle.Open;
-                    }
-                }
-
-                if (marketForPrice.StartsWith("GBP"))
-                {
-                    price = 1M / price;
-                }
-
-            }
-
-            return amount * (decimal)marketDetails.ContractMultiplier * (decimal)marketDetails.PointSize * price;
-        }
-
-        public decimal GetOnePipInDecimals(string market)
-        {
-            return (decimal)_instrumentDetails[market].PointSize;
-        }
-
-        private void UpdateInstrumentDetails()
+        public List<MarketDetails> GetMarketDetailsList()
         {
             var loginRules = _session.getLoginRules();
             var offersResponse = loginRules.getTableRefreshResponse(O2GTableType.Offers);
@@ -114,19 +42,18 @@ namespace TraderTools.Brokers.FXCM
             var response = loginRules.getTableRefreshResponse(O2GTableType.Offers);
             var responseReader = readerFactory.createOffersTableReader(response);
 
+            var ret = new List<MarketDetails>();
             for (int i = 0; i < responseReader.Count; i++)
             {
                 var offerRow = responseReader.getRow(i);
 
-                _instrumentDetails.Add(offerRow.Instrument, new MarketDetails
-                {
-                    ContractMultiplier = offerRow.ContractMultiplier,
-                    PointSize = offerRow.PointSize,
-                    MinLotSize = tradingSettingsProvider.getMinQuantity(offerRow.Instrument, account),
-                    Digits = offerRow.Digits,
-                    Currency = offerRow.ContractCurrency
-                });
+                ret.Add(new MarketDetails(Name, offerRow.Instrument,
+                    offerRow.ContractCurrency, (decimal?)offerRow.PointSize,
+                    offerRow.Digits, tradingSettingsProvider.getMinQuantity(offerRow.Instrument, account),
+                    (decimal?)offerRow.ContractMultiplier));
             }
+
+            return ret;
         }
 
         public FxcmBroker()
@@ -159,8 +86,6 @@ namespace TraderTools.Brokers.FXCM
             {
                 Log.Error("Unable to connect to FXCM");
             }
-
-            UpdateInstrumentDetails();
         }
 
         public ConnectStatus Status
@@ -284,8 +209,8 @@ namespace TraderTools.Brokers.FXCM
                     trade.EntryQuantity = tradeRow.Amount;
                     trade.GrossProfitLoss = (decimal)tradeRow.GrossPL;
                     trade.TradeDirection = tradeRow.BuySell == "S" ? TradeDirection.Short : TradeDirection.Long;
-                    trade.PricePerPip = GetGBPPerPip(trade.EntryQuantity.Value, trade.Market, trade.EntryDateTime.Value,
-                        candlesService, this, true);
+                    trade.PricePerPip = candlesService.GetGBPPerPip(
+                        this, trade.Market, trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
 
                     addedOrUpdatedOpenTrade = true;
                 }
@@ -312,8 +237,8 @@ namespace TraderTools.Brokers.FXCM
                     if (trade.EntryQuantity != (decimal)tradeRow.Amount)
                     {
                         trade.EntryQuantity = (decimal)tradeRow.Amount;
-                        trade.PricePerPip = GetGBPPerPip(trade.EntryQuantity.Value, trade.Market, trade.EntryDateTime.Value,
-                            candlesService, this, true);
+                        trade.PricePerPip = candlesService.GetGBPPerPip(
+                            this, trade.Market, trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
 
                         addedOrUpdatedOpenTrade = true;
                     }
@@ -419,8 +344,7 @@ namespace TraderTools.Brokers.FXCM
                     trade.OrderPrice = (decimal)orderPrice;
                     trade.OrderDateTime = time;
                     trade.OrderExpireTime = actualExpiry;
-                    trade.PricePerPip = GetGBPPerPip(orderOrder.Amount, trade.Market, time,
-                        candlesService, this, true);
+                    trade.PricePerPip = candlesService.GetGBPPerPip(this, trade.Market, orderOrder.Amount, time, true);
 
                     if (stop != null)
                     {
@@ -447,8 +371,8 @@ namespace TraderTools.Brokers.FXCM
                     if (trade.OrderAmount != orderOrder.Amount)
                     {
                         trade.OrderAmount = orderOrder.Amount;
-                        trade.PricePerPip = GetGBPPerPip(trade.OrderAmount.Value, trade.Market, trade.OrderDateTime.Value,
-                            candlesService, this, true);
+                        trade.PricePerPip = 
+                            candlesService.GetGBPPerPip(this, trade.Market, trade.OrderAmount.Value, trade.OrderDateTime.Value, true);
                         addedOrUpdatedOpenTrade = true;
                     }
 
@@ -638,8 +562,8 @@ namespace TraderTools.Brokers.FXCM
                     Rollover = decimal.Parse(rollover2)
                 };
 
-                trade.PricePerPip = GetGBPPerPip(trade.EntryQuantity.Value, trade.Market, trade.EntryDateTime.Value,
-                    candlesService, this, true);
+                trade.PricePerPip = candlesService.GetGBPPerPip(
+                    this, trade.Market,  trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
 
                 switch (condition2)
                 {

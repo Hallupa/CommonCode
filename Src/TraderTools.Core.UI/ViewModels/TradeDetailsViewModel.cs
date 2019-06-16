@@ -18,6 +18,7 @@ namespace TraderTools.Core.UI.ViewModels
         private readonly Action _closeWindow;
         private TradeDetails _trade;
         [Import] private BrokersService _brokersService;
+        [Import] private IBrokersCandlesService _candlesService;
         private IBroker _broker;
         private BrokerAccount _brokerAccount;
 
@@ -183,7 +184,7 @@ namespace TraderTools.Core.UI.ViewModels
                 var priceInPips = broker.GetPriceInPips(tradeStartPrice, Trade.Market);
                 priceInPips += pipsChange == PipsChange.Add ? decimalPrice : -decimalPrice;
 
-                return broker.GetPriceFromPips(priceInPips, Trade.Market);
+                return _candlesService.GetPriceFromPips(_broker, priceInPips, Trade.Market);
             }
 
             return decimalPrice;
