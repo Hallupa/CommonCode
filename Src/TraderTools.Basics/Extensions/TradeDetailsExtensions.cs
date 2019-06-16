@@ -12,6 +12,8 @@ namespace TraderTools.Basics.Extensions
         public static void SimulateTrade(this TradeDetails trade, double candleLow, double candleHigh,
             double candleClose, DateTime candleOpenTime, DateTime candleCloseTime, out bool updated)
         {
+            updated = false;
+
             if (trade.CloseDateTime != null)
             {
                 updated = false;
@@ -51,23 +53,83 @@ namespace TraderTools.Basics.Extensions
             }
 
             // Try to fill order
-            if (trade.EntryPrice == null && trade.OrderPrice != null)
+            if (trade.EntryPrice == null && trade.OrderPrice != null && ((candleOpenTime <= trade.OrderDateTime && candleCloseTime >= trade.OrderDateTime) || candleOpenTime >= trade.OrderDateTime))
             {
                 var order = trade;
 
                 if (order.OrderPrice != null)
                 {
-                    if (order.TradeDirection == TradeDirection.Long && candleLow <= (double)order.OrderPrice)
+                    var orderType = order.OrderType ?? OrderType.LimitEntry;
+                    var direction = order.TradeDirection;
+                    var orderPrice = (double)order.OrderPrice;
+
+                    switch (orderType)
                     {
-                        var entryPrice = Math.Min((decimal)candleHigh, order.OrderPrice.Value);
-                        order.SetEntry(candleOpenTime, entryPrice);
-                        updated = true;
-                    }
-                    else if (order.TradeDirection == TradeDirection.Short && candleHigh >= (double)order.OrderPrice)
-                    {
-                        var entryPrice = Math.Max((decimal)candleLow, order.OrderPrice.Value);
-                        order.SetEntry(candleOpenTime, entryPrice);
-                        updated = true;
+                        case OrderType.LimitEntry: // Buy below current market price or sell above current market price
+                            {
+                                //                ___
+                                //                | |
+                                //  - - - - - - - | |
+                                //                | |
+                                //                ---
+                                if (candleLow <= orderPrice && candleHigh >= orderPrice)
+                                {
+                                    updated = updated | SetEntry(order, orderPrice, candleCloseTime);
+                                }
+                                // - - - - - - - -
+                                //                ___
+                                //                | |
+                                //                | |
+                                //                ---
+                                else if (direction == TradeDirection.Long && candleHigh <= orderPrice)
+                                {
+                                    updated = updated | SetEntry(order, candleHigh, candleCloseTime);
+                                }
+                                //                ___
+                                //                | |
+                                //                | |
+                                //                ---
+                                // - - - - - - - -
+                                else if (direction == TradeDirection.Short && candleLow >= orderPrice)
+                                {
+                                    updated = updated | SetEntry(order, candleLow, candleCloseTime);
+                                }
+
+                                break;
+                            }
+
+                        case OrderType.StopEntry: // Buy above current price or sell below current market price
+                            {
+                                //                ___
+                                //                | |
+                                //  - - - - - - - | |
+                                //                | |
+                                //                ---
+                                if (candleLow <= orderPrice && candleHigh >= orderPrice)
+                                {
+                                    updated = updated | SetEntry(order, orderPrice, candleCloseTime);
+                                }
+                                //                ___
+                                //                | |
+                                //                | |
+                                //                ---
+                                // - - - - - - - -
+                                else if (direction == TradeDirection.Long && candleLow >= orderPrice)
+                                {
+                                    updated = updated | SetEntry(order, candleLow, candleCloseTime);
+                                }
+                                // - - - - - - - -
+                                //                ___
+                                //                | |
+                                //                | |
+                                //                ---
+                                else if (direction == TradeDirection.Short && candleHigh <= orderPrice)
+                                {
+                                    updated = updated | SetEntry(order, candleHigh, candleCloseTime);
+                                }
+
+                                break;
+                            }
                     }
                 }
                 else if (order.OrderPrice == null)
@@ -84,6 +146,12 @@ namespace TraderTools.Basics.Extensions
             }
 
             updated = false;
+        }
+
+        private static bool SetEntry(TradeDetails trade, double price, DateTime dateTime)
+        {
+            trade.SetEntry(dateTime, (decimal)price);
+            return true;
         }
     }
 }

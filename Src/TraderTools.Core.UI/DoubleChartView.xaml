@@ -172,7 +172,7 @@
 
         <GridSplitter Grid.Column="1" HorizontalAlignment="Center" Grid.RowSpan="2" VerticalAlignment="Stretch" Width="7" />
 
-        <Label Grid.Row="0" Grid.Column="2" FontWeight="Bold">2H chart</Label>
+        <Label Grid.Row="0" Grid.Column="2" FontWeight="Bold" Content="{Binding LargeChartTimeframe}"/>
 
         <Border Grid.Row="1" Grid.Column="2" BorderBrush="DarkGray" BorderThickness="1" Margin="5" Padding="5">
             <s:SciChartGroup ItemsSource="{Binding ChartViewModel.ChartPaneViewModels}"

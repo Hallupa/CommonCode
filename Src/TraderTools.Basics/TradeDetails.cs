@@ -4,7 +4,6 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
-using TraderTools.Basics.Extensions;
 
 namespace TraderTools.Basics
 {
@@ -21,6 +20,19 @@ namespace TraderTools.Basics
     {
         Market,
         EntryPrice
+    }
+
+    public enum OrderType
+    {
+        /// <summary>
+        /// Buy below current market price or sell above current market price.
+        /// </summary>
+        LimitEntry,
+
+        /// <summary>
+        /// Buy above current price or sell below current market price.
+        /// </summary>
+        StopEntry
     }
 
     public class DatePrice
@@ -48,7 +60,7 @@ namespace TraderTools.Basics
         public TradeDetails(decimal entryOrder, DateTime entryOrderTime,
             TradeDirection direction, decimal amount, string market, DateTime? orderExpireTime,
             decimal? stop, decimal? limit, Timeframe timeframe, string strategies, string comments, int custom1,
-            int custom2, int custom3, int custom4, bool alert)
+            int custom2, int custom3, int custom4, bool alert, OrderType orderType)
         {
             SetOrder(entryOrderTime, entryOrder, market, timeframe, direction, amount, orderExpireTime);
             if (stop != null) AddStopPrice(entryOrderTime, stop.Value);
@@ -237,6 +249,16 @@ namespace TraderTools.Basics
             set
             {
                 _orderDateTime = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public OrderType? OrderType
+        {
+            get => _orderType;
+            set
+            {
+                _orderType = value;
                 OnPropertyChanged();
             }
         }
@@ -447,6 +469,7 @@ namespace TraderTools.Basics
         private decimal? _limitInPips;
         private decimal? _initialStopInPips;
         private decimal? _initialLimitInPips;
+        private OrderType? _orderType;
 
         public void AddStopPrice(DateTime date, decimal? price)
         {

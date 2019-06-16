@@ -178,7 +178,7 @@ namespace TraderTools.Core.UI.ViewModels
             {
                 var tradeStartPrice = Trade.OrderPrice ?? Trade.EntryPrice.Value;
                 var broker = _brokersService.GetBroker(Trade.Broker);
-                var priceInPips = broker.GetPriceInPips(tradeStartPrice, Trade.Market);
+                var priceInPips = _candlesService.GetPriceInPips(broker, tradeStartPrice, Trade.Market);
                 priceInPips += pipsChange == PipsChange.Add ? decimalPrice : -decimalPrice;
 
                 return _candlesService.GetPriceFromPips(_broker, priceInPips, Trade.Market);

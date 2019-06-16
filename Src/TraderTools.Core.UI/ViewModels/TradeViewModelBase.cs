@@ -178,6 +178,8 @@ namespace TraderTools.Core.UI.ViewModels
         {
         }
 
+        public Timeframe LargeChartTimeframe { get; set; } = Timeframe.H2;
+
         public void ViewTrade(TradeDetails tradeDetails)
         {
             if (tradeDetails == null) return;
@@ -302,12 +304,11 @@ namespace TraderTools.Core.UI.ViewModels
         protected void ShowTrade(TradeDetails trade, bool updateCandles = false)
         {
             // Setup main chart
-            var largeChartTimeframe = GetSelectedTimeframe(trade);
             var smallChartTimeframe = Timeframe.D1;
 
             DateTime? start = null, end = null;
 
-            if (largeChartTimeframe == Timeframe.M1)
+            if (LargeChartTimeframe == Timeframe.M1)
             {
                 start = trade.StartDateTime.Value.AddMinutes(-20);
                 end = trade.CloseDateTime != null
@@ -319,10 +320,10 @@ namespace TraderTools.Core.UI.ViewModels
                 end = trade.CloseDateTime?.AddDays(20);
             }
 
-            var largeChartCandles = BrokerCandles.GetCandles(Broker, trade.Market, largeChartTimeframe, updateCandles, cacheData: false, minOpenTimeUtc: start, maxCloseTimeUtc: end);
+            var largeChartCandles = BrokerCandles.GetCandles(Broker, trade.Market, LargeChartTimeframe, updateCandles, cacheData: false, minOpenTimeUtc: start, maxCloseTimeUtc: end);
             var smallChartCandles = BrokerCandles.GetCandles(Broker, trade.Market, smallChartTimeframe, updateCandles, maxCloseTimeUtc: trade.CloseDateTime?.AddDays(30));
 
-            ShowTrade(trade, smallChartTimeframe, smallChartCandles, largeChartTimeframe, largeChartCandles);
+            ShowTrade(trade, smallChartTimeframe, smallChartCandles, LargeChartTimeframe, largeChartCandles);
         }
 
         protected void ShowTradeSetup(TradeDetails trade, bool updateCandles = false)
@@ -330,19 +331,18 @@ namespace TraderTools.Core.UI.ViewModels
             if (trade.StartDateTime == null) return;
 
             // Setup main chart
-            var largeChartTimeframe = trade.Timeframe ?? Timeframe.H2;
             var smallChartTimeframe = Timeframe.D1;
 
             DateTime? start = null;
-            if (largeChartTimeframe == Timeframe.M1)
+            if (LargeChartTimeframe == Timeframe.M1)
             {
                 start = trade.StartDateTime.Value.AddMinutes(-20);
             }
 
             var smallChartCandles = BrokerCandles.GetCandlesUptoSpecificTime(Broker, trade.Market, smallChartTimeframe, updateCandles, start, trade.StartDateTime.Value, Timeframe.M15);
-            var largeChartCandles = BrokerCandles.GetCandlesUptoSpecificTime(Broker, trade.Market, largeChartTimeframe, updateCandles, start, trade.StartDateTime.Value, Timeframe.M15);
+            var largeChartCandles = BrokerCandles.GetCandlesUptoSpecificTime(Broker, trade.Market, LargeChartTimeframe, updateCandles, start, trade.StartDateTime.Value, Timeframe.M15);
 
-            ShowTrade(trade, smallChartTimeframe, smallChartCandles, largeChartTimeframe, largeChartCandles);
+            ShowTrade(trade, smallChartTimeframe, smallChartCandles, LargeChartTimeframe, largeChartCandles);
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

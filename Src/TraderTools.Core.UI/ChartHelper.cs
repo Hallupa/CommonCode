@@ -296,9 +296,9 @@ namespace TraderTools.Core.UI
             var startTime = trade.OrderDateTime ?? trade.EntryDateTime.Value;
             var endTime = trade.CloseDateTime ?? new DateTime(candles.Last().CloseTimeTicks, DateTimeKind.Utc);
 
-            var startCandle = CandlesHelper.GetFirstCandleThatClosesBeforeDateTime(candles, startTime.ToLocalTime());
+            var startCandle = CandlesHelper.GetFirstCandleThatClosesBeforeDateTime(candles, startTime);
 
-            var endCandle = CandlesHelper.GetFirstCandleThatClosesBeforeDateTime(candles, endTime.ToLocalTime()) ?? candles.Last();
+            var endCandle = CandlesHelper.GetFirstCandleThatClosesBeforeDateTime(candles, endTime) ?? candles.Last();
 
             var candlesBeforeTrade = 0;
 
@@ -309,6 +309,9 @@ namespace TraderTools.Core.UI
                     break;
                 case Timeframe.M5:
                     candlesBeforeTrade = (6 * 12);
+                    break;
+                case Timeframe.M15:
+                    candlesBeforeTrade = (2 * 12);
                     break;
                 case Timeframe.H1:
                     candlesBeforeTrade = (2 * 24);
@@ -367,6 +370,7 @@ namespace TraderTools.Core.UI
                 cvm.XVisibleRange.Max = max;
                 cvm.XVisibleRange.Min = min;
             }
+
         }
     }
 }
