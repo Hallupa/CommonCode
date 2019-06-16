@@ -42,7 +42,7 @@ namespace TraderTools.Core.Broker
 
         public IObservable<BrokerAccountUpdated> AccountUpdatedObservable => _brokerAccountUpdatedSubject.AsObservable();
 
-        public static BrokerAccount LoadAccount(string dataPath, IBroker broker)
+        public static BrokerAccount LoadAccount(string dataPath, IBroker broker, IBrokersCandlesService candles)
         {
             var accountPath = Path.Combine(dataPath, "BrokerAccounts", $"{broker.Name}_Account.json");
 
@@ -59,7 +59,7 @@ namespace TraderTools.Core.Broker
 
                 if (trade.DataVersion == 0)
                 {
-                    broker.RecalculateTrade(account, trade);
+                    broker.RecalculateTrade(account, candles, trade);
                     trade.DataVersion = TradeDetails.CurrentDataVersion;
                 }
             }
@@ -151,7 +151,7 @@ namespace TraderTools.Core.Broker
             foreach (var trade in Trades)
             {
                 trade.Initialise();
-                broker.RecalculateTrade(this, trade);
+                broker.RecalculateTrade(this, candleService, trade);
             }
 
             Log.Info($"Completed updating {broker.Name} trades");

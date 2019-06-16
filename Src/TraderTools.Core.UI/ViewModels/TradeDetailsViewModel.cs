@@ -102,7 +102,7 @@ namespace TraderTools.Core.UI.ViewModels
             }
 
             Trade.RemoveLimitPrice(SelectedLimitIndex);
-            _broker.RecalculateTrade(_brokerAccount, Trade);
+            _broker.RecalculateTrade(_brokerAccount, _candlesService, Trade);
             RefreshDetails();
         }
 
@@ -114,7 +114,7 @@ namespace TraderTools.Core.UI.ViewModels
             }
 
             Trade.RemoveStopPrice(SelectedStopIndex);
-            _broker.RecalculateTrade(_brokerAccount, Trade);
+            _broker.RecalculateTrade(_brokerAccount, _candlesService, Trade);
             RefreshDetails();
         }
 
@@ -134,7 +134,7 @@ namespace TraderTools.Core.UI.ViewModels
             }
 
             Trade.AddLimitPrice(date.Value, price.Value);
-            _broker.RecalculateTrade(_brokerAccount, Trade);
+            _broker.RecalculateTrade(_brokerAccount, _candlesService, Trade);
             RefreshDetails();
         }
 
@@ -149,7 +149,7 @@ namespace TraderTools.Core.UI.ViewModels
             }
 
             Trade.AddStopPrice(date.Value, price.Value);
-            _broker.RecalculateTrade(_brokerAccount, Trade);
+            _broker.RecalculateTrade(_brokerAccount, _candlesService, Trade);
             RefreshDetails();
         }
 
@@ -181,7 +181,7 @@ namespace TraderTools.Core.UI.ViewModels
             {
                 var tradeStartPrice = Trade.OrderPrice ?? Trade.EntryPrice.Value;
                 var broker = _brokersService.GetBroker(Trade.Broker);
-                var priceInPips = broker.GetPriceInPips(tradeStartPrice, Trade.Market);
+                var priceInPips = _candlesService.GetPriceInPips(_broker, tradeStartPrice, Trade.Market);
                 priceInPips += pipsChange == PipsChange.Add ? decimalPrice : -decimalPrice;
 
                 return _candlesService.GetPriceFromPips(_broker, priceInPips, Trade.Market);

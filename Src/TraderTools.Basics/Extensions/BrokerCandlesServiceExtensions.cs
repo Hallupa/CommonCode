@@ -7,49 +7,6 @@ namespace TraderTools.Basics.Extensions
 {
     public static class BrokerCandlesServiceExtensions
     {
-        public static void UpdateTradeStopLimitPips(this IBrokersCandlesService candlesService, IBroker broker, TradeDetails trade)
-        {
-            // Update stop pips
-            if ((trade.EntryPrice == null && trade.OrderPrice == null) || trade.StopPrices.Count == 0)
-            {
-                trade.StopInPips = null;
-                trade.InitialStopInPips = null;
-            }
-            else
-            {
-                var price = trade.OrderPrice ?? trade.EntryPrice.Value;
-                var stop = trade.GetStopPrices().First();
-                var stopInPips = Math.Abs(candlesService.GetPriceInPips(broker, stop.Price.Value, trade.Market) -
-                                          candlesService.GetPriceInPips(broker, price, trade.Market));
-                trade.InitialStopInPips = stopInPips;
-
-                stop = trade.GetStopPrices().Last();
-                stopInPips = Math.Abs(candlesService.GetPriceInPips(broker, stop.Price.Value, trade.Market) -
-                                      candlesService.GetPriceInPips(broker, price, trade.Market));
-                trade.StopInPips = stopInPips;
-            }
-
-            // Update limit pips
-            if ((trade.EntryPrice == null && trade.OrderPrice == null) || trade.LimitPrices.Count == 0)
-            {
-                trade.LimitInPips = null;
-                trade.InitialLimitInPips = null;
-            }
-            else
-            {
-                var price = trade.OrderPrice ?? trade.EntryPrice.Value;
-                var limit = trade.GetLimitPrices().First();
-                var limitInPips = Math.Abs(candlesService.GetPriceInPips(broker, limit.Price.Value, trade.Market) -
-                                           candlesService.GetPriceInPips(broker, price, trade.Market));
-                trade.InitialLimitInPips = limitInPips;
-
-                limit = trade.GetLimitPrices().Last();
-                limitInPips = Math.Abs(candlesService.GetPriceInPips(broker, limit.Price.Value, trade.Market) -
-                                       candlesService.GetPriceInPips(broker, price, trade.Market));
-                trade.LimitInPips = limitInPips;
-            }
-        }
-
         public static ICandle GetFirstCandleThatClosesBeforeDateTime(
             this IBrokersCandlesService service, string market, IBroker broker, Timeframe timeframe, DateTime dateTime, bool updateCandles = false)
         {

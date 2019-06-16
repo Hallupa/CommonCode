@@ -5,27 +5,7 @@ namespace TraderTools.Basics.Extensions
 {
     public static class BrokerExtensions
     {
-        /// <summary>
-        /// For most currency pairs, the 'pip' location is the fourth decimal place. In this example, if the GBP/USD moved from 1.42279 to 1.42289 you would have gained or lost one pip
-        /// http://help.fxcm.com/markets/Trading/Education/Trading-Basics/32856512/How-to-calculate-PIP-value.htm
-        /// </summary>
-        /// <param name="price"></param>
-        /// <returns></returns>
-        public static decimal GetPriceInPips(this IBroker broker, decimal price, string market)
-        {
-            var pipInDecimals = broker.GetOnePipInDecimals(market);
-
-            return price / pipInDecimals;
-        }
-
-        public static decimal GetPriceFromPips(this IBroker broker, decimal pips, string market)
-        {
-            var pipInDecimals = broker.GetOnePipInDecimals(market);
-
-            return pips * pipInDecimals;
-        }
-
-        public static void RecalculateTrade(this IBroker broker, IBrokerAccount brokerAccount, TradeDetails trade)
+        public static void RecalculateTrade(this IBroker broker, IBrokerAccount brokerAccount, IBrokersCandlesService candles, TradeDetails trade)
         {
             var startTime = trade.OrderDateTime ?? trade.EntryDateTime;
 
@@ -66,16 +46,24 @@ namespace TraderTools.Basics.Extensions
                 // Update initial stop pips
                 var price = trade.EntryPrice ?? trade.OrderPrice.Value;
                 var stop = entryOrOrderStop;
-                var stopInPips = Math.Abs(broker.GetPriceInPips(stop.Price.Value, trade.Market) -
-                                          broker.GetPriceInPips(price, trade.Market));
+                var stopInPips = Math.Abs(candles.GetPriceInPips(broker, stop.Price.Value, trade.Market) -
+                                          candles.GetPriceInPips(broker, price, trade.Market));
                 trade.InitialStopInPips = stopInPips;
                 trade.InitialStop = entryOrOrderStop.Price;
 
                 // Update current stop
                 stop = trade.StopPrices.Last();
-                stopInPips = Math.Abs(broker.GetPriceInPips(stop.Price.Value, trade.Market) -
-                                      broker.GetPriceInPips(price, trade.Market));
-                trade.StopInPips = stopInPips;
+                if (stop.Price != null)
+                {
+                    stopInPips = Math.Abs(candles.GetPriceInPips(broker, stop.Price.Value, trade.Market) -
+                                          candles.GetPriceInPips(broker, price, trade.Market));
+                    trade.StopInPips = stopInPips;
+                }
+                else
+                {
+                    trade.StopInPips = null;
+                }
+
                 trade.StopPrice = stop.Price;
             }
             else
@@ -109,15 +97,15 @@ namespace TraderTools.Basics.Extensions
                 // Update initial limit
                 var price = trade.EntryPrice ?? trade.OrderPrice.Value;
                 var limit = entryOrOrderLimit;
-                var limitInPips = Math.Abs(broker.GetPriceInPips(limit.Price.Value, trade.Market) -
-                                           broker.GetPriceInPips(price, trade.Market));
+                var limitInPips = Math.Abs(candles.GetPriceInPips(broker, limit.Price.Value, trade.Market) -
+                                           candles.GetPriceInPips(broker, price, trade.Market));
                 trade.InitialLimitInPips = limitInPips;
                 trade.InitialLimit = entryOrOrderLimit.Price;
 
                 // Update current limit
                 limit = trade.LimitPrices.Last();
-                limitInPips = Math.Abs(broker.GetPriceInPips(limit.Price.Value, trade.Market) -
-                                      broker.GetPriceInPips(price, trade.Market));
+                limitInPips = Math.Abs(candles.GetPriceInPips(broker, limit.Price.Value, trade.Market) -
+                                       candles.GetPriceInPips(broker, price, trade.Market));
                 trade.LimitInPips = limitInPips;
                 trade.LimitPrice = limit.Price;
             }

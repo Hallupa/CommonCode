@@ -106,6 +106,7 @@
     <Compile Include="ChartDataRunner.cs" />
     <Compile Include="DepositWithdrawal.cs" />
     <Compile Include="Extensions\BrokerCandlesServiceExtensions.cs" />
+    <Compile Include="Extensions\BrokerExtensions.cs" />
     <Compile Include="Extensions\CandleExtensions.cs" />
     <Compile Include="Extensions\TradeDetailsExtensions.cs" />
     <Compile Include="Helpers\CandlesHelper.cs" />

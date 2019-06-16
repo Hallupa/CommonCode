@@ -26,7 +26,6 @@ namespace TraderTools.Brokers.FXCM
         private Random _rnd;
         private string _user;
         private string _password;
-                        price = (decimal) candleService.GetFirstCandleThatClosesBeforeDateTime(marketForPrice, broker, Timeframe.D1, date, updateCandles).Open;
 
         public List<MarketDetails> GetMarketDetailsList()
         {
@@ -327,8 +326,8 @@ namespace TraderTools.Brokers.FXCM
                 var instrument = orderOffer.Instrument;
                 var orderPrice = orderOrder.Rate;
                 var buySell = orderOrder.BuySell;
-                decimal? stop = GetStopPrice(stopOrder, instrument, (decimal)orderPrice, buySell);
-                decimal? limit = GetLimitPrice(limitOrder, instrument, (decimal)orderPrice, buySell);
+                decimal? stop = GetStopPrice(stopOrder, candlesService, instrument, (decimal)orderPrice, buySell);
+                decimal? limit = GetLimitPrice(limitOrder, candlesService, instrument, (decimal)orderPrice, buySell);
                 var amount = orderOrder.Amount;
                 var actualExpiry = orderOrder.ExpireDate.Year >= 1950 ? (DateTime?)expiry : null;
 
@@ -409,7 +408,7 @@ namespace TraderTools.Brokers.FXCM
             return addedOrUpdatedOpenTrade;
         }
 
-        private decimal? GetStopPrice(O2GOrderTableRow stop, string instrument, decimal orderPrice, string buySell)
+        private decimal? GetStopPrice(O2GOrderTableRow stop, IBrokersCandlesService candles, string instrument, decimal orderPrice, string buySell)
         {
             if (stop == null)
             {
@@ -426,14 +425,14 @@ namespace TraderTools.Brokers.FXCM
             {
                 ret = (decimal)orderPrice +
                       (buySell == "B"
-                          ? -this.GetPriceFromPips(Math.Abs((decimal)stop.PegOffset), instrument)
-                          : this.GetPriceFromPips(Math.Abs((decimal)stop.PegOffset), instrument));
+                          ? -candles.GetPriceFromPips(this, Math.Abs((decimal)stop.PegOffset), instrument)
+                          : candles.GetPriceFromPips(this, Math.Abs((decimal)stop.PegOffset), instrument));
             }
 
             return ret;
         }
 
-        private decimal? GetLimitPrice(O2GOrderTableRow limit, string instrument, decimal orderPrice, string buySell)
+        private decimal? GetLimitPrice(O2GOrderTableRow limit, IBrokersCandlesService candles, string instrument, decimal orderPrice, string buySell)
         {
             if (limit == null)
             {
@@ -450,8 +449,8 @@ namespace TraderTools.Brokers.FXCM
             {
                 ret = (decimal)orderPrice +
                       (buySell == "B"
-                          ? this.GetPriceFromPips(Math.Abs((decimal)limit.PegOffset), instrument)
-                          : -this.GetPriceFromPips(Math.Abs((decimal)limit.PegOffset), instrument));
+                          ? candles.GetPriceFromPips(this, Math.Abs((decimal)limit.PegOffset), instrument)
+                          : -candles.GetPriceFromPips(this, Math.Abs((decimal)limit.PegOffset), instrument));
             }
 
             return ret;

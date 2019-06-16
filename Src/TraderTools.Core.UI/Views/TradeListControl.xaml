@@ -23,7 +23,7 @@
         </Grid.Resources>
 
         <DataGrid ItemsSource="{Binding Path=Trades, IsAsync=True}" EnableRowVirtualization="true" AutoGenerateColumns="False" GridLinesVisibility="Horizontal"
-                  SelectedItem="{Binding SelectedTrade}"
+                  SelectedItem="{Binding SelectedTrade}" CanUserDeleteRows="False"
                   CanUserAddRows="False" x:Name="MainDataGrid" ClipboardCopyMode="IncludeHeader" PreviewMouseWheel="MainDataGrid_OnPreviewMouseWheel">
             <DataGrid.Resources>
                 <ui:BindingProxy x:Key="Proxy" Data="{Binding}" />
