@@ -31,5 +31,25 @@ namespace TraderTools.Test
         {
             throw new NotImplementedException();
         }
+
+        public MarketDetails GetMarketDetails(string broker, string market)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AddMarketDetails(MarketDetails marketDetails)
+        {
+            throw new NotImplementedException();
+        }
+        
+        public bool HasMarketDetails(string broker, string market)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SaveMarketDetailsList()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

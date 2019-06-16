@@ -23,7 +23,7 @@
         </Grid.Resources>
 
         <DataGrid ItemsSource="{Binding Path=Trades, IsAsync=True}" EnableRowVirtualization="true" AutoGenerateColumns="False" GridLinesVisibility="Horizontal"
-                  SelectedItem="{Binding SelectedTrade}"
+                  SelectedItem="{Binding SelectedTrade}" CanUserDeleteRows="False"
                   CanUserAddRows="False" x:Name="MainDataGrid" ClipboardCopyMode="IncludeHeader" PreviewMouseWheel="MainDataGrid_OnPreviewMouseWheel">
             <DataGrid.Resources>
                 <ui:BindingProxy x:Key="Proxy" Data="{Binding}" />
@@ -57,7 +57,7 @@
                 <DataGridTextColumn Header="Market" Binding="{Binding Market, Mode=OneWay}" IsReadOnly="True" Width="80" />
                 <DataGridTextColumn Header="Order date" Binding="{Binding OrderDateTimeLocal, StringFormat={}{0:dd-MM-yy HH:mm}, Mode=OneWay}" IsReadOnly="True" Width="100" Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.OrderDate}, Mode=OneWay}"/>
                 <DataGridTextColumn Header="Order price" Binding="{Binding OrderPrice, StringFormat={}{0:0.0000}, Mode=OneWay}" IsReadOnly="True" Width="75" Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.OrderPrice}, Mode=OneWay}"/>
-                <DataGridTextColumn Header="Entry price" Binding="{Binding StartPrice, StringFormat={}{0:0.0000}, Mode=OneWay}" IsReadOnly="True" Width="68"/>
+                <DataGridTextColumn Header="Entry price" Binding="{Binding EntryPrice, StringFormat={}{0:0.0000}, Mode=OneWay}" IsReadOnly="True" Width="68"/>
                 <DataGridTextColumn Header="L/S" Binding="{Binding TradeDirection}" FontWeight="Bold" IsReadOnly="True" Width="40"/>
                 <DataGridTextColumn Header="Broker" Binding="{Binding Broker, Mode=OneWay}" FontWeight="Bold" IsReadOnly="True" Width="75" Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.Broker}, Mode=OneWay}"/>
                 <DataGridTextColumn Header="£/pip" Binding="{Binding PricePerPip, StringFormat={}{0:0.00}}" IsReadOnly="True" Width="50" Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.PoundsPerPip}, Mode=OneWay}"/>
@@ -69,7 +69,7 @@
                                         Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.Stop}, Mode=OneWay}">
                     <DataGridTemplateColumn.CellStyle>
                         <Style TargetType="{x:Type DataGridCell}">
-                            <Setter Property="Background" Value="#18FF0000" />
+                            <Setter Property="Background" Value="#11FF0000" />
                             <Style.Triggers>
                                 <Trigger Property="IsSelected" Value="True">
                                     <Setter Property="Foreground" Value="Black"/>
@@ -97,7 +97,7 @@
                                         Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.Limit}, Mode=OneWay}">
                     <DataGridTemplateColumn.CellStyle>
                         <Style TargetType="{x:Type DataGridCell}">
-                            <Setter Property="Background" Value="#18FF0000" />
+                            <Setter Property="Background" Value="#1100FF00" />
                             <Style.Triggers>
                                 <Trigger Property="IsSelected" Value="True">
                                     <Setter Property="Foreground" Value="Black"/>

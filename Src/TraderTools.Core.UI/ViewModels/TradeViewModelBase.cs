@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
 using System.IO;
@@ -16,8 +17,8 @@ using Hallupa.Library;
 using Hallupa.Library.UI;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
-using TraderTools.Core.Extensions;
 using TraderTools.Core.Services;
+using TraderTools.Core.UI.ChartModifiers;
 using TraderTools.Core.UI.Services;
 using TraderTools.Core.UI.Views;
 using TraderTools.Indicators;
@@ -66,12 +67,50 @@ namespace TraderTools.Core.UI.ViewModels
             EditCommand = new DelegateCommand(o => EditTrade());
             DeleteCommand = new DelegateCommand(o => DeleteTrade());
             ViewTradeCommand = new DelegateCommand(t => ViewTrade((TradeDetails)t));
+            RemoveSelectedLineCommand = new DelegateCommand(t => RemoveSelectedLine());
             ViewTradeSetupCommand = new DelegateCommand(t => ViewTradeSetup((TradeDetails)t));
 
             TradesView = (CollectionView)CollectionViewSource.GetDefaultView(Trades);
             TradesView.Filter = TradesViewFilter;
 
             _dispatcher = Dispatcher.CurrentDispatcher;
+        }
+
+        private void RemoveSelectedLine()
+        {
+            if (ChartViewModel != null && ChartViewModel.ChartPaneViewModels.Count > 0 && ChartViewModel.ChartPaneViewModels[0].TradeAnnotations != null)
+            {
+                var toRemoveList = ChartViewModel.ChartPaneViewModels[0].TradeAnnotations.OfType<LineAnnotation>().Where(x => x.Tag is string s && s.StartsWith("Added") && x.IsSelected).ToList();
+                foreach (var toRemove in toRemoveList)
+                {
+                    ChartViewModel.ChartPaneViewModels[0].TradeAnnotations.Remove(toRemove);
+
+                    var linked = ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations.OfType<LineAnnotation>().FirstOrDefault(x => x.Tag is string s && s.Equals((string)toRemove.Tag));
+                    if (linked != null)
+                    {
+                        ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations.Remove(linked);
+                    }
+                }
+            }
+
+            if (ChartViewModelSmaller1 != null && ChartViewModelSmaller1.ChartPaneViewModels.Count > 0 && ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations != null)
+            {
+                var toRemoveList = ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations.OfType<LineAnnotation>().Where(x => x.Tag is string s && s.StartsWith("Added") && x.IsSelected).ToList();
+                foreach (var toRemove in toRemoveList)
+                {
+                    ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations.Remove(toRemove);
+
+                    if (ChartViewModel != null)
+                    {
+                        var linked = ChartViewModel.ChartPaneViewModels[0].TradeAnnotations.OfType<LineAnnotation>()
+                            .FirstOrDefault(x => x.Tag is string s && s.Equals((string) toRemove.Tag));
+                        if (linked != null)
+                        {
+                            ChartViewModel.ChartPaneViewModels[0].TradeAnnotations.Remove(linked);
+                        }
+                    }
+                }
+            }
         }
 
         public CollectionView TradesView { get; private set; }
@@ -91,6 +130,8 @@ namespace TraderTools.Core.UI.ViewModels
         protected TradeDetails TradeShowingOnChart { get; private set; }
         public DelegateCommand ViewTradeCommand { get; private set; }
         public DelegateCommand ViewTradeSetupCommand { get; private set; }
+
+        public DelegateCommand RemoveSelectedLineCommand { get; private set; }
 
         public int SelectedMainIndicatorsIndex
         {
@@ -170,7 +211,7 @@ namespace TraderTools.Core.UI.ViewModels
 
         public bool ShowOrdersOnly
         {
-            get { return (bool) GetValue(ShowOrdersOnlyProperty); }
+            get { return (bool)GetValue(ShowOrdersOnlyProperty); }
             set { SetValue(ShowOrdersOnlyProperty, value); }
         }
 
@@ -295,8 +336,51 @@ namespace TraderTools.Core.UI.ViewModels
                     ChartHelper.CreateTradeAnnotations(ChartViewModelSmaller1, TradeAnnotationsToShow.All, smallChartTimeframe,
                         smallChartCandles, trade);
 
+                AddTradeLines(trade);
+
                 TradeShown?.Invoke(trade);
             }));
+        }
+
+        private void AddTradeLines(TradeDetails t)
+        {
+            if (t.ChartLines != null)
+            {
+                var id = 1;
+                foreach (var line in t.ChartLines)
+                {
+                    var addedLine = new LineAnnotation
+                    {
+                        Tag = "Added_" + id,
+                        StrokeThickness = AddLinesModifier.StrokeThickness,
+                        Opacity = AddLinesModifier.Opacity,
+                        Stroke = AddLinesModifier.Stroke,
+                        X1 = line.DateTimeUTC1,
+                        Y1 = line.Price1,
+                        X2 = line.DateTimeUTC2,
+                        Y2 = line.Price2,
+                        IsEditable = true
+                    };
+                    ChartViewModel.ChartPaneViewModels[0].TradeAnnotations.Add(addedLine);
+                    // addedLine.ParentSurface.mo
+
+                    addedLine = new LineAnnotation
+                    {
+                        Tag = "Added_" + id,
+                        StrokeThickness = AddLinesModifier.StrokeThickness,
+                        Opacity = AddLinesModifier.Opacity,
+                        Stroke = AddLinesModifier.Stroke,
+                        X1 = line.DateTimeUTC1,
+                        Y1 = line.Price1,
+                        X2 = line.DateTimeUTC2,
+                        Y2 = line.Price2,
+                        IsEditable = true
+                    };
+                    ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations.Add(addedLine);
+
+                    id++;
+                }
+            }
         }
 
         protected event Action<TradeDetails> TradeShown;

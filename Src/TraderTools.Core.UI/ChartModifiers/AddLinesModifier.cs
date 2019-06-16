@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Specialized;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Windows;
@@ -6,7 +7,6 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using Abt.Controls.SciChart;
 using Abt.Controls.SciChart.ChartModifiers;
-using Abt.Controls.SciChart.Model.DataSeries;
 using Abt.Controls.SciChart.Numerics.CoordinateCalculators;
 using Abt.Controls.SciChart.Visuals;
 using Abt.Controls.SciChart.Visuals.Annotations;
@@ -18,6 +18,10 @@ namespace TraderTools.Core.UI.ChartModifiers
 {
     public class AddLinesModifier : ChartModifierBase
     {
+        public const double StrokeThickness = 4;
+        public static readonly Brush Stroke = Brushes.Black;
+        public const double Opacity = 0.6;
+
         private LineAnnotation _currentLine;
         private LineAnnotation _currentLinkedLine;
         private ISciChartSurface _linkedSurface;
@@ -63,6 +67,60 @@ namespace TraderTools.Core.UI.ChartModifiers
             DependencyContainer.ComposeParts(this);
         }
 
+        public override void OnAttached()
+        {
+            base.OnAttached();
+
+            Loaded += OnLoaded;
+        }
+
+        /// <summary>
+        /// Loaded can be called multiple times.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            LinkedChartSurface.Annotations.CollectionChanged -= AnnotationsOnCollectionChanged;
+            ParentSurface.Annotations.CollectionChanged -= AnnotationsOnCollectionChanged;
+
+            LinkedChartSurface.Annotations.CollectionChanged += AnnotationsOnCollectionChanged;
+            ParentSurface.Annotations.CollectionChanged += AnnotationsOnCollectionChanged;
+
+            if (LinkedChartSurface.Annotations.Count > 0)
+            {
+                AnnotationsOnCollectionChanged(sender, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, LinkedChartSurface.Annotations.ToList()));
+            }
+
+            if (ParentSurface.Annotations.Count > 0)
+            {
+                AnnotationsOnCollectionChanged(sender, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, ParentSurface.Annotations.ToList()));
+            }
+        }
+
+        private void AnnotationsOnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (e.Action == NotifyCollectionChangedAction.Add)
+            {
+                foreach (var l in e.NewItems.OfType<LineAnnotation>().Where(x => x.Tag != null && x.Tag is string && ((string) x.Tag).StartsWith("Added")))
+                {
+                    l.DragDelta -= CurrentLineOnDragDelta;
+                    l.DragDelta += CurrentLineOnDragDelta;
+
+                    // Don't raise RaiseChartLinesChanged here as the controls are not ready. The delta changed event will raise RaiseChartLinesChanged
+                }
+            }
+            else if (e.Action == NotifyCollectionChangedAction.Remove)
+            {
+                foreach (var l in e.OldItems.OfType<LineAnnotation>().Where(x => x.Tag != null && x.Tag is string && ((string)x.Tag).StartsWith("Added")))
+                {
+                    l.DragDelta -= CurrentLineOnDragDelta;
+                }
+
+                _chartingService.RaiseChartLinesChanged();
+            }
+        }
+
         public override void OnModifierMouseDown(ModifierMouseArgs e)
         {
             if (_currentLine == null)
@@ -97,6 +155,8 @@ namespace TraderTools.Core.UI.ChartModifiers
 
                 _chartingService.ChartMode = null;
                 e.Handled = true;
+
+                _chartingService.RaiseChartLinesChanged();
             }
         }
 
@@ -105,16 +165,14 @@ namespace TraderTools.Core.UI.ChartModifiers
             var currentLine = new LineAnnotation
             {
                 Tag = "Added_" + id,
-                StrokeThickness = 2,
-                Opacity = 0.6,
-                Stroke = Brushes.Gold,
+                StrokeThickness = StrokeThickness,
+                Opacity = Opacity,
+                Stroke = Stroke,
                 X1 = x,
                 Y1 = y,
                 X2 = x,
                 Y2 = y
             };
-
-            currentLine.DragDelta += CurrentLineOnDragDelta;
 
             surface.Annotations.Add(currentLine);
 
@@ -163,6 +221,8 @@ namespace TraderTools.Core.UI.ChartModifiers
                     otherLine.Y1 = line.Y1;
                     otherLine.Y2 = line.Y2;
                 }
+
+                _chartingService.RaiseChartLinesChanged();
             }
         }
 

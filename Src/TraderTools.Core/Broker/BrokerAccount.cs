@@ -8,6 +8,7 @@ using System.Reactive.Subjects;
 using System.Reflection;
 using log4net;
 using TraderTools.Basics;
+using TraderTools.Basics.Extensions;
 using TraderTools.Core.Services;
 using TraderTools.Core.Trading;
 
@@ -41,7 +42,7 @@ namespace TraderTools.Core.Broker
 
         public IObservable<BrokerAccountUpdated> AccountUpdatedObservable => _brokerAccountUpdatedSubject.AsObservable();
 
-        public static BrokerAccount LoadAccount(string dataPath, IBroker broker)
+        public static BrokerAccount LoadAccount(string dataPath, IBroker broker, IBrokersCandlesService candles)
         {
             var accountPath = Path.Combine(dataPath, "BrokerAccounts", $"{broker.Name}_Account.json");
 
@@ -55,6 +56,12 @@ namespace TraderTools.Core.Broker
             foreach (var trade in account.Trades)
             {
                 trade.Initialise();
+
+                if (trade.DataVersion == 0)
+                {
+                    broker.RecalculateTrade(account, candles, trade);
+                    trade.DataVersion = TradeDetails.CurrentDataVersion;
+                }
             }
 
             return account;
@@ -144,7 +151,7 @@ namespace TraderTools.Core.Broker
             foreach (var trade in Trades)
             {
                 trade.Initialise();
-                trade.UpdateRisk(this);
+                broker.RecalculateTrade(this, candleService, trade);
             }
 
             Log.Info($"Completed updating {broker.Name} trades");
