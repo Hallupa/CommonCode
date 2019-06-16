@@ -7,6 +7,7 @@ using System.Windows;
 using Hallupa.Library;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
+using TraderTools.Core.Broker;
 using TraderTools.Core.Services;
 
 namespace TraderTools.Core.UI.ViewModels
@@ -18,6 +19,7 @@ namespace TraderTools.Core.UI.ViewModels
         private TradeDetails _trade;
         [Import] private BrokersService _brokersService;
         private IBroker _broker;
+        private BrokerAccount _brokerAccount;
 
         #endregion
 
@@ -35,6 +37,7 @@ namespace TraderTools.Core.UI.ViewModels
             RefreshDetails();
 
             _broker = _brokersService.GetBroker(trade.Broker);
+            _brokerAccount = _brokersService.AccountsLookup[_broker];
 
             AddLimitCommand= new DelegateCommand(AddLimit);
             AddStopCommand = new DelegateCommand(AddStop);
@@ -78,13 +81,13 @@ namespace TraderTools.Core.UI.ViewModels
             DependencyContainer.ComposeParts(this);
 
             LimitPrices.Clear();
-            foreach (var limitPrice in Trade.GetLimitPrices())
+            foreach (var limitPrice in Trade.LimitPrices)
             {
                 LimitPrices.Add(new DatePrice(limitPrice.Date.ToLocalTime(), limitPrice.Price));
             }
 
             StopPrices.Clear();
-            foreach (var stopPrice in Trade.GetStopPrices())
+            foreach (var stopPrice in Trade.StopPrices)
             {
                 StopPrices.Add(new DatePrice(stopPrice.Date.ToLocalTime(), stopPrice.Price));
             }
@@ -98,7 +101,7 @@ namespace TraderTools.Core.UI.ViewModels
             }
 
             Trade.RemoveLimitPrice(SelectedLimitIndex);
-            _broker.UpdateTradeStopLimitPips(Trade);
+            _broker.RecalculateTrade(_brokerAccount, Trade);
             RefreshDetails();
         }
 
@@ -110,7 +113,7 @@ namespace TraderTools.Core.UI.ViewModels
             }
 
             Trade.RemoveStopPrice(SelectedStopIndex);
-            _broker.UpdateTradeStopLimitPips(Trade);
+            _broker.RecalculateTrade(_brokerAccount, Trade);
             RefreshDetails();
         }
 
@@ -130,7 +133,7 @@ namespace TraderTools.Core.UI.ViewModels
             }
 
             Trade.AddLimitPrice(date.Value, price.Value);
-            _broker.UpdateTradeStopLimitPips(Trade);
+            _broker.RecalculateTrade(_brokerAccount, Trade);
             RefreshDetails();
         }
 
@@ -145,7 +148,7 @@ namespace TraderTools.Core.UI.ViewModels
             }
 
             Trade.AddStopPrice(date.Value, price.Value);
-            _broker.UpdateTradeStopLimitPips(Trade);
+            _broker.RecalculateTrade(_brokerAccount, Trade);
             RefreshDetails();
         }
 

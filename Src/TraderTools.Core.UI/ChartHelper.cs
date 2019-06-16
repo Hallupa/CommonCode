@@ -130,7 +130,8 @@ namespace TraderTools.Core.UI
             {
                 if (trade.EntryPrice != null && (annotationsToShow.HasFlag(TradeAnnotationsToShow.All) || annotationsToShow.HasFlag(TradeAnnotationsToShow.EntryMarker)))
                 {
-                    var colour = trade.Profit != null && trade.Profit < 0 ? Colors.DarkRed : Colors.Green;
+                    var profit = trade.NetProfitLoss ?? trade.GrossProfitLoss;
+                    var colour = profit != null && profit < 0 ? Colors.DarkRed : Colors.Green;
                     AddBuySellMarker(trade.TradeDirection.Value, annotations, trade, trade.EntryDateTimeLocal.Value, trade.EntryPrice.Value, 0.9, colour: colour);
                 }
 
@@ -154,7 +155,8 @@ namespace TraderTools.Core.UI
 
                 if (annotationsToShow.HasFlag(TradeAnnotationsToShow.All) || annotationsToShow.HasFlag(TradeAnnotationsToShow.CloseMarker))
                 {
-                    var colour = trade.Profit != null && trade.Profit < 0 ? Colors.DarkRed : Colors.Green;
+                    var profit = trade.NetProfitLoss ?? trade.GrossProfitLoss;
+                    var colour = profit != null && profit < 0 ? Colors.DarkRed : Colors.Green;
                     AddBuySellMarker(oppositeTradeDirection, annotations, trade, trade.CloseDateTimeLocal.Value, trade.ClosePrice.Value, 0.9, colour: colour);
                 }
             }
@@ -162,7 +164,7 @@ namespace TraderTools.Core.UI
             // Add stop prices
             if (annotationsToShow.HasFlag(TradeAnnotationsToShow.All) || annotationsToShow.HasFlag(TradeAnnotationsToShow.StopsLines))
             {
-                var stopPrices = trade.GetStopPrices();
+                var stopPrices = trade.StopPrices;
                 if (stopPrices.Count > 0)
                 {
                     stopPrices.Add(new DatePrice(trade.CloseDateTime != null
@@ -176,7 +178,7 @@ namespace TraderTools.Core.UI
             // Add limit prices
             if (annotationsToShow.HasFlag(TradeAnnotationsToShow.All) || annotationsToShow.HasFlag(TradeAnnotationsToShow.LimitsLines))
             {
-                var limitPrices = trade.GetLimitPrices();
+                var limitPrices = trade.LimitPrices;
                 if (limitPrices.Count > 0)
                 {
                     limitPrices.Add(new DatePrice(trade.CloseDateTime?.ToLocalTime() ?? new DateTime(candles[candles.Count - 1].CloseTimeTicks, DateTimeKind.Utc), null));

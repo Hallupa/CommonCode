@@ -274,13 +274,11 @@ namespace TraderTools.Brokers.FXCM
                     if (!tradeRow.Limit.Equals(0D))
                     {
                         trade.AddLimitPrice(trade.EntryDateTime.Value, (decimal)tradeRow.Limit);
-                        this.UpdateTradeStopLimitPips(trade);
                     }
 
                     if (!tradeRow.Stop.Equals(0D))
                     {
                         trade.AddStopPrice(trade.EntryDateTime.Value, (decimal)tradeRow.Stop);
-                        this.UpdateTradeStopLimitPips(trade);
                     }
 
                     trade.EntryQuantity = tradeRow.Amount;
@@ -332,7 +330,6 @@ namespace TraderTools.Brokers.FXCM
                             trade.LimitPrices[trade.LimitPrices.Count - 1].Price != (decimal)tradeRow.Limit)
                         {
                             trade.AddLimitPrice(DateTime.UtcNow, (decimal)tradeRow.Limit);
-                            this.UpdateTradeStopLimitPips(trade);
                             addedOrUpdatedOpenTrade = true;
                         }
                     }
@@ -343,7 +340,6 @@ namespace TraderTools.Brokers.FXCM
                             trade.StopPrices[trade.StopPrices.Count - 1].Price != (decimal)tradeRow.Stop)
                         {
                             trade.AddStopPrice(DateTime.UtcNow, (decimal)tradeRow.Stop);
-                            this.UpdateTradeStopLimitPips(trade);
                             addedOrUpdatedOpenTrade = true;
                         }
                     }
@@ -429,13 +425,11 @@ namespace TraderTools.Brokers.FXCM
                     if (stop != null)
                     {
                         trade.AddStopPrice(time, stop);
-                        this.UpdateTradeStopLimitPips(trade);
                     }
 
                     if (limit != null)
                     {
                         trade.AddLimitPrice(time, limit);
-                        this.UpdateTradeStopLimitPips(trade);
                     }
 
                     trade.TradeDirection = buySell == "B" ? TradeDirection.Long : TradeDirection.Short;
@@ -474,7 +468,6 @@ namespace TraderTools.Brokers.FXCM
                     {
                         trade.ClearStopPrices();
                         trade.AddStopPrice(time, stop);
-                        this.UpdateTradeStopLimitPips(trade);
                         addedOrUpdatedOpenTrade = true;
                     }
 
@@ -482,7 +475,6 @@ namespace TraderTools.Brokers.FXCM
                     {
                         trade.ClearLimitPrices();
                         trade.AddLimitPrice(time, limit);
-                        this.UpdateTradeStopLimitPips(trade);
                         addedOrUpdatedOpenTrade = true;
                     }
                 }

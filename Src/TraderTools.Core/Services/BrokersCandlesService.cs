@@ -83,7 +83,7 @@ namespace TraderTools.Core.Services
                     _candlesLookup.TryGetValue((broker, market, timeframe), out candles);
                 }
 
-                if (candles == null)
+                if (candles == null || candles.Count == 0)
                 {
                     candles = LoadBrokerCandles(broker, market, timeframe).ToList();
 
