@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using Hallupa.Library.UI;
 using TraderTools.Basics;
 
 namespace TraderTools.Core.UI.ViewModels
@@ -20,7 +21,7 @@ namespace TraderTools.Core.UI.ViewModels
         private decimal _expectancyR;
         private int _openTradesCount;
 
-        public ObservableCollection<TradeDetails> Trades { get; } = new ObservableCollection<TradeDetails>();
+        public ObservableCollectionEx<TradeDetails> Trades { get; } = new ObservableCollectionEx<TradeDetails>();
 
         public string Name
         {
@@ -140,7 +141,7 @@ namespace TraderTools.Core.UI.ViewModels
             TradesCount = Trades.Count;
             OpenTradesCount = Trades.Count(x => x.EntryDateTime != null && x.CloseDateTime == null);
             Profit = Trades.Sum(t => t.Profit ?? 0);
-            PercentSuccessfulTrades = profitableTrades.Count != 0 ? (profitableTrades.Count * 100M) / Trades.Count : 0;
+            PercentSuccessfulTrades = profitableTrades.Count != 0 ? (profitableTrades.Count * 100M) / (decimal)Trades.Count(x => x.Profit != null) : 0;
             RSum = Trades.Where(t => t.RMultiple != null).Sum(t => t.RMultiple.Value);
 
             AvRWinningTrades = positiveRMultipleTrades.Count != 0 ? positiveRMultipleTrades.Where(t => t.RMultiple != null).Sum(t => t.RMultiple.Value) / (decimal)positiveRMultipleTrades.Count : 0;

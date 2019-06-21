@@ -141,6 +141,8 @@ namespace TraderTools.Brokers.FXCM
             // Get open trades
             var updated = GetOpenTrades(account, candlesService, tableManager, out var openTrades);
 
+            updated = GetClosedTrades(account, candlesService, tableManager, out var closedTrades) || updated;
+
             updated = GetOrders(account, candlesService, tableManager, out var orders) || updated;
 
             // Update trades from reports API
@@ -170,6 +172,88 @@ namespace TraderTools.Brokers.FXCM
             return updated;
         }
 
+        private bool GetClosedTrades(IBrokerAccount account, IBrokersCandlesService candlesService,
+            O2GTableManager tableManager, out List<TradeDetails> openTradesFound)
+        {
+            O2GTableIterator iterator;
+            openTradesFound = new List<TradeDetails>();
+            var openTrades = tableManager.getTable(O2GTableType.ClosedTrades);
+
+            iterator = new O2GTableIterator();
+            var addedOrUpdatedOpenTrade = false;
+
+            while (openTrades.getNextGenericRow(iterator, out var row))
+            {
+                var tradeRow = (O2GClosedTradeTableRow)row;
+                var trade = account.Trades.FirstOrDefault(x => x.Id == tradeRow.TradeID);
+
+                if (trade == null)
+                {
+                    trade = new TradeDetails();
+                    account.Trades.Add(trade);
+                    trade.Market = tradeRow.Instrument;
+                    trade.Broker = "FXCM";
+                    trade.Id = tradeRow.TradeID;
+                    trade.EntryDateTime = DateTime.SpecifyKind(tradeRow.OpenTime, DateTimeKind.Utc);
+                    trade.CloseDateTime = DateTime.SpecifyKind(tradeRow.CloseTime, DateTimeKind.Utc);
+                    trade.EntryPrice = (decimal)tradeRow.OpenRate;
+
+                    trade.EntryQuantity = tradeRow.Amount;
+                    trade.GrossProfitLoss = (decimal)tradeRow.GrossPL;
+                    trade.TradeDirection = tradeRow.BuySell == "S" ? TradeDirection.Short : TradeDirection.Long;
+                    trade.PricePerPip = candlesService.GetGBPPerPip(
+                        this, trade.Market, trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
+
+                    addedOrUpdatedOpenTrade = true;
+                }
+                else
+                {
+                    if (trade.EntryDateTime != DateTime.SpecifyKind(tradeRow.OpenTime, DateTimeKind.Utc))
+                    {
+                        trade.EntryDateTime = DateTime.SpecifyKind(tradeRow.OpenTime, DateTimeKind.Utc);
+                        addedOrUpdatedOpenTrade = true;
+                    }
+
+                    if (trade.CloseDateTime != DateTime.SpecifyKind(tradeRow.CloseTime, DateTimeKind.Utc))
+                    {
+                        trade.CloseDateTime = DateTime.SpecifyKind(tradeRow.CloseTime, DateTimeKind.Utc);
+                        addedOrUpdatedOpenTrade = true;
+                    }
+
+                    if (trade.GrossProfitLoss != (decimal)tradeRow.GrossPL)
+                    {
+                        trade.GrossProfitLoss = (decimal)tradeRow.GrossPL;
+                        addedOrUpdatedOpenTrade = true;
+                    }
+
+                    if (trade.EntryPrice != (decimal)tradeRow.OpenRate)
+                    {
+                        trade.EntryPrice = (decimal)tradeRow.OpenRate;
+                        addedOrUpdatedOpenTrade = true;
+                    }
+
+                    if (trade.EntryQuantity != (decimal)tradeRow.Amount)
+                    {
+                        trade.EntryQuantity = (decimal)tradeRow.Amount;
+                        trade.PricePerPip = candlesService.GetGBPPerPip(
+                            this, trade.Market, trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
+
+                        addedOrUpdatedOpenTrade = true;
+                    }
+
+                    if (trade.TradeDirection != (tradeRow.BuySell == "S" ? TradeDirection.Short : TradeDirection.Long))
+                    {
+                        trade.TradeDirection = tradeRow.BuySell == "S" ? TradeDirection.Short : TradeDirection.Long;
+                        addedOrUpdatedOpenTrade = true;
+                    }
+                }
+
+                openTradesFound.Add(trade);
+            }
+
+            return addedOrUpdatedOpenTrade;
+        }
+                
         private bool GetOpenTrades(IBrokerAccount account, IBrokersCandlesService candlesService,
             O2GTableManager tableManager, out List<TradeDetails> openTradesFound)
         {

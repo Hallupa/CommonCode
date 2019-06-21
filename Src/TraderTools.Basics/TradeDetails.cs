@@ -113,6 +113,7 @@ namespace TraderTools.Basics
             trade.Custom3 = custom3;
             trade.Custom4 = custom4;
             trade.OrderKind = orderKind;
+            trade.OrderType = orderType;
             return trade;
         }
 
@@ -455,9 +456,13 @@ namespace TraderTools.Basics
         private OrderType? _orderType;
         public void AddStopPrice(DateTime date, decimal? price)
         {
+            if (StopPrices.Count > 0 && StopPrices.Last().Price == price)
+            {
+                return;
+            }
+
             StopPrices.Add(new DatePrice(date, price));
             StopPrices = StopPrices.OrderBy(x => x.Date).ToList();
-            _currentStopPrice = null;
         }
 
         public void ClearStopPrices()
@@ -479,6 +484,11 @@ namespace TraderTools.Basics
 
         public void AddLimitPrice(DateTime date, decimal? price)
         {
+            if (LimitPrices.Count > 0 && LimitPrices.Last().Price == price)
+            {
+                return;
+            }
+
             LimitPrices.Add(new DatePrice(date, price));
             LimitPrices = LimitPrices.OrderBy(x => x.Date).ToList();
         }
@@ -644,6 +654,36 @@ namespace TraderTools.Basics
             if (EntryDateTime != null && OrderDateTime == null)
             {
                 OrderDateTime = EntryDateTime;
+            }
+
+            // Remove duplicate stops
+            if (StopPrices != null)
+            {
+                for (var i = StopPrices.Count - 1; i >= 1; i--)
+                {
+                    var current = StopPrices[i];
+                    var prev = StopPrices[i - 1];
+
+                    if (current.Price == prev.Price)
+                    {
+                        StopPrices.RemoveAt(i);
+                    }
+                }
+            }
+
+            // Remove duplicate limits
+            if (LimitPrices != null)
+            {
+                for (var i = LimitPrices.Count - 1; i >= 1; i--)
+                {
+                    var current = LimitPrices[i];
+                    var prev = LimitPrices[i - 1];
+
+                    if (current.Price == prev.Price)
+                    {
+                        LimitPrices.RemoveAt(i);
+                    }
+                }
             }
         }
 

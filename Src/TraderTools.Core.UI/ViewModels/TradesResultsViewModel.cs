@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
+using Hallupa.Library.UI;
 using TraderTools.Basics;
 
 namespace TraderTools.Core.UI.ViewModels
@@ -16,7 +17,7 @@ namespace TraderTools.Core.UI.ViewModels
         private string _selectedResultOption = "All";
         private Dispatcher _dispatcher;
 
-        public ObservableCollection<TradesResultViewModel> Results { get; } = new ObservableCollection<TradesResultViewModel>();
+        public ObservableCollectionEx<TradesResultViewModel> Results { get; } = new ObservableCollectionEx<TradesResultViewModel>();
 
         public List<string> ResultOptions { get; private set; } = new List<string>
         {
@@ -105,10 +106,7 @@ namespace TraderTools.Core.UI.ViewModels
                 var groupTrades = group.ToList();
 
                 // Add trades to result
-                foreach (var t in groupTrades)
-                {
-                    result.Trades.Add(t);
-                }
+                result.Trades.AddRange(groupTrades);
 
                 if (_createStrategiesSubResults)
                 {
@@ -117,6 +115,7 @@ namespace TraderTools.Core.UI.ViewModels
                         result.StrategyResults = new TradesResultsViewModel(() => group.ToList(), false)
                         {
                             ShowOptions = false,
+                            ShowSubOptions = false,
                             SelectedResultOption = "Strategy",
                             AdvStrategyNaming = true
 
@@ -131,10 +130,7 @@ namespace TraderTools.Core.UI.ViewModels
             _dispatcher.Invoke(() =>
             {
                 Results.Clear();
-                foreach (var result in results.OrderByDescending(x => x.Name).ToList())
-                {
-                    Results.Add(result);
-                }
+                Results.AddRange(results.OrderByDescending(x => x.Name).ToList());
             });
         }
 

@@ -164,7 +164,7 @@ namespace TraderTools.Core.UI
             // Add stop prices
             if (annotationsToShow.HasFlag(TradeAnnotationsToShow.All) || annotationsToShow.HasFlag(TradeAnnotationsToShow.StopsLines))
             {
-                var stopPrices = trade.StopPrices;
+                var stopPrices = trade.StopPrices.ToList();
                 if (stopPrices.Count > 0)
                 {
                     stopPrices.Add(new DatePrice(trade.CloseDateTime != null
@@ -178,7 +178,7 @@ namespace TraderTools.Core.UI
             // Add limit prices
             if (annotationsToShow.HasFlag(TradeAnnotationsToShow.All) || annotationsToShow.HasFlag(TradeAnnotationsToShow.LimitsLines))
             {
-                var limitPrices = trade.LimitPrices;
+                var limitPrices = trade.LimitPrices.ToList();
                 if (limitPrices.Count > 0)
                 {
                     limitPrices.Add(new DatePrice(trade.CloseDateTime?.ToLocalTime() ?? new DateTime(candles[candles.Count - 1].CloseTimeTicks, DateTimeKind.Utc), null));

@@ -423,8 +423,26 @@ namespace TraderTools.Core.UI.ViewModels
                 start = trade.StartDateTime.Value.AddMinutes(-20);
             }
 
-            var smallChartCandles = BrokerCandles.GetCandlesUptoSpecificTime(Broker, trade.Market, smallChartTimeframe, updateCandles, start, trade.StartDateTime.Value, Timeframe.M15);
-            var largeChartCandles = BrokerCandles.GetCandlesUptoSpecificTime(Broker, trade.Market, LargeChartTimeframe, updateCandles, start, trade.StartDateTime.Value, Timeframe.M15);
+            var candlesTimeframe = LargeChartTimeframe;
+
+            switch (LargeChartTimeframe)
+            {
+                case Timeframe.H1:
+                    candlesTimeframe = Timeframe.M15;
+                    break;
+                case Timeframe.H2:
+                    candlesTimeframe = Timeframe.H1;
+                    break;
+                case Timeframe.M15:
+                    candlesTimeframe = Timeframe.M5;
+                    break;
+                case Timeframe.D1:
+                    candlesTimeframe = Timeframe.H2;
+                    break;
+            }
+
+            var smallChartCandles = BrokerCandles.GetCandlesUptoSpecificTime(Broker, trade.Market, smallChartTimeframe, updateCandles, start, trade.StartDateTime.Value, candlesTimeframe);
+            var largeChartCandles = BrokerCandles.GetCandlesUptoSpecificTime(Broker, trade.Market, LargeChartTimeframe, updateCandles, start, trade.StartDateTime.Value, candlesTimeframe);
 
             ShowTrade(trade, smallChartTimeframe, smallChartCandles, LargeChartTimeframe, largeChartCandles);
         }
