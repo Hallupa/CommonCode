@@ -216,7 +216,6 @@ namespace TraderTools.Core.Services
                 trade.LimitInPips = null;
                 trade.LimitPrice = null;
                 trade.InitialLimitInPips = null;
-                trade.InitialStop = null;
             }
 
             // Update price/pip
