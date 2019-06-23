@@ -24,7 +24,8 @@ namespace TraderTools.Core.UI
         OrderOrEntryLines = 8,
         OrderMarker = 16,
         EntryMarker = 32,
-        CloseMarker = 64
+        CloseMarker = 64,
+        MakeEntryCloseMarkerSmaller = 128
     }
 
     public static class ChartHelper
@@ -125,6 +126,7 @@ namespace TraderTools.Core.UI
 
             var dataSeries = cvm.ChartPaneViewModels[0].ChartSeriesViewModels[0].DataSeries;
             var startTime = trade.StartDateTimeLocal;
+            var entryCloseMarketSmaller = annotationsToShow.HasFlag(TradeAnnotationsToShow.MakeEntryCloseMarkerSmaller);
 
             if (startTime != null && (trade.OrderPrice != null || trade.EntryPrice != null))
             {
@@ -132,7 +134,8 @@ namespace TraderTools.Core.UI
                 {
                     var profit = trade.NetProfitLoss ?? trade.GrossProfitLoss;
                     var colour = profit != null && profit < 0 ? Colors.DarkRed : Colors.Green;
-                    AddBuySellMarker(trade.TradeDirection.Value, annotations, trade, trade.EntryDateTimeLocal.Value, trade.EntryPrice.Value, 0.9, colour: colour);
+                    AddBuySellMarker(trade.TradeDirection.Value, annotations, trade, trade.EntryDateTimeLocal.Value, trade.EntryPrice.Value,
+                        entryCloseMarketSmaller, colour: colour);
                 }
 
                 if (annotationsToShow.HasFlag(TradeAnnotationsToShow.All) || annotationsToShow.HasFlag(TradeAnnotationsToShow.OrderOrEntryLines))
@@ -157,7 +160,7 @@ namespace TraderTools.Core.UI
                 {
                     var profit = trade.NetProfitLoss ?? trade.GrossProfitLoss;
                     var colour = profit != null && profit < 0 ? Colors.DarkRed : Colors.Green;
-                    AddBuySellMarker(oppositeTradeDirection, annotations, trade, trade.CloseDateTimeLocal.Value, trade.ClosePrice.Value, 0.9, colour: colour);
+                    AddBuySellMarker(oppositeTradeDirection, annotations, trade, trade.CloseDateTimeLocal.Value, trade.ClosePrice.Value, entryCloseMarketSmaller, colour: colour);
                 }
             }
 
@@ -190,21 +193,22 @@ namespace TraderTools.Core.UI
             return annotations;
         }
 
-        private static void AddBuySellMarker(TradeDirection direction, AnnotationCollection annotations, TradeDetails trade, DateTime timeLocal, decimal price, double opacity, bool isFilled = true, Color? colour = null)
+        private static void AddBuySellMarker(
+            TradeDirection direction, AnnotationCollection annotations, TradeDetails trade,
+            DateTime timeLocal, decimal price, bool makeSmaller, bool isFilled = true, Color? colour = null)
         {
             var buyMarker = new BuyMarkerAnnotation();
             var sellMarker = new SellMarkerAnnotation();
             var annotation = direction == TradeDirection.Long ? buyMarker : (CustomAnnotation)sellMarker;
-            annotation.Width = 24;
-            annotation.Height = 24;
+            annotation.Width = makeSmaller ? 12 : 24;
+            annotation.Height = makeSmaller ? 12 : 24;
             ((Path)annotation.Content).Stretch = Stretch.Fill;
             annotation.Margin = new Thickness(0, direction == TradeDirection.Long ? 5 : -5, 0, 0);
             annotation.DataContext = trade;
 
             var brush = new SolidColorBrush
             {
-                Color = colour ?? (direction == TradeDirection.Long ? Colors.Green : Colors.DarkRed),
-                Opacity = opacity
+                Color = colour ?? (direction == TradeDirection.Long ? Colors.Green : Colors.DarkRed)
             };
 
             if (isFilled)

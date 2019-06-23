@@ -36,11 +36,13 @@ namespace TraderTools.Core.Services
             }
         }
 
-        public void LoadBrokerAccounts(IBrokersCandlesService candlesService)
+        public void LoadBrokerAccounts(
+            IBrokersCandlesService candlesService,
+            ITradeDetailsAutoCalculatorService tradeCalculatorService)
         {
             foreach (var broker in Brokers)
             {
-                var account = BrokerAccount.LoadAccount(DataDirectory, broker, candlesService);
+                var account = BrokerAccount.LoadAccount(DataDirectory, broker, candlesService, tradeCalculatorService);
                 
                 if (account == null)
                 {

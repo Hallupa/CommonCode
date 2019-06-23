@@ -138,7 +138,7 @@
                 </DataGridTextColumn>
                 <DataGridTextColumn Header="Result R" Binding="{Binding RMultiple, StringFormat={}{0:0.00}, Mode=OneWay}" IsReadOnly="True" Width="60" Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.ResultR}, Mode=OneWay}"/>
                 
-                <DataGridTemplateColumn Header="Strategies" Width="350">
+                <DataGridTemplateColumn Header="Strategies" Width="350" IsReadOnly="False">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <tokenEditor:TokenContainerControl SelectedItemsCSV="{Binding Path=Strategies, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1"/> 

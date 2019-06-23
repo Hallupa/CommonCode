@@ -77,13 +77,13 @@
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
     <Reference Include="System.Reactive, Version=4.1.0.0, Culture=neutral, PublicKeyToken=94bc3704cddfc263, processorArchitecture=MSIL">
-      <HintPath>..\..\..\TraderTools\packages\System.Reactive.4.1.2\lib\net46\System.Reactive.dll</HintPath>
+      <HintPath>..\..\..\Src\packages\System.Reactive.4.1.5\lib\net46\System.Reactive.dll</HintPath>
     </Reference>
     <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\..\..\TraderTools\packages\System.Runtime.CompilerServices.Unsafe.4.5.2\lib\netstandard2.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
     </Reference>
     <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\..\..\TraderTools\packages\System.Threading.Tasks.Extensions.4.5.1\lib\netstandard2.0\System.Threading.Tasks.Extensions.dll</HintPath>
+      <HintPath>..\..\..\Src\packages\System.Threading.Tasks.Extensions.4.5.2\lib\netstandard2.0\System.Threading.Tasks.Extensions.dll</HintPath>
     </Reference>
     <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\..\..\TraderTools\packages\System.ValueTuple.4.5.0\lib\net47\System.ValueTuple.dll</HintPath>
@@ -106,7 +106,6 @@
     <Compile Include="ChartDataRunner.cs" />
     <Compile Include="DepositWithdrawal.cs" />
     <Compile Include="Extensions\BrokerCandlesServiceExtensions.cs" />
-    <Compile Include="Extensions\BrokerExtensions.cs" />
     <Compile Include="Extensions\CandleExtensions.cs" />
     <Compile Include="Extensions\TradeDetailsExtensions.cs" />
     <Compile Include="Helpers\CandlesHelper.cs" />
@@ -114,8 +113,10 @@
     <Compile Include="IBroker.cs" />
     <Compile Include="IBrokersCandlesService.cs" />
     <Compile Include="IIndicator.cs" />
+    <Compile Include="IMarketDetailsService.cs" />
     <Compile Include="Indicator.cs" />
     <Compile Include="ISimpleCandle.cs" />
+    <Compile Include="ITradeDetailsAutoCalculatorService.cs" />
     <Compile Include="Market.cs" />
     <Compile Include="MarketDetails.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

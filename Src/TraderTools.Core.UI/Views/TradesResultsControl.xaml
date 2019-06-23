@@ -39,7 +39,7 @@
 
 
         <DataGrid Grid.Row="1" Grid.ColumnSpan="4" ScrollViewer.CanContentScroll="False" AutoGenerateColumns="False" ClipboardCopyMode="IncludeHeader"
-                  FontSize="16" EnableRowVirtualization="True"
+                  EnableRowVirtualization="True"
                   ItemsSource="{Binding Results}" CanUserAddRows="False" RowDetailsVisibilityMode="Collapsed" PreviewMouseWheel="UIElement_OnPreviewMouseWheel">
             <DataGrid.RowStyle>
                 <Style TargetType="{x:Type DataGridRow}">

@@ -2,13 +2,15 @@
 using System.Collections.Generic;
 using System.Linq;
 using TraderTools.Basics.Helpers;
+using TraderTools.Core.Services;
 
 namespace TraderTools.Basics.Extensions
 {
     public static class BrokerCandlesServiceExtensions
     {
         public static ICandle GetFirstCandleThatClosesBeforeDateTime(
-            this IBrokersCandlesService service, string market, IBroker broker, Timeframe timeframe, DateTime dateTime, bool updateCandles = false)
+            this IBrokersCandlesService service, string market, IBroker broker, Timeframe timeframe,
+            DateTime dateTime, bool updateCandles = false)
         {
             var candles = service.GetCandles(broker, market, timeframe, updateCandles, maxCloseTimeUtc: dateTime);
             if (candles == null)
@@ -19,8 +21,10 @@ namespace TraderTools.Basics.Extensions
             return CandlesHelper.GetFirstCandleThatClosesBeforeDateTime(candles, dateTime);
         }
 
-        public static List<ICandle> GetCandlesUptoSpecificTime(this IBrokersCandlesService brokerCandles, IBroker broker, string market,
-            Timeframe timeframe, bool updateCandles, DateTime? startUtc, DateTime? endUtc, Timeframe smallestTimeframeForPartialCandle = Timeframe.M1)
+        public static List<ICandle> GetCandlesUptoSpecificTime(this IBrokersCandlesService brokerCandles,
+            IBroker broker, string market,
+            Timeframe timeframe, bool updateCandles, DateTime? startUtc, DateTime? endUtc,
+            Timeframe smallestTimeframeForPartialCandle = Timeframe.M1)
         {
             var allLargeChartCandles = brokerCandles.GetCandles(broker, market, timeframe, updateCandles, cacheData: false, minOpenTimeUtc: startUtc, maxCloseTimeUtc: endUtc);
             var smallestTimeframeCandles = brokerCandles.GetCandles(broker, market, smallestTimeframeForPartialCandle, updateCandles, cacheData: false, maxCloseTimeUtc: endUtc);
@@ -88,24 +92,27 @@ namespace TraderTools.Basics.Extensions
         /// </summary>
         /// <param name="price"></param>
         /// <returns></returns>
-        public static decimal GetPriceInPips(this IBrokersCandlesService candleService, IBroker broker, decimal price, string market)
+        public static decimal GetPriceInPips(this IMarketDetailsService marketsService, string brokerName, decimal price, string market)
         {
-            var pipInDecimals = candleService.GetOnePipInDecimals(broker.Name, market);
+            var pipInDecimals = marketsService.GetOnePipInDecimals(brokerName, market);
 
             return price / pipInDecimals;
         }
 
-        public static decimal GetPriceFromPips(this IBrokersCandlesService candleService, IBroker broker, decimal pips, string market)
+        public static decimal GetPriceFromPips(this IMarketDetailsService marketsService, string brokerName, decimal pips, string market)
         {
-            var pipInDecimals = candleService.GetOnePipInDecimals(broker.Name, market);
+            var pipInDecimals = marketsService.GetOnePipInDecimals(brokerName, market);
 
             return pips * pipInDecimals;
         }
 
-        public static decimal GetGBPPerPip(this IBrokersCandlesService candleService,
-            IBroker broker, string market, decimal amount, DateTime date, bool updateCandles)
+        public static decimal GetGBPPerPip(
+            this IBrokersCandlesService candleService,
+            IMarketDetailsService marketsService,
+            IBroker broker, string market, decimal amount,
+            DateTime date, bool updateCandles)
         {
-            var marketDetails = candleService.GetMarketDetails(broker.Name, market);
+            var marketDetails = marketsService.GetMarketDetails(broker.Name, market);
             decimal price = 0M;
 
             // If market contains GBP, then use the market for the price
@@ -123,7 +130,7 @@ namespace TraderTools.Basics.Extensions
                 // Try to get GBP candle, if it exists
                 var marketForPrice = !market.Contains("/") ? $"GBP/{marketDetails.Currency}" : $"GBP/{market.Split('/')[1]}";
 
-                if (!candleService.HasMarketDetails(broker.Name, marketForPrice))
+                if (!marketsService.HasMarketDetails(broker.Name, marketForPrice))
                 {
                     marketForPrice = $"{marketForPrice.Split('/')[1]}/{marketForPrice.Split('/')[0]}";
                 }
@@ -135,7 +142,7 @@ namespace TraderTools.Basics.Extensions
                 else
                 {
                     // Get candle price, if it exists
-                    if (candleService.HasMarketDetails(broker.Name, marketForPrice))
+                    if (marketsService.HasMarketDetails(broker.Name, marketForPrice))
                     {
                         price = (decimal)candleService.GetFirstCandleThatClosesBeforeDateTime(marketForPrice, broker, Timeframe.D1, date, updateCandles).Open;
                     }
@@ -159,9 +166,10 @@ namespace TraderTools.Basics.Extensions
             return amount * (decimal)marketDetails.ContractMultiplier * (decimal)marketDetails.PointSize * price;
         }
 
-        public static decimal GetOnePipInDecimals(this IBrokersCandlesService candleService, string broker, string market)
+        public static decimal GetOnePipInDecimals(this IMarketDetailsService marketsService, string broker, string market)
         {
-            var marketDetails = candleService.GetMarketDetails(broker, market);
+            var marketDetails = marketsService.GetMarketDetails(broker, market);
+
             return marketDetails.PointSize.Value;
         }
     }

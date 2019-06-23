@@ -27,8 +27,6 @@ namespace TraderTools.Core.Services
     {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private Dictionary<string, MarketDetails> _marketDetailsList = new Dictionary<string, MarketDetails>();
-
         public static DateTime EarliestDateTime = new DateTime(2013, 1, 1);
 
         private Dictionary<(IBroker broker, string Market, Timeframe TimeFrame), List<ICandle>> _candlesLookup
@@ -45,7 +43,6 @@ namespace TraderTools.Core.Services
                 _lastUpdated = data.ToDictionary(x => x.Item1, x => x.Item2);
             }
 
-            LoadMarketDetailsList();
         }
 
         public void UpdateCandles(IBroker broker, string market, Timeframe timeframe)
@@ -68,70 +65,6 @@ namespace TraderTools.Core.Services
                 var newLock = new object();
                 _lockLookups[(broker, market, timeframe)] = newLock;
                 return newLock;
-            }
-        }
-
-        public bool HasMarketDetails(string broker, string market)
-        {
-            lock (_marketDetailsList)
-            {
-                return _marketDetailsList.ContainsKey(MarketDetails.GetKey(broker, market));
-            }
-        }
-
-        public MarketDetails GetMarketDetails(string broker, string market)
-        {
-            lock (_marketDetailsList)
-            {
-                _marketDetailsList.TryGetValue(MarketDetails.GetKey(broker, market), out var ret);
-
-                return ret;
-            }
-        }
-
-        public void AddMarketDetails(MarketDetails marketDetails)
-        {
-            lock (_marketDetailsList)
-            {
-                _marketDetailsList[MarketDetails.GetKey(marketDetails.Broker, marketDetails.Name)] = marketDetails;
-            }
-        }
-
-        public void SaveMarketDetailsList()
-        {
-            using (new LogRunTime("Load market details list"))
-            {
-                lock (_marketDetailsList)
-                {
-                    var marketDetailsListPath = Path.Combine(BrokersService.DataDirectory, "MarketDetails.json");
-
-                    File.WriteAllText(
-                        marketDetailsListPath,
-                        JsonConvert.SerializeObject(_marketDetailsList.Values.ToList()));
-                }
-            }
-        }
-
-        public void LoadMarketDetailsList()
-        {
-            using (new LogRunTime("Load market details list"))
-            {
-                lock (_marketDetailsList)
-                {
-                    var marketDetailsListPath = Path.Combine(BrokersService.DataDirectory, "MarketDetails.json");
-
-                    if (File.Exists(marketDetailsListPath))
-                    {
-                        var data = JsonConvert.DeserializeObject<List<MarketDetails>>(
-                            File.ReadAllText(marketDetailsListPath));
-
-                        _marketDetailsList.Clear();
-                        foreach (var d in data)
-                        {
-                            _marketDetailsList[MarketDetails.GetKey(d.Broker, d.Name)] = d;
-                        }
-                    }
-                }
             }
         }
 

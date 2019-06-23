@@ -42,7 +42,11 @@ namespace TraderTools.Core.Broker
 
         public IObservable<BrokerAccountUpdated> AccountUpdatedObservable => _brokerAccountUpdatedSubject.AsObservable();
 
-        public static BrokerAccount LoadAccount(string dataPath, IBroker broker, IBrokersCandlesService candles)
+        public static BrokerAccount LoadAccount(
+            string dataPath,
+            IBroker broker,
+            IBrokersCandlesService candles,
+            ITradeDetailsAutoCalculatorService tradeCalculatorService)
         {
             var accountPath = Path.Combine(dataPath, "BrokerAccounts", $"{broker.Name}_Account.json");
 
@@ -59,7 +63,7 @@ namespace TraderTools.Core.Broker
 
                 if (trade.DataVersion == 0)
                 {
-                    broker.RecalculateTrade(account, candles, trade);
+                    tradeCalculatorService.AddTrade(trade);
                     trade.DataVersion = TradeDetails.CurrentDataVersion;
                 }
             }
@@ -135,7 +139,11 @@ namespace TraderTools.Core.Broker
             ForceUpdate
         }
 
-        public void UpdateBrokerAccount(IBroker broker, IBrokersCandlesService candleService, UpdateOption option = UpdateOption.OnlyIfNotRecentlyUpdated)
+        public void UpdateBrokerAccount(
+            IBroker broker,
+            IBrokersCandlesService candleService,
+            ITradeDetailsAutoCalculatorService tradeCalculateService,
+            UpdateOption option = UpdateOption.OnlyIfNotRecentlyUpdated)
         {
             if (option == UpdateOption.OnlyIfNotRecentlyUpdated && (AccountLastUpdated != null && (DateTime.UtcNow - AccountLastUpdated.Value).TotalHours < 24))
             {
@@ -151,7 +159,7 @@ namespace TraderTools.Core.Broker
             foreach (var trade in Trades)
             {
                 trade.Initialise();
-                broker.RecalculateTrade(this, candleService, trade);
+                tradeCalculateService.AddTrade(trade);
             }
 
             Log.Info($"Completed updating {broker.Name} trades");

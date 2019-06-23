@@ -19,13 +19,13 @@
             ContractMultiplier = contractMultiplier;
         }
 
-        public int? Digits { get; internal set; }
-        public decimal? PointSize { get; internal set; }
-        public int? MinLotSize { get; internal set; }
-        public decimal? ContractMultiplier { get; internal set; }
-        public string Currency { get; internal set; }
-        public string Name { get; internal set; }
-        public string Broker { get; internal set; }
+        public int? Digits { get; set; }
+        public decimal? PointSize { get; set; }
+        public int? MinLotSize { get; set; }
+        public decimal? ContractMultiplier { get; set; }
+        public string Currency { get; set; }
+        public string Name { get; set; }
+        public string Broker { get; set; }
 
         public static string GetKey(string broker, string market)
         {

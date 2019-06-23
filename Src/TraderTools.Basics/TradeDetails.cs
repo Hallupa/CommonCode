@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -337,11 +338,27 @@ namespace TraderTools.Basics
         }
 
         public decimal? OrderAmount { get; set; }
-        
-        public List<DatePrice> StopPrices { get; set; } = new List<DatePrice>();
-        
-        public List<DatePrice> LimitPrices { get; set; } = new List<DatePrice>();
-        
+
+        public List<DatePrice> StopPrices
+        {
+            get => _stopPrices;
+            set
+            {
+                _stopPrices = value; 
+                OnPropertyChanged();
+            }
+        }
+
+        public List<DatePrice> LimitPrices
+        {
+            get => _limitPrices;
+            set
+            {
+                _limitPrices = value; 
+                OnPropertyChanged();
+            }
+        }
+
         public decimal? RiskAmount { get; set; }
         
         public decimal? RiskPercentOfBalance { get; set; }
@@ -442,10 +459,11 @@ namespace TraderTools.Basics
             OrderAmount = orderAmount;
         }
 
-        public void SetEntry(DateTime dateTime, decimal price)
+        public void SetEntry(DateTime dateTime, decimal price, decimal amount)
         {
             EntryDateTime = dateTime;
             EntryPrice = price;
+            EntryQuantity = amount;
 
             if (OrderDateTime == null)
             {
@@ -454,6 +472,9 @@ namespace TraderTools.Basics
         }
 
         private OrderType? _orderType;
+        private List<DatePrice> _limitPrices = new List<DatePrice>();
+        private List<DatePrice> _stopPrices = new List<DatePrice>();
+
         public void AddStopPrice(DateTime date, decimal? price)
         {
             if (StopPrices.Count > 0 && StopPrices.Last().Price == price)
