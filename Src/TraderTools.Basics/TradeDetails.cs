@@ -207,6 +207,46 @@ namespace TraderTools.Basics
             }
         }
 
+        public decimal? CommissionValue
+        {
+            get => _commissionValue;
+            set
+            {
+                _commissionValue = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public string CommissionValueCurrency
+        {
+            get => _commissionValueCurrency;
+            set
+            {
+                _commissionValueCurrency = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public decimal? EntryValue
+        {
+            get => _entryValue;
+            set
+            {
+                _entryValue = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public string EntryValueCurrency
+        {
+            get => _entryValueCurrency;
+            set
+            {
+                _entryValueCurrency = value;
+                OnPropertyChanged();
+            }
+        }
+
         public decimal? NetProfitLoss
         {
             get => _netProfitLoss;
@@ -474,6 +514,10 @@ namespace TraderTools.Basics
         private OrderType? _orderType;
         private List<DatePrice> _limitPrices = new List<DatePrice>();
         private List<DatePrice> _stopPrices = new List<DatePrice>();
+        private string _commissionValueCurrency;
+        private decimal? _commissionValue;
+        private decimal? _entryValue;
+        private string _entryValueCurrency;
 
         public void AddStopPrice(DateTime date, decimal? price)
         {

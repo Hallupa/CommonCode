@@ -18,6 +18,7 @@ namespace TraderTools.Core.Services
         [Import] private IBrokersCandlesService candlesService;
         [Import] private BrokersService _brokersService;
         [Import] private IMarketDetailsService _marketsService;
+        private CalculateOptions _options = CalculateOptions.All;
 
         public void AddTrade(TradeDetails trade)
         {
@@ -25,6 +26,11 @@ namespace TraderTools.Core.Services
             trade.PropertyChanged -= TradeOnPropertyChanged;
             trade.PropertyChanged += TradeOnPropertyChanged;
             TradeOnPropertyChanged(trade, new PropertyChangedEventArgs(string.Empty));
+        }
+
+        public void SetOptions(CalculateOptions options)
+        {
+            _options = options;
         }
 
         public void RemoveTrade(TradeDetails trade)
@@ -218,18 +224,10 @@ namespace TraderTools.Core.Services
                 trade.InitialLimitInPips = null;
             }
 
-            // Update price/pip
-            if (trade.EntryQuantity != null && trade.EntryDateTime != null)
+            // Update price per pip
+            if (!_options.HasFlag(CalculateOptions.ExcludePricePerPip))
             {
-                if (broker != null)
-                {
-                    trade.PricePerPip = candlesService.GetGBPPerPip(_marketsService, broker, trade.Market,
-                        trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
-                }
-                else
-                {
-                    trade.PricePerPip = null;
-                }
+                UpdateTradePricePerPip(trade, broker);
             }
 
             // Update risk
@@ -280,6 +278,23 @@ namespace TraderTools.Core.Services
             else
             {
                 trade.RMultiple = null;
+            }
+        }
+
+        private void UpdateTradePricePerPip(TradeDetails trade, IBroker broker)
+        {
+            // Update price/pip
+            if (trade.EntryQuantity != null && trade.EntryDateTime != null)
+            {
+                if (broker != null)
+                {
+                    trade.PricePerPip = candlesService.GetGBPPerPip(_marketsService, broker, trade.Market,
+                        trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
+                }
+                else
+                {
+                    trade.PricePerPip = null;
+                }
             }
         }
     }

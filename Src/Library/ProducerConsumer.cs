@@ -29,6 +29,8 @@ namespace Hallupa.Library
             _queue = new Queue<T>();
         }
 
+        public bool IsCanceled => _cancel;
+
         public void Start()
         {
             _consumerTasks = new List<Task>();

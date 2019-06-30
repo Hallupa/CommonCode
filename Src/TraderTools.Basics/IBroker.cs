@@ -30,12 +30,13 @@ namespace TraderTools.Basics
     public interface IBroker
     {
         string Name { get; }
-        bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService);
+        bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService, Action<string> updateProgressAction);
         bool UpdateCandles(List<ICandle> candles, string market, Timeframe timeframe, DateTime start);
         void Connect();
         ConnectStatus Status { get; }
         BrokerKind Kind { get; }
         List<TickData> GetTickData(IBroker broker, string market, DateTime utcStart, DateTime utcEnd);
         List<MarketDetails> GetMarketDetailsList();
+        ICandle GetSingleCandle(string market, Timeframe timeframe, DateTime date);
     }
 }

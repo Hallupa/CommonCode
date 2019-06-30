@@ -41,7 +41,7 @@
             </DataGrid.ContextMenu>
 
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Status" Binding="{Binding Status, Mode=OneWay}" IsReadOnly="True" Width="65">
+                <DataGridTextColumn Header="Status" Binding="{Binding Status, Mode=OneWay}" IsReadOnly="True" Width="65" Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.Status}, Mode=OneWay}">
                     <DataGridTextColumn.CellStyle>
                         <Style TargetType="{x:Type DataGridCell}">
                             <Setter Property="Background" Value="{Binding ., Converter={StaticResource StatusToColour}}" />
@@ -64,6 +64,8 @@
                 <DataGridComboBoxColumn Header="T" SelectedItemBinding="{Binding Timeframe}" ItemsSource="{Binding Data.TimeFrameItems, Source={StaticResource Proxy}, UpdateSourceTrigger=PropertyChanged}" Width="55" Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.Timeframe}, Mode=OneWay}"/>
                 <DataGridTextColumn Header="Close price" Binding="{Binding ClosePrice, StringFormat={}{0:0.0000}, Mode=OneWay}" IsReadOnly="True" Width="68" Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.ClosePrice}, Mode=OneWay}"/>
                 <DataGridTextColumn Header="Quantity" Binding="{Binding EntryQuantity, StringFormat={}{0:0.00000}, Mode=OneWay}" IsReadOnly="True" Width="75" Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.Quantity}, Mode=OneWay}"/>
+                <DataGridTextColumn Header="Entry value" Binding="{Binding EntryValue, StringFormat={}{0:0.0000}, Mode=OneWay}" IsReadOnly="True" Width="68" Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.EntryValue}, Mode=OneWay}"/>
+                <DataGridTextColumn Header="Commission value" Binding="{Binding CommissionValue, StringFormat={}{0:0.0000}, Mode=OneWay}" IsReadOnly="True" Width="68" Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.EntryValue}, Mode=OneWay}"/>
 
                 <DataGridTemplateColumn Header="Stop" Width="75"
                                         Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.Stop}, Mode=OneWay}">
@@ -121,8 +123,8 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTextColumn Header="Risking" Binding="{Binding RiskAmount, StringFormat={}£{0:0.00}, Mode=OneWay}" IsReadOnly="True" Width="60"/>
-                <DataGridTextColumn Header="Risk %" Binding="{Binding RiskPercentOfBalance, StringFormat={}{0:0.00}%, Mode=OneWay}" IsReadOnly="True" Width="55"/>
+                <DataGridTextColumn Header="Risking" Binding="{Binding RiskAmount, StringFormat={}£{0:0.00}, Mode=OneWay}" IsReadOnly="True" Width="60" Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.Risk}, Mode=OneWay}"/>
+                <DataGridTextColumn Header="Risk %" Binding="{Binding RiskPercentOfBalance, StringFormat={}{0:0.00}%, Mode=OneWay}" IsReadOnly="True" Width="55" Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.Risk}, Mode=OneWay}"/>
                 <DataGridTextColumn Header="Profit" Binding="{Binding Profit, StringFormat={}£{0:0.00}, Mode=OneWay}" IsReadOnly="True" Width="60">
                     <DataGridTextColumn.CellStyle>
                         <Style TargetType="{x:Type DataGridCell}">
@@ -138,7 +140,8 @@
                 </DataGridTextColumn>
                 <DataGridTextColumn Header="Result R" Binding="{Binding RMultiple, StringFormat={}{0:0.00}, Mode=OneWay}" IsReadOnly="True" Width="60" Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.ResultR}, Mode=OneWay}"/>
                 
-                <DataGridTemplateColumn Header="Strategies" Width="350" IsReadOnly="False">
+                <DataGridTemplateColumn Header="Strategies" Width="350" IsReadOnly="False"
+                                        Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.Strategies}, Mode=OneWay}">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <tokenEditor:TokenContainerControl SelectedItemsCSV="{Binding Path=Strategies, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1"/> 

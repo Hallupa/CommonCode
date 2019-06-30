@@ -125,7 +125,10 @@ namespace TraderTools.Core.UI.ViewModels
                                                      | TradeListDisplayOptionsFlag.Comments
                                                      | TradeListDisplayOptionsFlag.ResultR
                                                      | TradeListDisplayOptionsFlag.Broker
-                                                     | TradeListDisplayOptionsFlag.Timeframe;
+                                                     | TradeListDisplayOptionsFlag.Timeframe
+                                                     | TradeListDisplayOptionsFlag.Strategies
+                                                     | TradeListDisplayOptionsFlag.Risk
+                                                     | TradeListDisplayOptionsFlag.Status;
 
         protected TradeDetails TradeShowingOnChart { get; private set; }
         public DelegateCommand ViewTradeCommand { get; private set; }

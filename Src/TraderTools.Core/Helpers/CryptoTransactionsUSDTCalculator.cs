@@ -1,23 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows.Forms;
 using TraderTools.Basics;
 
 namespace TraderTools.Core.Helpers
 {
-    public class CryptoTransactionsCalculator
+    public class CryptoTransactionsUSDTCalculator
     {
         #region Fields
         private readonly IBrokersCandlesService _candlesService;
-        private readonly IBroker _fxcmBroker;
         private readonly IBroker _binanceBroker;
         #endregion
 
         #region Constructors
-        public CryptoTransactionsCalculator(IBrokersCandlesService candlesService, IBroker fxcmBroker, IBroker binanceBroker)
+        public CryptoTransactionsUSDTCalculator(IBrokersCandlesService candlesService, IBroker binanceBroker)
         {
             _candlesService = candlesService;
-            _fxcmBroker = fxcmBroker;
             _binanceBroker = binanceBroker;
         }
         #endregion
@@ -89,7 +88,7 @@ namespace TraderTools.Core.Helpers
             return txns;
         }
 
-        public List<Transaction> CalculateTransactions(
+       /*public List<Transaction> CalculateTransactions(
             List<TradeDetails> trades, List<DepositWithdrawal> depositWithdrawals, bool updateCandles)
         {
             var ret = new List<Transaction>();
@@ -102,12 +101,12 @@ namespace TraderTools.Core.Helpers
             // Get fiat values
             foreach (var t in ret)
             {
-                var gbpValue = AssetValueCalculator.GetAsetGbpValue(_candlesService, _binanceBroker, _fxcmBroker, t.Asset1, t.DateTimeStart, t.Amount, out var success, updateCandles);
+                var gbpValue = AssetValueCalculator.GetCryptoAssetApproxUsdValue(_candlesService, _binanceBroker, t.Asset1, t.DateTimeStart, t.Amount, out var success, updateCandles);
 
                 if (!success && !string.IsNullOrEmpty(t.Asset2))
                 {
                     // Try calculating with asset 2
-                    gbpValue = AssetValueCalculator.GetAsetGbpValue(_candlesService, _binanceBroker, _fxcmBroker, t.Asset2, t.DateTimeStart, t.Amount * t.Price, out success, updateCandles);
+                    gbpValue = AssetValueCalculator.GetCryptoAssetApproxUsdValue(_candlesService, _binanceBroker, t.Asset2, t.DateTimeStart, t.Amount * t.Price, out success, updateCandles);
                 }
 
                 if (!success && t.TransactionType != TransactionType.Withdraw && t.TransactionType != TransactionType.Deposit)
@@ -126,11 +125,6 @@ namespace TraderTools.Core.Helpers
             foreach (var t in trades)
             {
                 if (t.EntryDateTime == null || t.EntryQuantity == 0M) continue;
-
-                if (t.Id == "Kraken_TRRWUB-DQGTS-G65USW")
-                {
-
-                }
 
                 ret.Add(new Transaction
                 {
@@ -160,7 +154,7 @@ namespace TraderTools.Core.Helpers
                     });
                 }
             }
-        }
+        }*/
 
         private static void AddTransactions(List<DepositWithdrawal> depositWithdrawals, List<Transaction> ret)
         {
@@ -206,51 +200,52 @@ namespace TraderTools.Core.Helpers
             var simplifiedTrades = new List<TradeDetails>();
             foreach (var groupedTradesByOrderId in groupedTradesByOrderIdList)
             {
-                TradeDetails trade = null;
-
-                foreach (var t in groupedTradesByOrderId)
+                var firstTrade = groupedTradesByOrderId.First();
+                var trade = new TradeDetails
                 {
-                    if (trade == null)
-                    {
-                        trade = new TradeDetails
-                        {
-                            BaseAsset = t.BaseAsset,
-                            Broker = t.Broker,
-                            Comments = t.Comments,
-                            Strategies = t.Strategies,
-                            OrderId = t.OrderId,
-                            CommissionAsset = t.CommissionAsset,
-                            Commission = t.Commission,
-                            OrderDateTime = t.OrderDateTime,
-                            OrderAmount = t.OrderAmount,
-                            EntryDateTime = t.EntryDateTime,
-                            EntryQuantity = t.EntryQuantity,
-                            Timeframe = t.Timeframe,
-                            EntryPrice = t.EntryPrice,
-                            Market = t.Market,
-                            Id = t.Id,
-                            OrderKind = t.OrderKind,
-                            UniqueId = t.UniqueId,
-                            TradeDirection = t.TradeDirection
-                        };
+                    BaseAsset = firstTrade.BaseAsset,
+                    Broker = firstTrade.Broker,
+                    Comments = firstTrade.Comments,
+                    Strategies = firstTrade.Strategies,
+                    OrderId = firstTrade.OrderId,
+                    CommissionAsset = firstTrade.CommissionAsset,
+                    Commission = firstTrade.Commission,
+                    OrderDateTime = firstTrade.OrderDateTime,
+                    OrderAmount = groupedTradesByOrderId.Any(x => x.OrderAmount != null)
+                        ? groupedTradesByOrderId.Where(x => x.OrderAmount != null).Sum(x => x.OrderAmount)
+                        : null,
+                    EntryDateTime = firstTrade.EntryDateTime,
+                    EntryQuantity = groupedTradesByOrderId.Any(x => x.EntryQuantity != null)
+                        ? groupedTradesByOrderId.Where(x => x.EntryQuantity != null).Sum(x => x.EntryQuantity)
+                        : null,
+                    Timeframe = firstTrade.Timeframe,
+                    Market = firstTrade.Market,
+                    Id = firstTrade.Id,
+                    OrderKind = firstTrade.OrderKind,
+                    UniqueId = firstTrade.UniqueId,
+                    TradeDirection = firstTrade.TradeDirection
+                };
 
-                        simplifiedTrades.Add(trade);
-                    }
-                    else
-                    {
-                        trade.EntryPrice = ((trade.EntryPrice * trade.EntryQuantity) +
-                                            (t.EntryPrice * t.EntryQuantity))
-                                           / (trade.EntryQuantity + t.EntryQuantity);
-                        trade.EntryQuantity = trade.EntryQuantity.Value + t.EntryQuantity.Value;
-                        trade.Commission = trade.Commission.Value + t.Commission.Value;
-                        trade.OrderAmount = trade.OrderAmount ?? 0M + t.OrderAmount ?? 0M;
-                    }
-                }
+                trade.EntryPrice = groupedTradesByOrderId.Any(x => x.EntryPrice != null)
+                    ? groupedTradesByOrderId.Where(x => x.EntryPrice != null).Sum(x => x.EntryPrice * x.EntryQuantity) /
+                      trade.EntryQuantity
+                    : null;
+
+                trade.OrderPrice = groupedTradesByOrderId.Any(x => x.OrderPrice != null)
+                    ? groupedTradesByOrderId.Where(x => x.OrderPrice != null).Sum(x => x.OrderPrice * x.OrderAmount) /
+                      trade.OrderAmount
+                    : null;
+
+                trade.CommissionValueCurrency = groupedTradesByOrderId.First().CommissionValueCurrency;
+                trade.EntryValueCurrency = groupedTradesByOrderId.First().EntryValueCurrency;
+                trade.EntryValue = groupedTradesByOrderId.Where(x => x.EntryValue != null).Sum(x => x.EntryValue.Value);
+                trade.CommissionValue = groupedTradesByOrderId.Where(x => x.CommissionValue != null).Sum(x => x.CommissionValue.Value);
+
+                simplifiedTrades.Add(trade);
             }
 
             return simplifiedTrades;
         }
-
     }
 
     public enum TransactionType

@@ -66,10 +66,6 @@
       <Project>{610CED3A-FFEF-45D5-B0C0-B4F79F320509}</Project>
       <Name>TraderTools.Basics</Name>
     </ProjectReference>
-    <ProjectReference Include="..\TraderTools.Brokers.FXCM\TraderTools.Brokers.FXCM.csproj">
-      <Project>{89047D98-156E-4BA0-B71E-121F7E26806E}</Project>
-      <Name>TraderTools.Brokers.FXCM</Name>
-    </ProjectReference>
     <ProjectReference Include="..\TraderTools.Core.UI\TraderTools.Core.UI.csproj">
       <Project>{2A2CF3F9-24AD-46E9-A341-75BDD4B191D1}</Project>
       <Name>TraderTools.Core.UI</Name>
