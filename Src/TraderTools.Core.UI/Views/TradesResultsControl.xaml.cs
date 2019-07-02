@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace TraderTools.Core.UI.Views
 {
@@ -23,13 +24,6 @@ namespace TraderTools.Core.UI.Views
             set { SetValue(DisableMouseWheelScrollProperty, value); }
         }
 
-        private void RowDoubleClick(object sender, RoutedEventArgs e)
-        {
-            var row = (DataGridRow)sender;
-            row.DetailsVisibility = row.DetailsVisibility == Visibility.Collapsed ?
-                Visibility.Visible : Visibility.Collapsed;
-        }
-
         private void UIElement_OnPreviewMouseWheel(object sender, MouseWheelEventArgs e)
         {
             if (DisableMouseWheelScroll)
@@ -43,6 +37,28 @@ namespace TraderTools.Core.UI.Views
                 var parent = ((Control)sender).Parent as UIElement;
                 parent.RaiseEvent(eventArg);
             }
+        }
+
+        private void Expander_Expanded(object sender, RoutedEventArgs e)
+        {
+            for (var vis = sender as Visual; vis != null; vis = VisualTreeHelper.GetParent(vis) as Visual)
+                if (vis is DataGridRow)
+                {
+                    var row = (DataGridRow)vis;
+                    row.DetailsVisibility = row.DetailsVisibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+                    break;
+                }
+        }
+
+        private void Expander_Collapsed(object sender, RoutedEventArgs e)
+        {
+            for (var vis = sender as Visual; vis != null; vis = VisualTreeHelper.GetParent(vis) as Visual)
+                if (vis is DataGridRow)
+                {
+                    var row = (DataGridRow)vis;
+                    row.DetailsVisibility = row.DetailsVisibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+                    break;
+                }
         }
     }
 }

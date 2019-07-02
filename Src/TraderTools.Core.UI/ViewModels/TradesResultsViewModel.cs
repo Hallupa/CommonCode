@@ -85,7 +85,7 @@ namespace TraderTools.Core.UI.ViewModels
 
         public void UpdateResults()
         {
-            var trades = _getTradesFunc();
+            var trades = _getTradesFunc().Where(t => t.EntryDateTime != null).ToList();
 
             var groupedTrades = GetGroupedTrades(trades);
             if (groupedTrades == null)

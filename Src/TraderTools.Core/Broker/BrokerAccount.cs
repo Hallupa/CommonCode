@@ -142,6 +142,7 @@ namespace TraderTools.Core.Broker
         public void UpdateBrokerAccount(
             IBroker broker,
             IBrokersCandlesService candleService,
+            IMarketDetailsService marketsService,
             ITradeDetailsAutoCalculatorService tradeCalculateService,
             UpdateOption option = UpdateOption.OnlyIfNotRecentlyUpdated)
         {
@@ -152,7 +153,7 @@ namespace TraderTools.Core.Broker
 
             Log.Info($"Updating {broker.Name} account");
 
-            broker.UpdateAccount(this, candleService);
+            broker.UpdateAccount(this, candleService, marketsService);
 
             AccountLastUpdated = DateTime.UtcNow;
 

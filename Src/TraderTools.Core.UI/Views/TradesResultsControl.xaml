@@ -41,11 +41,13 @@
         <DataGrid Grid.Row="1" Grid.ColumnSpan="4" ScrollViewer.CanContentScroll="False" AutoGenerateColumns="False" ClipboardCopyMode="IncludeHeader"
                   EnableRowVirtualization="True"
                   ItemsSource="{Binding Results}" CanUserAddRows="False" RowDetailsVisibilityMode="Collapsed" PreviewMouseWheel="UIElement_OnPreviewMouseWheel">
-            <DataGrid.RowStyle>
-                <Style TargetType="{x:Type DataGridRow}">
-                    <EventSetter Event="MouseDoubleClick" Handler="RowDoubleClick"/>
-                </Style>
-            </DataGrid.RowStyle>
+
+            <DataGrid.RowHeaderTemplate>
+                <DataTemplate>
+                    <Expander Expanded="Expander_Expanded" Collapsed="Expander_Collapsed"/>
+                </DataTemplate>
+            </DataGrid.RowHeaderTemplate>
+
             <DataGrid.Columns>
                 <DataGridTextColumn Binding="{Binding Name}" Header="Name" Width="200" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding TradesCount}" Header="# trades" IsReadOnly="True"/>

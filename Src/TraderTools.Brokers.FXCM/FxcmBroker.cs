@@ -13,6 +13,7 @@ using Hallupa.Library;
 using log4net;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
+using TraderTools.Core.Services;
 
 namespace TraderTools.Brokers.FXCM
 {
@@ -134,19 +135,19 @@ namespace TraderTools.Brokers.FXCM
             return tableManager;
         }
 
-        public bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService)
+        public bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService)
         {
             var tableManager = GetTableManager();
 
             // Get open trades
-            var updated = GetOpenTrades(account, candlesService, tableManager, out var openTrades);
+            var updated = GetOpenTrades(account, candlesService, marketsService, tableManager, out var openTrades);
 
-            updated = GetClosedTrades(account, candlesService, tableManager, out var closedTrades) || updated;
+            updated = GetClosedTrades(account, candlesService, marketsService, tableManager, out var closedTrades) || updated;
 
-            updated = GetOrders(account, candlesService, tableManager, out var orders) || updated;
+            updated = GetOrders(account, candlesService, marketsService, tableManager, out var orders) || updated;
 
             // Update trades from reports API
-            updated = GetReportTrades(account, candlesService) || updated;
+            updated = GetReportTrades(account, candlesService, marketsService) || updated;
 
             // Set any open trades to closed that aren't in the open list
             foreach (var trade in account.Trades.Where(t =>
@@ -172,7 +173,7 @@ namespace TraderTools.Brokers.FXCM
             return updated;
         }
 
-        private bool GetClosedTrades(IBrokerAccount account, IBrokersCandlesService candlesService,
+        private bool GetClosedTrades(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService,
             O2GTableManager tableManager, out List<TradeDetails> openTradesFound)
         {
             O2GTableIterator iterator;
@@ -202,7 +203,7 @@ namespace TraderTools.Brokers.FXCM
                     trade.GrossProfitLoss = (decimal)tradeRow.GrossPL;
                     trade.TradeDirection = tradeRow.BuySell == "S" ? TradeDirection.Short : TradeDirection.Long;
                     trade.PricePerPip = candlesService.GetGBPPerPip(
-                        this, trade.Market, trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
+                        marketsService, this, trade.Market, trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
 
                     addedOrUpdatedOpenTrade = true;
                 }
@@ -236,7 +237,7 @@ namespace TraderTools.Brokers.FXCM
                     {
                         trade.EntryQuantity = (decimal)tradeRow.Amount;
                         trade.PricePerPip = candlesService.GetGBPPerPip(
-                            this, trade.Market, trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
+                            marketsService, this, trade.Market, trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
 
                         addedOrUpdatedOpenTrade = true;
                     }
@@ -254,7 +255,7 @@ namespace TraderTools.Brokers.FXCM
             return addedOrUpdatedOpenTrade;
         }
                 
-        private bool GetOpenTrades(IBrokerAccount account, IBrokersCandlesService candlesService,
+        private bool GetOpenTrades(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService,
             O2GTableManager tableManager, out List<TradeDetails> openTradesFound)
         {
             O2GTableIterator iterator;
@@ -293,7 +294,7 @@ namespace TraderTools.Brokers.FXCM
                     trade.GrossProfitLoss = (decimal)tradeRow.GrossPL;
                     trade.TradeDirection = tradeRow.BuySell == "S" ? TradeDirection.Short : TradeDirection.Long;
                     trade.PricePerPip = candlesService.GetGBPPerPip(
-                        this, trade.Market, trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
+                        marketsService, this, trade.Market, trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
 
                     addedOrUpdatedOpenTrade = true;
                 }
@@ -321,7 +322,7 @@ namespace TraderTools.Brokers.FXCM
                     {
                         trade.EntryQuantity = (decimal)tradeRow.Amount;
                         trade.PricePerPip = candlesService.GetGBPPerPip(
-                            this, trade.Market, trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
+                            marketsService, this, trade.Market, trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
 
                         addedOrUpdatedOpenTrade = true;
                     }
@@ -359,7 +360,7 @@ namespace TraderTools.Brokers.FXCM
             return addedOrUpdatedOpenTrade;
         }
 
-        private bool GetOrders(IBrokerAccount account, IBrokersCandlesService candlesService,
+        private bool GetOrders(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService,
             O2GTableManager tableManager, out List<TradeDetails> orders)
         {
             orders = new List<TradeDetails>();
@@ -410,8 +411,8 @@ namespace TraderTools.Brokers.FXCM
                 var instrument = orderOffer.Instrument;
                 var orderPrice = orderOrder.Rate;
                 var buySell = orderOrder.BuySell;
-                decimal? stop = GetStopPrice(stopOrder, candlesService, instrument, (decimal)orderPrice, buySell);
-                decimal? limit = GetLimitPrice(limitOrder, candlesService, instrument, (decimal)orderPrice, buySell);
+                decimal? stop = GetStopPrice(stopOrder, candlesService, marketsService, instrument, (decimal)orderPrice, buySell);
+                decimal? limit = GetLimitPrice(limitOrder, candlesService, marketsService, instrument, (decimal)orderPrice, buySell);
                 var amount = orderOrder.Amount;
                 var actualExpiry = orderOrder.ExpireDate.Year >= 1950 ? (DateTime?)expiry : null;
 
@@ -427,7 +428,7 @@ namespace TraderTools.Brokers.FXCM
                     trade.OrderPrice = (decimal)orderPrice;
                     trade.OrderDateTime = time;
                     trade.OrderExpireTime = actualExpiry;
-                    trade.PricePerPip = candlesService.GetGBPPerPip(this, trade.Market, orderOrder.Amount, time, true);
+                    trade.PricePerPip = candlesService.GetGBPPerPip(marketsService, this, trade.Market, orderOrder.Amount, time, true);
 
                     if (stop != null)
                     {
@@ -455,7 +456,7 @@ namespace TraderTools.Brokers.FXCM
                     {
                         trade.OrderAmount = orderOrder.Amount;
                         trade.PricePerPip = 
-                            candlesService.GetGBPPerPip(this, trade.Market, trade.OrderAmount.Value, trade.OrderDateTime.Value, true);
+                            candlesService.GetGBPPerPip(marketsService, this, trade.Market, trade.OrderAmount.Value, trade.OrderDateTime.Value, true);
                         addedOrUpdatedOpenTrade = true;
                     }
 
@@ -504,7 +505,7 @@ namespace TraderTools.Brokers.FXCM
             return addedOrUpdatedOpenTrade;
         }
 
-        private decimal? GetStopPrice(O2GOrderTableRow stop, IBrokersCandlesService candles, string instrument, decimal orderPrice, string buySell)
+        private decimal? GetStopPrice(O2GOrderTableRow stop, IBrokersCandlesService candles, IMarketDetailsService marketsService, string instrument, decimal orderPrice, string buySell)
         {
             if (stop == null)
             {
@@ -521,14 +522,14 @@ namespace TraderTools.Brokers.FXCM
             {
                 ret = (decimal)orderPrice +
                       (buySell == "B"
-                          ? -candles.GetPriceFromPips(this, Math.Abs((decimal)stop.PegOffset), instrument)
-                          : candles.GetPriceFromPips(this, Math.Abs((decimal)stop.PegOffset), instrument));
+                          ? -marketsService.GetPriceFromPips(this.Name, Math.Abs((decimal)stop.PegOffset), instrument)
+                          : marketsService.GetPriceFromPips(this.Name, Math.Abs((decimal)stop.PegOffset), instrument));
             }
 
             return ret;
         }
 
-        private decimal? GetLimitPrice(O2GOrderTableRow limit, IBrokersCandlesService candles, string instrument, decimal orderPrice, string buySell)
+        private decimal? GetLimitPrice(O2GOrderTableRow limit, IBrokersCandlesService candles, IMarketDetailsService marketsService, string instrument, decimal orderPrice, string buySell)
         {
             if (limit == null)
             {
@@ -545,14 +546,14 @@ namespace TraderTools.Brokers.FXCM
             {
                 ret = (decimal)orderPrice +
                       (buySell == "B"
-                          ? candles.GetPriceFromPips(this, Math.Abs((decimal)limit.PegOffset), instrument)
-                          : -candles.GetPriceFromPips(this, Math.Abs((decimal)limit.PegOffset), instrument));
+                          ? marketsService.GetPriceFromPips(this.Name, Math.Abs((decimal)limit.PegOffset), instrument)
+                          : -marketsService.GetPriceFromPips(this.Name, Math.Abs((decimal)limit.PegOffset), instrument));
             }
 
             return ret;
         }
 
-        private bool GetReportTrades(IBrokerAccount brokerAccount, IBrokersCandlesService candlesService)
+        private bool GetReportTrades(IBrokerAccount brokerAccount, IBrokersCandlesService candlesService, IMarketDetailsService marketsService)
         {
             var updated = false;
             var url = "https://fxpa2.fxcorporate.com/fxpa/getreport.app/";
@@ -658,7 +659,7 @@ namespace TraderTools.Brokers.FXCM
                 };
 
                 trade.PricePerPip = candlesService.GetGBPPerPip(
-                    this, trade.Market,  trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
+                    marketsService, this, trade.Market,  trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
 
                 switch (condition2)
                 {

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using TraderTools.Core.Services;
 
 namespace TraderTools.Basics
 {
@@ -30,7 +31,7 @@ namespace TraderTools.Basics
     public interface IBroker
     {
         string Name { get; }
-        bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService);
+        bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService);
         bool UpdateCandles(List<ICandle> candles, string market, Timeframe timeframe, DateTime start);
         void Connect();
         ConnectStatus Status { get; }
