@@ -20,7 +20,11 @@ namespace TraderTools.Core.UI.Views
         ResultR = 128,
         OrderPrice = 256,
         ClosePrice = 512,
-        Timeframe = 1024
+        Timeframe = 1024,
+        EntryValue = 2048,
+        Strategies = 4096,
+        Risk = 8192,
+        Status = 16384
     }
 
     /// <summary>

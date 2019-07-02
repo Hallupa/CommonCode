@@ -146,6 +146,20 @@ namespace TraderTools.Core.Broker
             ITradeDetailsAutoCalculatorService tradeCalculateService,
             UpdateOption option = UpdateOption.OnlyIfNotRecentlyUpdated)
         {
+            void UpdateProgressAction(string txt)
+            {
+            }
+
+            UpdateBrokerAccount(broker, candleService, tradeCalculateService, UpdateProgressAction, option);
+        }
+
+        public void UpdateBrokerAccount(
+            IBroker broker,
+            IBrokersCandlesService candleService,
+            ITradeDetailsAutoCalculatorService tradeCalculateService,
+            Action<string> updateProgressAction,
+            UpdateOption option = UpdateOption.OnlyIfNotRecentlyUpdated)
+        {
             if (option == UpdateOption.OnlyIfNotRecentlyUpdated && (AccountLastUpdated != null && (DateTime.UtcNow - AccountLastUpdated.Value).TotalHours < 24))
             {
                 return;
@@ -153,9 +167,36 @@ namespace TraderTools.Core.Broker
 
             Log.Info($"Updating {broker.Name} account");
 
-            broker.UpdateAccount(this, candleService, marketsService);
+            foreach (var t in Trades)
+            {
+                tradeCalculateService.RemoveTrade(t);
+            }
+
+            broker.UpdateAccount(this, candleService, updateProgressAction);
 
             AccountLastUpdated = DateTime.UtcNow;
+
+            foreach (var trade in Trades)
+            {
+                trade.Initialise();
+                tradeCalculateService.AddTrade(trade);
+            }
+
+            Log.Info($"Completed updating {broker.Name} trades");
+            _brokerAccountUpdatedSubject.OnNext(new BrokerAccountUpdated(this));
+        }
+
+        public void SetTrades(List<TradeDetails> trades, ITradeDetailsAutoCalculatorService tradeCalculateService, IBroker broker)
+        {
+            AccountLastUpdated = DateTime.UtcNow;
+
+            foreach (var t in Trades)
+            {
+                tradeCalculateService.RemoveTrade(t);
+            }
+
+            Trades.Clear();
+            Trades.AddRange(trades);
 
             foreach (var trade in Trades)
             {

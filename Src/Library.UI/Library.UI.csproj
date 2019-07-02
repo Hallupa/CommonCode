@@ -118,6 +118,10 @@
     <Compile Include="TokenEditor\TokenControl.xaml.cs">
       <DependentUpon>TokenControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ViewModels\ProgressViewModel.cs" />
+    <Compile Include="Views\ProgressView.xaml.cs">
+      <DependentUpon>ProgressView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="VisualHelper.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -130,6 +134,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="TokenEditor\TokenControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\ProgressView.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
