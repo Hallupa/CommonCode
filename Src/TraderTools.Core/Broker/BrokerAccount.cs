@@ -150,13 +150,14 @@ namespace TraderTools.Core.Broker
             {
             }
 
-            UpdateBrokerAccount(broker, candleService, tradeCalculateService, UpdateProgressAction, option);
+            UpdateBrokerAccount(broker, candleService, tradeCalculateService, marketsService, UpdateProgressAction, option);
         }
 
         public void UpdateBrokerAccount(
             IBroker broker,
             IBrokersCandlesService candleService,
             ITradeDetailsAutoCalculatorService tradeCalculateService,
+            IMarketDetailsService marketsService,
             Action<string> updateProgressAction,
             UpdateOption option = UpdateOption.OnlyIfNotRecentlyUpdated)
         {
@@ -172,7 +173,7 @@ namespace TraderTools.Core.Broker
                 tradeCalculateService.RemoveTrade(t);
             }
 
-            broker.UpdateAccount(this, candleService, updateProgressAction);
+            broker.UpdateAccount(this, candleService, marketsService, updateProgressAction);
 
             AccountLastUpdated = DateTime.UtcNow;
 

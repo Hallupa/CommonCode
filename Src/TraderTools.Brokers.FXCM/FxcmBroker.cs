@@ -56,6 +56,11 @@ namespace TraderTools.Brokers.FXCM
             return ret;
         }
 
+        public ICandle GetSingleCandle(string market, Timeframe timeframe, DateTime date)
+        {
+            throw new NotImplementedException();
+        }
+
         public FxcmBroker()
         {
             _rnd = new Random();
@@ -135,18 +140,22 @@ namespace TraderTools.Brokers.FXCM
             return tableManager;
         }
 
-        public bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService)
+        public bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService, Action<string> updateProgressAction)
         {
             var tableManager = GetTableManager();
 
             // Get open trades
+            updateProgressAction("Getting open trades");
             var updated = GetOpenTrades(account, candlesService, marketsService, tableManager, out var openTrades);
 
+            updateProgressAction("Getting recently closed trades");
             updated = GetClosedTrades(account, candlesService, marketsService, tableManager, out var closedTrades) || updated;
 
+            updateProgressAction("Getting orders");
             updated = GetOrders(account, candlesService, marketsService, tableManager, out var orders) || updated;
 
             // Update trades from reports API
+            updateProgressAction("Getting historic trades");
             updated = GetReportTrades(account, candlesService, marketsService) || updated;
 
             // Set any open trades to closed that aren't in the open list
@@ -168,6 +177,7 @@ namespace TraderTools.Brokers.FXCM
                 }
             }
 
+            updateProgressAction("Updating deposits/withdrawals");
             UpdateDepositsWithdrawals(account);
 
             return updated;
