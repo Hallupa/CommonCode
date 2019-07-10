@@ -96,16 +96,17 @@ namespace TraderTools.Basics
         {
         }
 
-        public static TradeDetails CreateOrder(decimal entryOrder, DateTime entryOrderTime, OrderKind orderKind,
+        public static TradeDetails CreateOrder(string broker, decimal entryOrder, DateTime entryOrderTime, OrderKind orderKind,
             TradeDirection direction, decimal amount, string market, DateTime? orderExpireTime,
             decimal? stop, decimal? limit, Timeframe timeframe, string strategies, string comments, int custom1,
-            int custom2, int custom3, int custom4, bool alert, OrderType orderType)
+            int custom2, int custom3, int custom4, bool alert, OrderType orderType, ITradeDetailsAutoCalculatorService tradeCalculatorService)
         {
             var trade = new TradeDetails();
             trade.SetOrder(entryOrderTime, entryOrder, market, timeframe, direction, amount, orderExpireTime);
             if (stop != null) trade.AddStopPrice(entryOrderTime, stop.Value);
             if (limit != null) trade.AddLimitPrice(entryOrderTime, limit.Value);
             trade.Timeframe = timeframe;
+            trade.Broker = broker;
             trade.Alert = alert;
             trade.Comments = comments;
             trade.Strategies = strategies;
@@ -115,6 +116,7 @@ namespace TraderTools.Basics
             trade.Custom4 = custom4;
             trade.OrderKind = orderKind;
             trade.OrderType = orderType;
+            tradeCalculatorService.AddTrade(trade);
             return trade;
         }
 

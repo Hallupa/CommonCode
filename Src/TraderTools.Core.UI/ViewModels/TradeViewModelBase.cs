@@ -48,7 +48,7 @@ namespace TraderTools.Core.UI.ViewModels
         protected IBroker Broker { get; set; }
 
         private int _selectedMainIndicatorsIndex;
-        private Dispatcher _dispatcher;
+        protected Dispatcher _dispatcher;
 
         protected TradeViewModelBase()
         {
@@ -172,7 +172,15 @@ namespace TraderTools.Core.UI.ViewModels
 
         [Import] public ChartingService ChartingService { get; private set; }
 
-        public TradeDetails SelectedTrade { get; set; }
+        public TradeDetails SelectedTrade
+        {
+            get => _selectedTrade;
+            set
+            {
+                _selectedTrade = value; 
+                OnPropertyChanged();
+            }
+        }
 
         public static readonly DependencyProperty ShowOpenTradesOnlyProperty = DependencyProperty.Register(
             "ShowOpenTradesOnly", typeof(bool), typeof(TradeViewModelBase), new PropertyMetadata(default(bool), ShowOpenTradesOnlyChanged));
@@ -199,6 +207,7 @@ namespace TraderTools.Core.UI.ViewModels
             "ShowOrdersOnly", typeof(bool), typeof(TradeViewModelBase), new PropertyMetadata(default(bool), ShowOrdersOnlyChanged));
 
         private Window _parent;
+        private TradeDetails _selectedTrade;
 
         private static void ShowOrdersOnlyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
@@ -402,13 +411,9 @@ namespace TraderTools.Core.UI.ViewModels
                     ? trade.CloseDateTime.Value.AddMinutes(20)
                     : trade.StartDateTime.Value.AddMinutes(240);
             }
-            else
-            {
-                end = trade.CloseDateTime?.AddDays(20);
-            }
 
             var largeChartCandles = BrokerCandles.GetCandles(Broker, trade.Market, LargeChartTimeframe, updateCandles, cacheData: false, minOpenTimeUtc: start, maxCloseTimeUtc: end);
-            var smallChartCandles = BrokerCandles.GetCandles(Broker, trade.Market, smallChartTimeframe, updateCandles, maxCloseTimeUtc: trade.CloseDateTime?.AddDays(30));
+            var smallChartCandles = BrokerCandles.GetCandles(Broker, trade.Market, smallChartTimeframe, updateCandles);
 
             ShowTrade(trade, smallChartTimeframe, smallChartCandles, LargeChartTimeframe, largeChartCandles);
         }

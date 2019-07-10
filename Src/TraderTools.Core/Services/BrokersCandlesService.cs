@@ -90,7 +90,11 @@ namespace TraderTools.Core.Services
                     {
                         lock (_candlesLookup)
                         {
-                            _candlesLookup.Add((broker, market, timeframe), candles);
+                            // Re-check if candles lookup contains the key as it may have changed
+                            if (!_candlesLookup.ContainsKey((broker, market, timeframe)))
+                            {
+                                _candlesLookup.Add((broker, market, timeframe), candles);
+                            }
                         }
                     }
                 }
@@ -104,7 +108,7 @@ namespace TraderTools.Core.Services
                     Timeframe = timeframe
                 }, out var updatedDatetime))
                 {
-                    if ((DateTime.UtcNow - updatedDatetime).TotalSeconds < 240)
+                    if ((DateTime.UtcNow - updatedDatetime).TotalSeconds < 60 * 30)
                     {
                         returnCandles = true;
                     }
