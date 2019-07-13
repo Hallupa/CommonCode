@@ -41,7 +41,7 @@
             </DataGrid.ContextMenu>
 
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Status" Binding="{Binding Status, Mode=OneWay}" IsReadOnly="True" Width="65" Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.Status}, Mode=OneWay}">
+                <DataGridTextColumn Header="Status" Binding="{Binding Status, Mode=OneWay}" IsReadOnly="True" Width="75" Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.Status}, Mode=OneWay}">
                     <DataGridTextColumn.CellStyle>
                         <Style TargetType="{x:Type DataGridCell}">
                             <Setter Property="Background" Value="{Binding ., Converter={StaticResource StatusToColour}}" />

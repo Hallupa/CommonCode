@@ -152,8 +152,13 @@ namespace TraderTools.Core.UI.ViewModels
 
         private void SetOrderDateTimePrice(object obj)
         {
-            Trade.OrderPrice = GetPrice();
-            Trade.OrderDateTime = GetDatetime();
+            var date = GetDatetime();
+            Trade.OrderDateTime = date;
+
+            if (date != null)
+            {
+                Trade.AddOrderPrice(date.Value, GetPrice());
+            }
 
             // Refresh by changing Trade
             var t = Trade;

@@ -369,6 +369,16 @@ namespace TraderTools.Basics
             }
         }
 
+        public List<DatePrice> OrderPrices
+        {
+            get => _orderPrices;
+            set
+            {
+                _orderPrices = value;
+                OnPropertyChanged();
+            }
+        }
+
         public DateTime? OrderExpireTime
         {
             get => _orderExpireTime;
@@ -493,7 +503,7 @@ namespace TraderTools.Basics
             Timeframe timeframe, TradeDirection tradeDirection, decimal orderAmount, DateTime? expires)
         {
             OrderDateTime = dateTime;
-            OrderPrice = price;
+            AddOrderPrice(dateTime, price);
             Timeframe = timeframe;
             Market = market;
             TradeDirection = tradeDirection;
@@ -516,6 +526,7 @@ namespace TraderTools.Basics
         private OrderType? _orderType;
         private List<DatePrice> _limitPrices = new List<DatePrice>();
         private List<DatePrice> _stopPrices = new List<DatePrice>();
+        private List<DatePrice> _orderPrices = new List<DatePrice>();
         private string _commissionValueCurrency;
         private decimal? _commissionValue;
         private decimal? _entryValue;
@@ -530,6 +541,22 @@ namespace TraderTools.Basics
 
             StopPrices.Add(new DatePrice(date, price));
             StopPrices = StopPrices.OrderBy(x => x.Date).ToList();
+        }
+
+        public void AddOrderPrice(DateTime date, decimal? price)
+        {
+            if (price == null)
+            {
+                return;
+            }
+
+            if (OrderPrices.Count > 0 && OrderPrices.Last().Price == price)
+            {
+                return;
+            }
+
+            OrderPrices.Add(new DatePrice(date, price));
+            OrderPrices = OrderPrices.OrderBy(x => x.Date).ToList();
         }
 
         public void ClearStopPrices()
@@ -575,7 +602,7 @@ namespace TraderTools.Basics
             LimitPrices.RemoveAt(index);
         }
 
-        public void SetClose(DateTime dateTime, decimal price, TradeCloseReason reason)
+        public void SetClose(DateTime dateTime, decimal? price, TradeCloseReason reason)
         {
             ClosePrice = price;
             CloseDateTime = dateTime;
@@ -705,6 +732,7 @@ namespace TraderTools.Basics
                         case TradeCloseReason.HitStop:
                             return "Hit stop";
                         case TradeCloseReason.OrderClosed:
+                            return "Order closed";
                         case TradeCloseReason.ManualClose:
                             return "Closed";
                     }
@@ -721,6 +749,21 @@ namespace TraderTools.Basics
             if (EntryDateTime != null && OrderDateTime == null)
             {
                 OrderDateTime = EntryDateTime;
+            }
+
+            if (LimitPrices == null)
+            {
+                LimitPrices = new List<DatePrice>();
+            }
+
+            if (LimitPrices.Count == 0 && LimitPrice != null)
+            {
+                var date = OrderDateTime ?? EntryDateTime;
+
+                if (date != null)
+                {
+                    LimitPrices.Add(new DatePrice(date.Value, LimitPrice));
+                }
             }
 
             // Remove duplicate stops

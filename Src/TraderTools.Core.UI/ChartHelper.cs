@@ -117,11 +117,9 @@ namespace TraderTools.Core.UI
             }));
         }
 
-        public static AnnotationCollection CreateTradeAnnotations(ChartViewModel cvm, TradeAnnotationsToShow annotationsToShow,
-            Timeframe timeframe, IList<ICandle> candles, TradeDetails trade)
+        public static AnnotationCollection CreateTradeAnnotations(AnnotationCollection annotations, ChartViewModel cvm, TradeAnnotationsToShow annotationsToShow, Timeframe timeframe, IList<ICandle> candles, TradeDetails trade)
         {
             // Setup annotations
-            var annotations = new AnnotationCollection();
             if (candles.Count == 0) return annotations;
 
             var dataSeries = cvm.ChartPaneViewModels[0].ChartSeriesViewModels[0].DataSeries;
@@ -142,9 +140,13 @@ namespace TraderTools.Core.UI
                 {
                     if (trade.OrderPrice != null && trade.OrderDateTimeLocal != null)
                     {
-                        AddHorizontalLine(trade.OrderPrice.Value, trade.OrderDateTimeLocal.Value, 
-                            trade.EntryDateTimeLocal ?? trade.CloseDateTimeLocal ?? DateTime.Now, dataSeries, annotations, 
-                            trade, Colors.Gray, extendLeftAndRight: false, extendRightIfZeroLength: true);
+                        var orderPrices = trade.OrderPrices.ToList();
+                        if (orderPrices.Count > 0)
+                        {
+                            orderPrices.Add(new DatePrice(trade.EntryDateTime?.ToLocalTime() ?? new DateTime(candles[candles.Count - 1].CloseTimeTicks, DateTimeKind.Utc), null));
+
+                            AddLineAnnotations(orderPrices, cvm.ChartPaneViewModels[0].ChartSeriesViewModels[0].DataSeries, annotations, Colors.Gray);
+                        }
                     }
                 }
             }

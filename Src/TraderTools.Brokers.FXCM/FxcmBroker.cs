@@ -435,7 +435,7 @@ namespace TraderTools.Brokers.FXCM
                     trade.OrderAmount = orderOrder.Amount;
                     trade.Id = orderOrder.TradeID;
                     trade.Market = instrument;
-                    trade.OrderPrice = (decimal)orderPrice;
+                    trade.AddOrderPrice(time, (decimal)orderPrice);
                     trade.OrderDateTime = time;
                     trade.OrderExpireTime = actualExpiry;
                     trade.PricePerPip = candlesService.GetGBPPerPip(marketsService, this, trade.Market, orderOrder.Amount, time, true);
@@ -458,7 +458,7 @@ namespace TraderTools.Brokers.FXCM
                 {
                     if (trade.OrderPrice != (decimal)orderPrice)
                     {
-                        trade.OrderPrice = (decimal)orderPrice;
+                        trade.AddOrderPrice(time, (decimal)orderPrice);
                         addedOrUpdatedOpenTrade = true;
                     }
 

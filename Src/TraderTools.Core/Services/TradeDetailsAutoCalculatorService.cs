@@ -162,6 +162,8 @@ namespace TraderTools.Core.Services
                 trade.InitialStop = null;
             }
 
+            UpdateOrderPrice(trade);
+
             // Update limit pips
             if (trade.LimitPrices.Count > 0)
             {
@@ -278,6 +280,19 @@ namespace TraderTools.Core.Services
             else
             {
                 trade.RMultiple = null;
+            }
+        }
+
+        private void UpdateOrderPrice(TradeDetails trade)
+        {
+            // Update order prices
+            if (trade.OrderPrices.Count > 0)
+            {
+                trade.OrderPrice = trade.OrderPrices.Last().Price;
+            }
+            else
+            {
+                trade.OrderPrice = null;
             }
         }
 

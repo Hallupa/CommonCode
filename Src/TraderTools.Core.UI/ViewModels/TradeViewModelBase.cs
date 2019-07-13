@@ -103,7 +103,7 @@ namespace TraderTools.Core.UI.ViewModels
                     if (ChartViewModel != null)
                     {
                         var linked = ChartViewModel.ChartPaneViewModels[0].TradeAnnotations.OfType<LineAnnotation>()
-                            .FirstOrDefault(x => x.Tag is string s && s.Equals((string) toRemove.Tag));
+                            .FirstOrDefault(x => x.Tag is string s && s.Equals((string)toRemove.Tag));
                         if (linked != null)
                         {
                             ChartViewModel.ChartPaneViewModels[0].TradeAnnotations.Remove(linked);
@@ -177,7 +177,7 @@ namespace TraderTools.Core.UI.ViewModels
             get => _selectedTrade;
             set
             {
-                _selectedTrade = value; 
+                _selectedTrade = value;
                 OnPropertyChanged();
             }
         }
@@ -282,8 +282,8 @@ namespace TraderTools.Core.UI.ViewModels
         {
             _dispatcher.BeginInvoke((Action)(() =>
             {
-                ChartViewModel.ChartPaneViewModels.Clear();
-                ChartViewModelSmaller1.ChartPaneViewModels.Clear();
+                //ChartViewModel.ChartPaneViewModels.Clear();
+                //ChartViewModelSmaller1.ChartPaneViewModels.Clear();
                 TradeShowingOnChart = trade;
 
                 if (trade == null)
@@ -316,7 +316,8 @@ namespace TraderTools.Core.UI.ViewModels
                     largeChartTimeframe);
 
 
-                ChartHelper.SetChartViewModelPriceData(smallChartCandles, ChartViewModelSmaller1, smallChartTimeframe);
+                ChartHelper.SetChartViewModelPriceData(smallChartCandles, ChartViewModelSmaller1,
+                    smallChartTimeframe);
 
                 if (SelectedMainIndicatorsIndex == (int)MainIndicators.EMA8_EMA25_EMA50)
                 {
@@ -341,12 +342,30 @@ namespace TraderTools.Core.UI.ViewModels
                     smallChartTimeframe);
 
 
-                ChartViewModel.ChartPaneViewModels[0].TradeAnnotations =
-                    ChartHelper.CreateTradeAnnotations(ChartViewModel, TradeAnnotationsToShow.All, largeChartTimeframe, largeChartCandles,
-                        trade);
-                ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations =
-                    ChartHelper.CreateTradeAnnotations(ChartViewModelSmaller1, TradeAnnotationsToShow.All, smallChartTimeframe,
-                        smallChartCandles, trade);
+                if (ChartViewModel.ChartPaneViewModels[0].TradeAnnotations == null)
+                {
+                    ChartViewModel.ChartPaneViewModels[0].TradeAnnotations = new AnnotationCollection();
+                }
+                else
+                {
+                    ChartViewModel.ChartPaneViewModels[0].TradeAnnotations.Clear();
+                }
+
+                ChartHelper.CreateTradeAnnotations(ChartViewModel.ChartPaneViewModels[0].TradeAnnotations,
+                    ChartViewModel, TradeAnnotationsToShow.All, largeChartTimeframe, largeChartCandles, trade);
+
+                if (ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations == null)
+                {
+                    ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations = new AnnotationCollection();
+                }
+                else
+                {
+                    ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations.Clear();
+                }
+
+                ChartHelper.CreateTradeAnnotations(ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations,
+                    ChartViewModelSmaller1, TradeAnnotationsToShow.All, smallChartTimeframe, smallChartCandles,
+                    trade);
 
                 AddTradeLines(trade);
 

@@ -121,7 +121,7 @@
                             <s:SciStockChart x:Name="PART_ChartPaneView" Padding="0" BorderThickness="0,0,1,1" IsAxisMarkersEnabled="True" IsRolloverEnabled="False"
                                          IsCursorEnabled="True" IsXAxisVisible="{Binding IsFirstChartPane}" IsPanEnabled="{Binding ParentViewModel.IsPanEnabled}"
                                          ViewportManager="{Binding ViewportManager}" SeriesSource="{Binding ChartSeriesViewModels}"
-                                         Annotations="{Binding TradeAnnotations}" s:ThemeManager.Theme="Chrome">
+                                         Annotations="{Binding TradeAnnotations}" s:ThemeManager.Theme="Chrome" ClipModifierSurface="True">
 
                                 <s:SciStockChart.XAxisStyle>
                                     <Style TargetType="s:CategoryDateTimeAxis">
@@ -188,7 +188,7 @@
 
                             <s:SciStockChart x:Name="PART_ChartPaneView" Padding="0" BorderThickness="0,0,1,1" IsAxisMarkersEnabled="True" IsRolloverEnabled="False"
                                          IsCursorEnabled="True" IsXAxisVisible="{Binding IsFirstChartPane}" IsPanEnabled="{Binding ParentViewModel.IsPanEnabled}"
-                                         ViewportManager="{Binding ViewportManager}" SeriesSource="{Binding ChartSeriesViewModels}"
+                                         ViewportManager="{Binding ViewportManager}" SeriesSource="{Binding ChartSeriesViewModels}" ClipModifierSurface="True"
                                          Annotations="{Binding TradeAnnotations}" s:ThemeManager.Theme="Chrome">
 
                                 <s:SciStockChart.XAxisStyle>

@@ -16,6 +16,10 @@ using TraderTools.Core.UI.Services;
 
 namespace TraderTools.Core.UI.ChartModifiers
 {
+    /// <summary>
+    /// Always use indexes for X properties on LineAnnotations. If use DateTime, it can cause issues when the line
+    /// goes off the surface when scrolling and the X co-ordinate doesn't exactly match-up with an X-axis data point.
+    /// </summary>
     public class AddLinesModifier : ChartModifierBase
     {
         public const double StrokeThickness = 4;
@@ -168,9 +172,9 @@ namespace TraderTools.Core.UI.ChartModifiers
                 StrokeThickness = StrokeThickness,
                 Opacity = Opacity,
                 Stroke = Stroke,
-                X1 = x,
+                X1 = x is DateTime t1 ? ((ICategoryCoordinateCalculator)surface.XAxis.GetCurrentCoordinateCalculator()).TransformDataToIndex(t1) : x,
                 Y1 = y,
-                X2 = x,
+                X2 = x is DateTime t2 ? ((ICategoryCoordinateCalculator)surface.XAxis.GetCurrentCoordinateCalculator()).TransformDataToIndex(t2) : x,
                 Y2 = y
             };
 
@@ -197,25 +201,24 @@ namespace TraderTools.Core.UI.ChartModifiers
                 if (otherLine != null)
                 {
                     var categoryCoordCalc = (ICategoryCoordinateCalculator)line.ParentSurface.XAxis.GetCurrentCoordinateCalculator();
+                    var otherCategoryCoordCalc = (ICategoryCoordinateCalculator)otherLine.ParentSurface.XAxis.GetCurrentCoordinateCalculator();
 
                     if (line.X1 is DateTime time1)
                     {
-                        otherLine.X1 = time1;
+                        otherLine.X1 = otherCategoryCoordCalc.TransformDataToIndex(time1);
                     }
                     else
                     {
-                        var x1DateTime = categoryCoordCalc.TransformIndexToData((int)line.X1);
-                        otherLine.X1 = x1DateTime;
+                        otherLine.X1 = otherCategoryCoordCalc.TransformDataToIndex(categoryCoordCalc.TransformIndexToData((int)line.X1));
                     }
 
                     if (line.X2 is DateTime time2)
                     {
-                        otherLine.X2 = time2;
+                        otherLine.X2 = otherCategoryCoordCalc.TransformDataToIndex(time2);
                     }
                     else
                     {
-                        var x2DateTime = categoryCoordCalc.TransformIndexToData((int)line.X2);
-                        otherLine.X2 = x2DateTime;
+                        otherLine.X2 = otherCategoryCoordCalc.TransformDataToIndex(categoryCoordCalc.TransformIndexToData((int)line.X2));
                     }
 
                     otherLine.Y1 = line.Y1;
@@ -231,12 +234,12 @@ namespace TraderTools.Core.UI.ChartModifiers
             if (_currentLine != null)
             {
                 var xy = GetXY(e.MousePoint, ParentSurface, ModifierSurface);
-                _currentLine.X2 = xy.X;
+                _currentLine.X2 = xy.X is DateTime t1 ? ((ICategoryCoordinateCalculator)_currentLine.ParentSurface.XAxis.GetCurrentCoordinateCalculator()).TransformDataToIndex(t1) : xy.X;
                 _currentLine.Y2 = xy.Y;
 
                 if (_currentLinkedLine != null)
                 {
-                    _currentLinkedLine.X2 = xy.X;
+                    _currentLinkedLine.X2 = xy.X is DateTime t2 ? ((ICategoryCoordinateCalculator)_currentLinkedLine.ParentSurface.XAxis.GetCurrentCoordinateCalculator()).TransformDataToIndex(t2) : xy.X;
                     _currentLinkedLine.Y2 = xy.Y;
                 }
             }
