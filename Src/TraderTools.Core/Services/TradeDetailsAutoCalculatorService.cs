@@ -90,6 +90,8 @@ namespace TraderTools.Core.Services
                 return;
             }
 
+            UpdateOrderPrice(trade);
+
             // Initial stop is stop at entry point or order point
             if (trade.StopPrices.Count > 0)
             {
@@ -161,8 +163,6 @@ namespace TraderTools.Core.Services
                 trade.InitialStopInPips = null;
                 trade.InitialStop = null;
             }
-
-            UpdateOrderPrice(trade);
 
             // Update limit pips
             if (trade.LimitPrices.Count > 0)

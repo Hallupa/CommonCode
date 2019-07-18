@@ -13,7 +13,6 @@ using Hallupa.Library;
 using log4net;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
-using TraderTools.Core.Services;
 
 namespace TraderTools.Brokers.FXCM
 {

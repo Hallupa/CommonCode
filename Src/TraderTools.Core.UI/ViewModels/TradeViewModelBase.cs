@@ -232,6 +232,7 @@ namespace TraderTools.Core.UI.ViewModels
         }
 
         public Timeframe LargeChartTimeframe { get; set; } = Timeframe.H2;
+        public Timeframe SmallChartTimeframe { get; set; } = Timeframe.D1;
 
         public void ViewTrade(TradeDetails tradeDetails)
         {
@@ -291,78 +292,17 @@ namespace TraderTools.Core.UI.ViewModels
                     return;
                 }
 
-                ChartHelper.SetChartViewModelPriceData(largeChartCandles, ChartViewModel, largeChartTimeframe);
-
-                if (SelectedMainIndicatorsIndex == (int)MainIndicators.EMA8_EMA25_EMA50)
-                {
-                    ChartHelper.AddIndicator(ChartViewModel.ChartPaneViewModels[0], trade.Market,
-                        new ExponentialMovingAverage(8), Colors.DarkBlue, largeChartTimeframe, largeChartCandles);
-                    ChartHelper.AddIndicator(ChartViewModel.ChartPaneViewModels[0], trade.Market,
-                        new ExponentialMovingAverage(25), Colors.Blue, largeChartTimeframe, largeChartCandles);
-                    ChartHelper.AddIndicator(ChartViewModel.ChartPaneViewModels[0], trade.Market,
-                        new ExponentialMovingAverage(50), Colors.LightBlue, largeChartTimeframe, largeChartCandles);
-                }
-                else if (SelectedMainIndicatorsIndex == (int)MainIndicators.EMA20_MA50_MA200)
-                {
-                    ChartHelper.AddIndicator(ChartViewModel.ChartPaneViewModels[0], trade.Market,
-                        new ExponentialMovingAverage(8), Colors.DarkBlue, largeChartTimeframe, largeChartCandles);
-                    ChartHelper.AddIndicator(ChartViewModel.ChartPaneViewModels[0], trade.Market,
-                        new SimpleMovingAverage(50), Colors.Blue, largeChartTimeframe, largeChartCandles);
-                    ChartHelper.AddIndicator(ChartViewModel.ChartPaneViewModels[0], trade.Market,
-                        new SimpleMovingAverage(200), Colors.LightBlue, largeChartTimeframe, largeChartCandles);
-                }
-
+                ViewCandles(trade.Market, smallChartTimeframe, smallChartCandles, largeChartTimeframe, largeChartCandles);
+                
                 ChartHelper.SetChartViewModelVisibleRange(trade, ChartViewModel, largeChartCandles,
                     largeChartTimeframe);
-
-
-                ChartHelper.SetChartViewModelPriceData(smallChartCandles, ChartViewModelSmaller1,
-                    smallChartTimeframe);
-
-                if (SelectedMainIndicatorsIndex == (int)MainIndicators.EMA8_EMA25_EMA50)
-                {
-                    ChartHelper.AddIndicator(ChartViewModelSmaller1.ChartPaneViewModels[0], trade.Market,
-                        new ExponentialMovingAverage(8), Colors.DarkBlue, smallChartTimeframe, smallChartCandles);
-                    ChartHelper.AddIndicator(ChartViewModelSmaller1.ChartPaneViewModels[0], trade.Market,
-                        new ExponentialMovingAverage(25), Colors.Blue, smallChartTimeframe, smallChartCandles);
-                    ChartHelper.AddIndicator(ChartViewModelSmaller1.ChartPaneViewModels[0], trade.Market,
-                        new ExponentialMovingAverage(50), Colors.LightBlue, smallChartTimeframe, smallChartCandles);
-                }
-                else if (SelectedMainIndicatorsIndex == (int)MainIndicators.EMA20_MA50_MA200)
-                {
-                    ChartHelper.AddIndicator(ChartViewModelSmaller1.ChartPaneViewModels[0], trade.Market,
-                        new ExponentialMovingAverage(20), Colors.DarkBlue, smallChartTimeframe, smallChartCandles);
-                    ChartHelper.AddIndicator(ChartViewModelSmaller1.ChartPaneViewModels[0], trade.Market,
-                        new SimpleMovingAverage(50), Colors.Blue, smallChartTimeframe, smallChartCandles);
-                    ChartHelper.AddIndicator(ChartViewModelSmaller1.ChartPaneViewModels[0], trade.Market,
-                        new SimpleMovingAverage(200), Colors.LightBlue, smallChartTimeframe, smallChartCandles);
-                }
 
                 ChartHelper.SetChartViewModelVisibleRange(trade, ChartViewModelSmaller1, smallChartCandles,
                     smallChartTimeframe);
 
-
-                if (ChartViewModel.ChartPaneViewModels[0].TradeAnnotations == null)
-                {
-                    ChartViewModel.ChartPaneViewModels[0].TradeAnnotations = new AnnotationCollection();
-                }
-                else
-                {
-                    ChartViewModel.ChartPaneViewModels[0].TradeAnnotations.Clear();
-                }
-
                 ChartHelper.CreateTradeAnnotations(ChartViewModel.ChartPaneViewModels[0].TradeAnnotations,
                     ChartViewModel, TradeAnnotationsToShow.All, largeChartTimeframe, largeChartCandles, trade);
-
-                if (ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations == null)
-                {
-                    ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations = new AnnotationCollection();
-                }
-                else
-                {
-                    ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations.Clear();
-                }
-
+                
                 ChartHelper.CreateTradeAnnotations(ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations,
                     ChartViewModelSmaller1, TradeAnnotationsToShow.All, smallChartTimeframe, smallChartCandles,
                     trade);
@@ -371,6 +311,73 @@ namespace TraderTools.Core.UI.ViewModels
 
                 TradeShown?.Invoke(trade);
             }));
+        }
+
+        protected void ViewCandles(string market, Timeframe smallChartTimeframe, List<ICandle> smallChartCandles,
+            Timeframe largeChartTimeframe, List<ICandle> largeChartCandles)
+        {
+            ChartHelper.SetChartViewModelPriceData(largeChartCandles, ChartViewModel, largeChartTimeframe);
+
+            if (SelectedMainIndicatorsIndex == (int) MainIndicators.EMA8_EMA25_EMA50)
+            {
+                ChartHelper.AddIndicator(ChartViewModel.ChartPaneViewModels[0], market,
+                    new ExponentialMovingAverage(8), Colors.DarkBlue, largeChartTimeframe, largeChartCandles);
+                ChartHelper.AddIndicator(ChartViewModel.ChartPaneViewModels[0], market,
+                    new ExponentialMovingAverage(25), Colors.Blue, largeChartTimeframe, largeChartCandles);
+                ChartHelper.AddIndicator(ChartViewModel.ChartPaneViewModels[0], market,
+                    new ExponentialMovingAverage(50), Colors.LightBlue, largeChartTimeframe, largeChartCandles);
+            }
+            else if (SelectedMainIndicatorsIndex == (int) MainIndicators.EMA20_MA50_MA200)
+            {
+                ChartHelper.AddIndicator(ChartViewModel.ChartPaneViewModels[0], market,
+                    new ExponentialMovingAverage(8), Colors.DarkBlue, largeChartTimeframe, largeChartCandles);
+                ChartHelper.AddIndicator(ChartViewModel.ChartPaneViewModels[0], market,
+                    new SimpleMovingAverage(50), Colors.Blue, largeChartTimeframe, largeChartCandles);
+                ChartHelper.AddIndicator(ChartViewModel.ChartPaneViewModels[0], market,
+                    new SimpleMovingAverage(200), Colors.LightBlue, largeChartTimeframe, largeChartCandles);
+            }
+
+
+
+            ChartHelper.SetChartViewModelPriceData(smallChartCandles, ChartViewModelSmaller1,
+                smallChartTimeframe);
+
+            if (SelectedMainIndicatorsIndex == (int) MainIndicators.EMA8_EMA25_EMA50)
+            {
+                ChartHelper.AddIndicator(ChartViewModelSmaller1.ChartPaneViewModels[0], market,
+                    new ExponentialMovingAverage(8), Colors.DarkBlue, smallChartTimeframe, smallChartCandles);
+                ChartHelper.AddIndicator(ChartViewModelSmaller1.ChartPaneViewModels[0], market,
+                    new ExponentialMovingAverage(25), Colors.Blue, smallChartTimeframe, smallChartCandles);
+                ChartHelper.AddIndicator(ChartViewModelSmaller1.ChartPaneViewModels[0], market,
+                    new ExponentialMovingAverage(50), Colors.LightBlue, smallChartTimeframe, smallChartCandles);
+            }
+            else if (SelectedMainIndicatorsIndex == (int) MainIndicators.EMA20_MA50_MA200)
+            {
+                ChartHelper.AddIndicator(ChartViewModelSmaller1.ChartPaneViewModels[0], market,
+                    new ExponentialMovingAverage(20), Colors.DarkBlue, smallChartTimeframe, smallChartCandles);
+                ChartHelper.AddIndicator(ChartViewModelSmaller1.ChartPaneViewModels[0], market,
+                    new SimpleMovingAverage(50), Colors.Blue, smallChartTimeframe, smallChartCandles);
+                ChartHelper.AddIndicator(ChartViewModelSmaller1.ChartPaneViewModels[0], market,
+                    new SimpleMovingAverage(200), Colors.LightBlue, smallChartTimeframe, smallChartCandles);
+            }
+
+            if (ChartViewModel.ChartPaneViewModels[0].TradeAnnotations == null)
+            {
+                ChartViewModel.ChartPaneViewModels[0].TradeAnnotations = new AnnotationCollection();
+            }
+            else
+            {
+                ChartViewModel.ChartPaneViewModels[0].TradeAnnotations.Clear();
+            }
+
+            if (ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations == null)
+            {
+                ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations = new AnnotationCollection();
+            }
+            else
+            {
+                ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations.Clear();
+            }
         }
 
         private void AddTradeLines(TradeDetails t)
@@ -419,7 +426,7 @@ namespace TraderTools.Core.UI.ViewModels
         protected void ShowTrade(TradeDetails trade, bool updateCandles = false)
         {
             // Setup main chart
-            var smallChartTimeframe = Timeframe.D1;
+            SmallChartTimeframe = Timeframe.D1;
 
             DateTime? start = null, end = null;
 
@@ -432,9 +439,9 @@ namespace TraderTools.Core.UI.ViewModels
             }
 
             var largeChartCandles = BrokerCandles.GetCandles(Broker, trade.Market, LargeChartTimeframe, updateCandles, cacheData: false, minOpenTimeUtc: start, maxCloseTimeUtc: end);
-            var smallChartCandles = BrokerCandles.GetCandles(Broker, trade.Market, smallChartTimeframe, updateCandles);
+            var smallChartCandles = BrokerCandles.GetCandles(Broker, trade.Market, SmallChartTimeframe, updateCandles);
 
-            ShowTrade(trade, smallChartTimeframe, smallChartCandles, LargeChartTimeframe, largeChartCandles);
+            ShowTrade(trade, SmallChartTimeframe, smallChartCandles, LargeChartTimeframe, largeChartCandles);
         }
 
         protected void ShowTradeSetup(TradeDetails trade, bool updateCandles = false)

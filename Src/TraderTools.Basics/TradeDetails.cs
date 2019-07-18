@@ -293,6 +293,9 @@ namespace TraderTools.Basics
         
         public int Custom5 { get; set; }
 
+        public string CustomText1 { get; set; }
+
+
         public Timeframe? Timeframe
         {
             get => _timeframe;

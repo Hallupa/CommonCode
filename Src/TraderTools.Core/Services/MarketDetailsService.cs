@@ -33,7 +33,16 @@ namespace TraderTools.Core.Services
             }
         }
 
-        public void AddMarketDetails(MarketDetails marketDetails)
+        public List<MarketDetails> GetAlMarketDetails()
+        {
+            lock (_marketDetailsList)
+            {
+                return _marketDetailsList.Values.ToList();
+            }
+        }
+
+
+            public void AddMarketDetails(MarketDetails marketDetails)
         {
             lock (_marketDetailsList)
             {

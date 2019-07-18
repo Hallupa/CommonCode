@@ -1,10 +1,12 @@
-﻿using TraderTools.Basics;
+﻿using System.Collections.Generic;
 
-namespace TraderTools.Core.Services
+namespace TraderTools.Basics
 {
     public interface IMarketDetailsService
     {
         MarketDetails GetMarketDetails(string broker, string market);
+
+        List<MarketDetails> GetAlMarketDetails();
 
         void AddMarketDetails(MarketDetails marketDetails);
 

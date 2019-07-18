@@ -37,6 +37,41 @@ namespace TraderTools.Core.UI
 
         public static TimeSpan LocalUtcOffset { get; private set; }
 
+        public enum PositionType
+        {
+            Int,
+            DateTime
+        }
+
+        public static IComparable FindChartPosition(IDataSeries data, DateTime date)
+        {
+            PositionType? positionType = null;
+            return FindChartPosition(data, date, ref positionType);
+        }
+
+        /// <summary>
+        /// Because SciChart messes up lines that use DateTime but are not correctly on a axis point (the line appears to move
+        /// while scrolling) use index instead of DateTime apart from when the DateTime is after the last data point - in this
+        /// situation use DateTime, otherwise FindIndex will just return the latest chart point.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="date"></param>
+        /// <param name="positionType"></param>
+        /// <returns></returns>
+        public static IComparable FindChartPosition(IDataSeries data, DateTime date, ref PositionType? positionType)
+        {
+            if ((positionType != null && positionType == PositionType.DateTime) || date > (DateTime)data.XMax)
+            {
+                positionType = PositionType.DateTime;
+                return date;
+            }
+            else
+            {
+                positionType = PositionType.Int;
+                return data.FindIndex(date, SearchMode.Nearest);
+            }
+        }
+
         public static void SetChartViewModelPriceData(IList<ICandle> candles, ChartViewModel cvm, Timeframe timeframe)
         {
             var priceDataSeries = new OhlcDataSeries<DateTime, double>();

@@ -30,6 +30,7 @@ namespace TraderTools.Basics
         public TimeframeLookup<List<ICandle>> CurrentCandles { get; } = new TimeframeLookup<List<ICandle>>();
         public ICandle LatestSmallestTimeframeCandle { get; private set; }
         public bool IsComplete { get; private set; }
+        public bool IsFinalCandle => CurrentCandles[Timeframe.D1].Count == AllCandles[Timeframe.D1].Count;
 
         public void ProgressLowestTimefameCandle()
         {

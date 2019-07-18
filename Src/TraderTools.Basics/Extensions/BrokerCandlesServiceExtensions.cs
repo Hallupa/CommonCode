@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using TraderTools.Basics.Helpers;
-using TraderTools.Core.Services;
 
 namespace TraderTools.Basics.Extensions
 {

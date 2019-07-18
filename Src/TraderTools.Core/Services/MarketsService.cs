@@ -121,7 +121,16 @@ namespace TraderTools.Core.Services
                 "SPX500",
                 "Bund",
                 "NGAS",
-                "Copper"
+                "Copper",
+                "CHN50",
+                "EUR/NOK",
+                "EUR/SEK",
+                "EUR/TRY",
+                "USD/CNH",
+                "USD/HKD",
+                "USD/SEK",
+                "USOil",
+                "USD/TRY"
             };
         }
     }
