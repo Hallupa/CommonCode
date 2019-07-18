@@ -31,6 +31,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="log4net, Version=2.0.8.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
+      <HintPath>..\..\..\Src\packages\log4net.2.0.8\lib\net45-full\log4net.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -44,8 +47,34 @@
     <Compile Include="..\CommonAssemblyInfo.cs">
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="CachedDetails.cs" />
+    <Compile Include="IndicatorsHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StopHelper.cs" />
+    <Compile Include="StopPoint.cs" />
     <Compile Include="StrategyRunner.cs" />
+    <Compile Include="TradeDetailsKey.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Library\Library.csproj">
+      <Project>{827454B9-CA87-493D-ACD0-676EB423772F}</Project>
+      <Name>Library</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TraderTools.Basics\TraderTools.Basics.csproj">
+      <Project>{089CE7BD-EAB1-498C-A6BD-A41F14860ACA}</Project>
+      <Name>TraderTools.Basics</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TraderTools.Core\TraderTools.Core.csproj">
+      <Project>{53BA9AD8-A1E8-409F-9C23-5148F91305E2}</Project>
+      <Name>TraderTools.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TraderTools.Indicators\TraderTools.Indicators.csproj">
+      <Project>{A5A59813-A3D3-4AF5-9923-EC5B0879BE9C}</Project>
+      <Name>TraderTools.Indicators</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
