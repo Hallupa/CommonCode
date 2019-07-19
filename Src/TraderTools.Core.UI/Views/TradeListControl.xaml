@@ -92,9 +92,9 @@
                                 </Grid.ColumnDefinitions>
 
                                 <TextBlock Grid.Row="0" Margin="2" Text="{Binding InitialStop, StringFormat={}{0:0.000}, Mode=OneWay}"/>
-                                <TextBlock Grid.Row="0" Grid.Column="1" Margin="2" Text="{Binding InitialStopInPips, StringFormat={}{0:0.0 pips}, Mode=OneWay}"/>
-                                
-                                <TextBlock Grid.Row="1" Margin="2" Text="{Binding StopPrice, StringFormat={}{0:0.000}, Mode=OneWay}"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="2" Text="{Binding InitialStopInPips, StringFormat={}{0:0.0 pips}, Mode=OneWay}"/>
+
+                                <TextBlock Grid.Row="0" Grid.Column="1" Margin="2" Text="{Binding StopPrice, StringFormat={}{0:0.000}, Mode=OneWay}"/>
                             </Grid>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
@@ -125,9 +125,9 @@
                                 </Grid.ColumnDefinitions>
 
                                 <TextBlock Grid.Row="0" Margin="2" Text="{Binding InitialLimit, StringFormat={}{0:0.000}, Mode=OneWay}"/>
-                                <TextBlock Grid.Row="0" Grid.Column="1" Margin="2" Text="{Binding InitialLimitInPips, StringFormat={}{0:0.0 pips}, Mode=OneWay}"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="2" Text="{Binding InitialLimitInPips, StringFormat={}{0:0.0 pips}, Mode=OneWay}"/>
 
-                                <TextBlock Grid.Row="1" Margin="2" Text="{Binding LimitPrice, StringFormat={}{0:0.000}, Mode=OneWay}"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" Margin="2" Text="{Binding LimitPrice, StringFormat={}{0:0.000}, Mode=OneWay}"/>
                             </Grid>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
@@ -168,39 +168,9 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn Header="Timing" Width="250">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-
-                                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0" Padding="0">Order:</TextBlock>
-                                <TextBlock Grid.Row="0" Grid.Column="1" Margin="0" Padding="0" Text="{Binding OrderDateTimeLocal, StringFormat={}{0:dd-MM-yy HH:mm}, Mode=OneWay}"/>
-
-                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0" Padding="0">Expiry:</TextBlock>
-                                <TextBlock Grid.Row="1" Grid.Column="1" Margin="0" Padding="0" Text="{Binding OrderExpireTimeLocal, StringFormat={}{0:dd-MM-yy HH:mm}, Mode=OneWay}"/>
-
-                                <TextBlock Grid.Row="0" Grid.Column="2" Margin="15,0,0,0" Padding="0">Entry:</TextBlock>
-                                <TextBlock Grid.Row="0" Grid.Column="3" Margin="0" Padding="0" Text="{Binding EntryDateTimeLocal, StringFormat={}{0:dd-MM-yy HH:mm}, Mode=OneWay}"/>
-
-                                <TextBlock Grid.Row="1" Grid.Column="2" Margin="15,0,0,0" Padding="0">Close:</TextBlock>
-                                <TextBlock Grid.Row="1" Grid.Column="3" Margin="0" Padding="0" Text="{Binding CloseDateTimeLocal, StringFormat={}{0:dd-MM-yy HH:mm}, Mode=OneWay}"/>
-
-                            </Grid>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Order date" Binding="{Binding OrderDateTimeLocal, StringFormat={}{0:dd-MM-yy HH:mm}, Mode=OneWay}" IsReadOnly="True" Width="100"/>
+                <DataGridTextColumn Header="Entry date" Binding="{Binding EntryDateTimeLocal, StringFormat={}{0:dd-MM-yy HH:mm}, Mode=OneWay}" IsReadOnly="True" Width="100"/>
+                <DataGridTextColumn Header="Close date" Binding="{Binding CloseDateTimeLocal, StringFormat={}{0:dd-MM-yy HH:mm}, Mode=OneWay}" IsReadOnly="True" Width="100"/>
             </DataGrid.Columns>
         </DataGrid>
     </Grid>
