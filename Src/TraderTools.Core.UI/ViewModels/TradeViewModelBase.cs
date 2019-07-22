@@ -157,18 +157,9 @@ namespace TraderTools.Core.UI.ViewModels
         private bool TradesViewFilter(object obj)
         {
             var t = (TradeDetails)obj;
-
-            if (ShowOpenTradesOnly)
-            {
-                return t.EntryPrice != null && t.CloseDateTime == null;
-            }
-
-            if (ShowOrdersOnly)
-            {
-                return t.OrderPrice != null && t.EntryPrice == null && t.CloseDateTime == null;
-            }
-
-            return true;
+            return (ShowOpenTrades && t.EntryPrice != null && t.CloseDateTime == null)
+                   || (ShowOrders && t.OrderPrice != null && t.EntryPrice == null && t.CloseDateTime == null)
+                   || (ShowClosedTrades && t.CloseDateTime != null);
         }
 
         [Import] public ChartingService ChartingService { get; private set; }
@@ -183,50 +174,36 @@ namespace TraderTools.Core.UI.ViewModels
             }
         }
 
-        public static readonly DependencyProperty ShowOpenTradesOnlyProperty = DependencyProperty.Register(
-            "ShowOpenTradesOnly", typeof(bool), typeof(TradeViewModelBase), new PropertyMetadata(default(bool), ShowOpenTradesOnlyChanged));
+        public static readonly DependencyProperty ShowOpenTradesProperty = DependencyProperty.Register("ShowOpenTrades", typeof(bool), typeof(TradeViewModelBase), new PropertyMetadata(true, ShowTradesChanged));
+        public static readonly DependencyProperty ShowClosedTradesProperty = DependencyProperty.Register("ShowClosedTrades", typeof(bool), typeof(TradeViewModelBase), new PropertyMetadata(true, ShowTradesChanged));
+        public static readonly DependencyProperty ShowOrdersProperty = DependencyProperty.Register("ShowOrders", typeof(bool), typeof(TradeViewModelBase), new PropertyMetadata(true, ShowTradesChanged));
 
-        private static void ShowOpenTradesOnlyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        private static void ShowTradesChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var tvm = (TradeViewModelBase)d;
-
-            if (tvm.ShowOpenTradesOnly)
-            {
-                tvm.ShowOrdersOnly = false;
-            }
-
             tvm.TradesView.Refresh();
         }
 
-        public bool ShowOpenTradesOnly
+        public bool ShowOpenTrades
         {
-            get { return (bool)GetValue(ShowOpenTradesOnlyProperty); }
-            set { SetValue(ShowOpenTradesOnlyProperty, value); }
+            get { return (bool)GetValue(ShowOpenTradesProperty); }
+            set { SetValue(ShowOpenTradesProperty, value); }
         }
 
-        public static readonly DependencyProperty ShowOrdersOnlyProperty = DependencyProperty.Register(
-            "ShowOrdersOnly", typeof(bool), typeof(TradeViewModelBase), new PropertyMetadata(default(bool), ShowOrdersOnlyChanged));
+        public bool ShowClosedTrades
+        {
+            get { return (bool)GetValue(ShowClosedTradesProperty); }
+            set { SetValue(ShowClosedTradesProperty, value); }
+        }
+
+        public bool ShowOrders
+        {
+            get { return (bool)GetValue(ShowOrdersProperty); }
+            set { SetValue(ShowOrdersProperty, value); }
+        }
 
         private Window _parent;
         private TradeDetails _selectedTrade;
-
-        private static void ShowOrdersOnlyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            var tvm = (TradeViewModelBase)d;
-
-            if (tvm.ShowOrdersOnly)
-            {
-                tvm.ShowOpenTradesOnly = false;
-            }
-
-            tvm.TradesView.Refresh();
-        }
-
-        public bool ShowOrdersOnly
-        {
-            get { return (bool)GetValue(ShowOrdersOnlyProperty); }
-            set { SetValue(ShowOrdersOnlyProperty, value); }
-        }
 
         protected virtual void DeleteTrade()
         {
@@ -284,8 +261,6 @@ namespace TraderTools.Core.UI.ViewModels
         {
             _dispatcher.BeginInvoke((Action)(() =>
             {
-                //ChartViewModel.ChartPaneViewModels.Clear();
-                //ChartViewModelSmaller1.ChartPaneViewModels.Clear();
                 TradeShowingOnChart = trade;
 
                 if (trade == null)
@@ -401,7 +376,6 @@ namespace TraderTools.Core.UI.ViewModels
                         IsEditable = true
                     };
                     ChartViewModel.ChartPaneViewModels[0].TradeAnnotations.Add(addedLine);
-                    // addedLine.ParentSurface.mo
 
                     addedLine = new LineAnnotation
                     {
