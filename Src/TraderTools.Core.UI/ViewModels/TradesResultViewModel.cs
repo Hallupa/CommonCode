@@ -20,6 +20,7 @@ namespace TraderTools.Core.UI.ViewModels
         private decimal _avPositiveRFor20Candles;
         private decimal _expectancyR;
         private int _openTradesCount;
+        private decimal _totalR;
 
         public ObservableCollectionEx<TradeDetails> Trades { get; } = new ObservableCollectionEx<TradeDetails>();
 
@@ -93,6 +94,17 @@ namespace TraderTools.Core.UI.ViewModels
             }
         }
 
+        public decimal TotalR
+        {
+            get => _totalR;
+            set
+            {
+                _totalR = value;
+                OnPropertyChanged();
+            }
+
+        }
+
         public decimal RExpectancy
         {
             get => _expectancyR;
@@ -146,6 +158,7 @@ namespace TraderTools.Core.UI.ViewModels
 
             AvRWinningTrades = positiveRMultipleTrades.Count != 0 ? positiveRMultipleTrades.Where(t => t.RMultiple != null).Sum(t => t.RMultiple.Value) / (decimal)positiveRMultipleTrades.Count : 0;
             AvRLosingTrades = negativeRMultipleTrades.Count != 0 ? negativeRMultipleTrades.Where(t => t.RMultiple != null).Sum(t => t.RMultiple.Value) / (decimal)negativeRMultipleTrades.Count : 0;
+            TotalR = Trades.Sum(x => x.RMultiple != null ? x.RMultiple.Value : 0M);
             RExpectancy = Trades.Count(x => x.RMultiple != null) > 0 ? Trades.Where(t => t.RMultiple != null).Sum(t => t.RMultiple.Value) / Trades.Count(x => x.RMultiple != null) : 0;
         }
     }

@@ -57,6 +57,7 @@
                 <DataGridTextColumn Binding="{Binding AvRWinningTrades, StringFormat={}{0:0.000}}" Header="Average win R" Width="140" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding AvRLosingTrades, StringFormat={}{0:0.000}}" Header="Average lose R" Width="140" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding RExpectancy, StringFormat={}{0:0.000}}" Header="Expectancy R" Width="140" IsReadOnly="True"/>
+                <DataGridTextColumn Binding="{Binding TotalR, StringFormat={}{0:0.000}}" Header="Total R" Width="140" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding RSum, StringFormat={}{0:0.000}}" Header="R sum" Width="80" IsReadOnly="True" Visibility="Collapsed"/>
             </DataGrid.Columns>
             <DataGrid.RowDetailsTemplate>

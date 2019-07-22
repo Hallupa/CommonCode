@@ -128,7 +128,8 @@ namespace TraderTools.Core.UI.ViewModels
                                                      | TradeListDisplayOptionsFlag.Timeframe
                                                      | TradeListDisplayOptionsFlag.Strategies
                                                      | TradeListDisplayOptionsFlag.Risk
-                                                     | TradeListDisplayOptionsFlag.Status;
+                                                     | TradeListDisplayOptionsFlag.Status
+                                                     | TradeListDisplayOptionsFlag.ClosePrice;
 
         protected TradeDetails TradeShowingOnChart { get; private set; }
         public DelegateCommand ViewTradeCommand { get; private set; }

@@ -17,7 +17,8 @@ namespace TraderTools.Core.Trading
             Timeframe timeframe,
             MarketDetails market,
             TimeframeLookup<List<BasicCandleAndIndicators>> candlesLookup,
-            List<TradeDetails> existingTrades);
+            List<TradeDetails> existingTrades,
+            ITradeDetailsAutoCalculatorService calculator);
 
         void UpdateExistingOpenTrades(
             TradeDetails trade,

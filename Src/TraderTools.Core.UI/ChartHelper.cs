@@ -84,7 +84,7 @@ namespace TraderTools.Core.UI
 
             for (var i = 0; i < candles.Count; i++)
             {
-                time = DateTime.SpecifyKind(new DateTime(candles[i].OpenTimeTicks, DateTimeKind.Utc) + LocalUtcOffset, DateTimeKind.Local);
+                time = DateTime.SpecifyKind(new DateTime(candles[i].CloseTimeTicks, DateTimeKind.Utc) + LocalUtcOffset, DateTimeKind.Local);
 
                 xvalues.Add(time);
                 openValues.Add((double)candles[i].Open);
@@ -178,7 +178,9 @@ namespace TraderTools.Core.UI
                         var orderPrices = trade.OrderPrices.ToList();
                         if (orderPrices.Count > 0)
                         {
-                            orderPrices.Add(new DatePrice(trade.EntryDateTime?.ToLocalTime() ?? new DateTime(candles[candles.Count - 1].CloseTimeTicks, DateTimeKind.Utc), null));
+                            orderPrices.Add(new DatePrice(
+                                trade.EntryDateTime ?? trade.CloseDateTime ?? new DateTime(candles[candles.Count - 1].CloseTimeTicks, DateTimeKind.Utc),
+                                null));
 
                             AddLineAnnotations(orderPrices, cvm.ChartPaneViewModels[0].ChartSeriesViewModels[0].DataSeries, annotations, Colors.Gray);
                         }
@@ -208,8 +210,8 @@ namespace TraderTools.Core.UI
                 if (stopPrices.Count > 0)
                 {
                     stopPrices.Add(new DatePrice(trade.CloseDateTime != null
-                        ? trade.CloseDateTime.Value.ToLocalTime()
-                        : new DateTime(candles[candles.Count - 1].CloseTimeTicks, DateTimeKind.Utc).ToLocalTime(), null));
+                        ? trade.CloseDateTime.Value
+                        : new DateTime(candles[candles.Count - 1].CloseTimeTicks, DateTimeKind.Utc), null));
 
                     AddLineAnnotations(stopPrices, cvm.ChartPaneViewModels[0].ChartSeriesViewModels[0].DataSeries, annotations, Colors.Red);
                 }
@@ -221,7 +223,7 @@ namespace TraderTools.Core.UI
                 var limitPrices = trade.LimitPrices.ToList();
                 if (limitPrices.Count > 0)
                 {
-                    limitPrices.Add(new DatePrice(trade.CloseDateTime?.ToLocalTime() ?? new DateTime(candles[candles.Count - 1].CloseTimeTicks, DateTimeKind.Utc), null));
+                    limitPrices.Add(new DatePrice(trade.CloseDateTime ?? new DateTime(candles[candles.Count - 1].CloseTimeTicks, DateTimeKind.Utc), null));
 
                     AddLineAnnotations(limitPrices, cvm.ChartPaneViewModels[0].ChartSeriesViewModels[0].DataSeries, annotations, Colors.DarkGreen);
                 }

@@ -21,6 +21,7 @@ namespace TraderTools.Strategy
     public class StrategyRunner
     {
         private IBrokersCandlesService _candlesService;
+        private readonly ITradeDetailsAutoCalculatorService _calculatorService;
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private StopPoint _stopPoint;
         private CodeBlockStats _updateOpenTradesBlockStats;
@@ -40,9 +41,10 @@ namespace TraderTools.Strategy
             _populateCandlesBlockStats = new CodeBlockStats("Populate candles");
         }
 
-        public StrategyRunner(IBrokersCandlesService candleService)
+        public StrategyRunner(IBrokersCandlesService candleService, ITradeDetailsAutoCalculatorService calculatorService)
         {
             _candlesService = candleService;
+            _calculatorService = calculatorService;
 
             _updateOpenTradesBlockStats = LogCodeBlockStats.GetCodeBlockStats("Update open trades");
             _createNewTradesBlockStats = new CodeBlockStats("Create new trades");
@@ -79,7 +81,6 @@ namespace TraderTools.Strategy
             var logTimeSeconds = 15;
             var lastLogTime = DateTime.Now;
             var logInterval = 1000;
-            var logIntervalCount = 0;
             var startTime = Environment.TickCount;
 
             Log.Debug($"Running - {strategy.Name} on {market}");
@@ -89,6 +90,7 @@ namespace TraderTools.Strategy
             var trades = new List<TradeDetails>();
             var orders = new List<TradeDetails>();
             var openTrades = new List<TradeDetails>();
+            var closedTrades = new List<TradeDetails>();
             var strategyRequiredTimeframes = strategy.CandleTimeframesRequired;
 
 
@@ -128,6 +130,9 @@ namespace TraderTools.Strategy
             // Process H2 candles and above to create new trades
             using (_createOrdersBlockStats.Log())
             {
+                var logIntervalSeconds = 5;
+                var nextLogTime = DateTime.UtcNow.AddSeconds(logIntervalSeconds);
+
                 while (timeframeCandleIndexes[H2TimeframeLookupIndex] < totalH2TimeframeCandles)
                 {
                     if (stop) break;
@@ -136,11 +141,8 @@ namespace TraderTools.Strategy
                     ISimpleCandle smallestTimeframeCandle = null;
 
                     // Log progress
-                    logIntervalCount++;
-                    if (logIntervalCount % logInterval == 0 &&
-                        (DateTime.Now - lastLogTime).TotalSeconds > logTimeSeconds)
+                    if (DateTime.UtcNow > nextLogTime)
                     {
-                        lastLogTime = DateTime.Now;
                         var percent = (timeframeCandleIndexes[H2TimeframeLookupIndex] * 100.0) /
                                       (double)totalH2TimeframeCandles;
                         Log.Info($"StrategyRunner: {market} {percent:0.00}% complete - created {trades.Count} trades");
@@ -268,8 +270,18 @@ namespace TraderTools.Strategy
                             }
                         }
 
+                        var loggingIntervalSeconds = 5;
+                        var nextLogTime = DateTime.UtcNow.AddSeconds(loggingIntervalSeconds);
+
                         for (var i = 0; i < m1Candles.Count; i++)
                         {
+                            if (DateTime.UtcNow > nextLogTime)
+                            {
+                                var percent = (i * 100.0) / m1Candles.Count;
+                                Log.Info($"StrategyRunner: {market.Name} {percent:0.00}% Orders: {orders.Count} Open trades: {openTrades.Count} Closed trades: {closedTrades.Count}");
+                                nextLogTime = DateTime.UtcNow.AddSeconds(loggingIntervalSeconds);
+                            }
+
                             var m1Candle = m1Candles[i];
 
                             // Setup
@@ -325,7 +337,7 @@ namespace TraderTools.Strategy
                             for (var ii = orders.Count - 1; ii >= 0; ii--)
                             {
                                 orders[ii].SimulateTrade(m1Candle.Low, m1Candle.High, m1Candle.Close,
-                                    m1Candle.OpenTime(), m1Candle.CloseTime(), out _);
+                                    m1Candle.OpenTimeTicks, m1Candle.CloseTimeTicks, out _);
 
                                 if (orders[ii].EntryDateTime != null)
                                 {
@@ -342,10 +354,11 @@ namespace TraderTools.Strategy
                             for (var ii = openTrades.Count - 1; ii >= 0; ii--)
                             {
                                 openTrades[ii].SimulateTrade(m1Candle.Low, m1Candle.High, m1Candle.Close,
-                                    m1Candle.OpenTime(), m1Candle.CloseTime(), out _);
+                                    m1Candle.OpenTimeTicks, m1Candle.CloseTimeTicks, out _);
 
                                 if (openTrades[ii].CloseDateTime != null)
                                 {
+                                    closedTrades.Add(openTrades[ii]);
                                     openTrades.RemoveAt(ii);
                                 }
                             }
@@ -448,7 +461,7 @@ namespace TraderTools.Strategy
                     Debugger.Break();
                 }
 
-                newTrades = strategy.CreateNewTrades(timeframeToTest, market, timeframeCurrentCandles, trades);
+                newTrades = strategy.CreateNewTrades(timeframeToTest, market, timeframeCurrentCandles, trades, _calculatorService);
 
                 if (newTrades != null && newTrades.Count > 0)
                 {
