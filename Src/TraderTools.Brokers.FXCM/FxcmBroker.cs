@@ -483,14 +483,12 @@ namespace TraderTools.Brokers.FXCM
 
                     if (stop != null && trade.StopPrice != stop)
                     {
-                        trade.ClearStopPrices();
                         trade.AddStopPrice(time, stop);
                         addedOrUpdatedOpenTrade = true;
                     }
 
                     if (limit != null && trade.LimitPrice != limit)
                     {
-                        trade.ClearLimitPrices();
                         trade.AddLimitPrice(time, limit);
                         addedOrUpdatedOpenTrade = true;
                     }
