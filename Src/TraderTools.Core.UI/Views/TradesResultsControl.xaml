@@ -19,6 +19,7 @@
         </Grid.Resources>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
@@ -37,8 +38,13 @@
             <ComboBoxItem Content="Strategies"></ComboBoxItem>
         </ComboBox>
 
+        <StackPanel Orientation="Horizontal" Grid.Row="1" Grid.ColumnSpan="4">
+            <Label Content="Include in results: "/>
+            <CheckBox Content="Open trades" IsChecked="{Binding IncludeOpenTrades}" VerticalContentAlignment="Center"/>
+            <CheckBox Content="Closed trades" IsChecked="{Binding IncludeClosedTrades}" VerticalContentAlignment="Center"/>
+        </StackPanel>
 
-        <DataGrid Grid.Row="1" Grid.ColumnSpan="4" ScrollViewer.CanContentScroll="False" AutoGenerateColumns="False" ClipboardCopyMode="IncludeHeader"
+        <DataGrid Grid.Row="2" Grid.ColumnSpan="4" ScrollViewer.CanContentScroll="False" AutoGenerateColumns="False" ClipboardCopyMode="IncludeHeader"
                   EnableRowVirtualization="True"
                   ItemsSource="{Binding Results}" CanUserAddRows="False" RowDetailsVisibilityMode="Collapsed" PreviewMouseWheel="UIElement_OnPreviewMouseWheel">
 
@@ -51,7 +57,6 @@
             <DataGrid.Columns>
                 <DataGridTextColumn Binding="{Binding Name}" Header="Name" Width="200" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding TradesCount}" Header="# trades" IsReadOnly="True"/>
-                <DataGridTextColumn Binding="{Binding OpenTradesCount}" Header="# open trades" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding Profit, StringFormat={}£{0:0.0}}" Header="Current profit" IsReadOnly="True" Width="100" Visibility="{Binding ShowProfit, Converter={StaticResource BoolToVis}}"/>
                 <DataGridTextColumn Binding="{Binding PercentSuccessfulTrades, StringFormat={}{0:0.0}%}" Header="Profitable trades" Width="100" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding AvRWinningTrades, StringFormat={}{0:0.000}}" Header="Average win R" Width="140" IsReadOnly="True"/>

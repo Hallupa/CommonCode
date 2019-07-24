@@ -19,7 +19,6 @@ namespace TraderTools.Core.UI.ViewModels
         private decimal _avAdverseRFor10Candles;
         private decimal _avPositiveRFor20Candles;
         private decimal _expectancyR;
-        private int _openTradesCount;
         private decimal _totalR;
 
         public ObservableCollectionEx<TradeDetails> Trades { get; } = new ObservableCollectionEx<TradeDetails>();
@@ -30,16 +29,6 @@ namespace TraderTools.Core.UI.ViewModels
             set
             {
                 _name = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public int OpenTradesCount
-        {
-            get => _openTradesCount;
-            set
-            {
-                _openTradesCount = value;
                 OnPropertyChanged();
             }
         }
@@ -151,7 +140,6 @@ namespace TraderTools.Core.UI.ViewModels
             var negativeRMultipleTrades = Trades.Where(t => t.RMultiple != null && t.RMultiple <= 0).ToList();
             var profitableTrades = Trades.Where(t => t.Profit > 0 || t.RMultiple > 0).ToList();
             TradesCount = Trades.Count;
-            OpenTradesCount = Trades.Count(x => x.EntryDateTime != null && x.CloseDateTime == null);
             Profit = Trades.Sum(t => t.Profit ?? 0);
             PercentSuccessfulTrades = profitableTrades.Count != 0 ? (profitableTrades.Count * 100M) / (decimal)Trades.Count(x => x.Profit != null || x.RMultiple != null) : 0;
             RSum = Trades.Where(t => t.RMultiple != null).Sum(t => t.RMultiple.Value);

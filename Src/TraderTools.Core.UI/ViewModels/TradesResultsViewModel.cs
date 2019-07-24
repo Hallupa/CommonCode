@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
@@ -10,12 +11,14 @@ using TraderTools.Basics;
 
 namespace TraderTools.Core.UI.ViewModels
 {
-    public class TradesResultsViewModel : DependencyObject
+    public class TradesResultsViewModel : DependencyObject, INotifyPropertyChanged
     {
         private readonly Func<List<TradeDetails>> _getTradesFunc;
         private readonly bool _createStrategiesSubResults;
         private string _selectedResultOption = "All";
         private Dispatcher _dispatcher;
+        private bool _includeOpenTrades = false;
+        private bool _includeClosedTrades = true;
 
         public ObservableCollectionEx<TradesResultViewModel> Results { get; } = new ObservableCollectionEx<TradesResultViewModel>();
 
@@ -64,6 +67,28 @@ namespace TraderTools.Core.UI.ViewModels
 
         public bool ShowProfit { get; set; } = false;
 
+        public bool IncludeOpenTrades
+        {
+            get => _includeOpenTrades;
+            set
+            {
+                _includeOpenTrades = value;
+                OnPropertyChanged();
+                UpdateResults();
+            }
+        }
+
+        public bool IncludeClosedTrades
+        {
+            get => _includeClosedTrades;
+            set
+            {
+                _includeClosedTrades = value;
+                OnPropertyChanged();
+                UpdateResults();
+            }
+        }
+
         public bool AdvStrategyNaming { get; set; } = false;
 
         public string SelectedResultOption
@@ -85,7 +110,9 @@ namespace TraderTools.Core.UI.ViewModels
 
         public void UpdateResults()
         {
-            var trades = _getTradesFunc().Where(t => t.EntryDateTime != null).ToList();
+            var trades = _getTradesFunc().Where(t => 
+                (IncludeOpenTrades && t.CloseDateTime == null && t.EntryDateTime != null)
+            || (IncludeClosedTrades && t.CloseDateTime != null && t.EntryDateTime != null)).ToList();
 
             var groupedTrades = GetGroupedTrades(trades);
             if (groupedTrades == null)
@@ -193,6 +220,13 @@ namespace TraderTools.Core.UI.ViewModels
             {
                 return trades.GroupBy(x => x.Strategies).ToList();
             }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }
