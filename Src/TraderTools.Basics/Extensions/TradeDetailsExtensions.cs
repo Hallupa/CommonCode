@@ -29,25 +29,25 @@ namespace TraderTools.Basics.Extensions
                 {
                     var stopPrice = Math.Min((decimal)candleHigh, openTrade.StopPrice.Value);
 
-                    openTrade.SetClose(new DateTime(candleOpenTimeTicks), stopPrice, TradeCloseReason.HitStop);
+                    openTrade.SetClose(new DateTime(candleOpenTimeTicks, DateTimeKind.Utc), stopPrice, TradeCloseReason.HitStop);
                     updated = true;
                 }
                 else if (openTrade.StopPrice != null && openTrade.TradeDirection.Value == TradeDirection.Short && candleHigh >= (double)openTrade.StopPrice.Value)
                 {
                     var stopPrice = Math.Max((decimal)candleLow, openTrade.StopPrice.Value);
-                    openTrade.SetClose(new DateTime(candleOpenTimeTicks), stopPrice, TradeCloseReason.HitStop);
+                    openTrade.SetClose(new DateTime(candleOpenTimeTicks, DateTimeKind.Utc), stopPrice, TradeCloseReason.HitStop);
                     updated = true;
                 }
                 else if (openTrade.LimitPrice != null && openTrade.TradeDirection.Value == TradeDirection.Long && candleHigh >= (double)openTrade.LimitPrice.Value)
                 {
                     var limitPrice = Math.Max((decimal)candleLow, openTrade.LimitPrice.Value);
-                    openTrade.SetClose(new DateTime(candleOpenTimeTicks), limitPrice, TradeCloseReason.HitLimit);
+                    openTrade.SetClose(new DateTime(candleOpenTimeTicks, DateTimeKind.Utc), limitPrice, TradeCloseReason.HitLimit);
                     updated = true;
                 }
                 else if (openTrade.LimitPrice != null && openTrade.TradeDirection.Value == TradeDirection.Short && candleLow <= (double)openTrade.LimitPrice.Value)
                 {
                     var limitPrice = Math.Min((decimal)candleHigh, openTrade.LimitPrice.Value);
-                    openTrade.SetClose(new DateTime(candleOpenTimeTicks), limitPrice, TradeCloseReason.HitLimit);
+                    openTrade.SetClose(new DateTime(candleOpenTimeTicks, DateTimeKind.Utc), limitPrice, TradeCloseReason.HitLimit);
                     updated = true;
                 }
             }
@@ -76,7 +76,7 @@ namespace TraderTools.Basics.Extensions
                                 //                ---
                                 if (candleLow <= orderPrice && candleHigh >= orderPrice)
                                 {
-                                    order.SetEntry(new DateTime(candleCloseTimeTicks), (decimal)orderPrice, trade.OrderAmount.Value);
+                                    order.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal)orderPrice, trade.OrderAmount.Value);
                                     updated = true;
                                 }
                                 // - - - - - - - -
@@ -86,7 +86,7 @@ namespace TraderTools.Basics.Extensions
                                 //                ---
                                 else if (direction == TradeDirection.Long && candleHigh <= orderPrice)
                                 {
-                                    order.SetEntry(new DateTime(candleCloseTimeTicks), (decimal)candleHigh, trade.OrderAmount.Value);
+                                    order.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal)candleHigh, trade.OrderAmount.Value);
                                     updated = true;
                                 }
                                 //                ___
@@ -96,7 +96,7 @@ namespace TraderTools.Basics.Extensions
                                 // - - - - - - - -
                                 else if (direction == TradeDirection.Short && candleLow >= orderPrice)
                                 {
-                                    order.SetEntry(new DateTime(candleCloseTimeTicks), (decimal)candleLow, trade.OrderAmount.Value);
+                                    order.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal)candleLow, trade.OrderAmount.Value);
                                     updated = true;
                                 }
 
@@ -112,7 +112,7 @@ namespace TraderTools.Basics.Extensions
                                 //                ---
                                 if (candleLow <= orderPrice && candleHigh >= orderPrice)
                                 {
-                                    order.SetEntry(new DateTime(candleCloseTimeTicks), (decimal)orderPrice, trade.OrderAmount.Value);
+                                    order.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal)orderPrice, trade.OrderAmount.Value);
                                     updated = true;
                                 }
                                 //                ___
@@ -122,7 +122,7 @@ namespace TraderTools.Basics.Extensions
                                 // - - - - - - - -
                                 else if (direction == TradeDirection.Long && candleLow >= orderPrice)
                                 {
-                                    order.SetEntry(new DateTime(candleCloseTimeTicks), (decimal)candleLow, trade.OrderAmount.Value);
+                                    order.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal)candleLow, trade.OrderAmount.Value);
                                     updated = true;
                                 }
                                 // - - - - - - - -
@@ -132,7 +132,7 @@ namespace TraderTools.Basics.Extensions
                                 //                ---
                                 else if (direction == TradeDirection.Short && candleHigh <= orderPrice)
                                 {
-                                    order.SetEntry(new DateTime(candleCloseTimeTicks), (decimal)candleHigh, trade.OrderAmount.Value);
+                                    order.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal)candleHigh, trade.OrderAmount.Value);
                                     updated = true;
                                 }
 
@@ -142,13 +142,13 @@ namespace TraderTools.Basics.Extensions
                 }
                 else if (order.OrderPrice == null)
                 {
-                    order.SetEntry(new DateTime(candleOpenTimeTicks), (decimal)candleClose, trade.OrderAmount.Value);
+                    order.SetEntry(new DateTime(candleOpenTimeTicks, DateTimeKind.Utc), (decimal)candleClose, trade.OrderAmount.Value);
                     updated = true;
                 }
 
                 if (trade.EntryPrice == null && order.OrderExpireTime != null && candleCloseTimeTicks >= order.OrderExpireTime.Value.Ticks)
                 {
-                    order.SetExpired(new DateTime(candleOpenTimeTicks));
+                    order.SetExpired(new DateTime(candleOpenTimeTicks, DateTimeKind.Utc));
                     updated = true;
                 }
             }

@@ -250,6 +250,8 @@ namespace TraderTools.Strategy
 
             trades = updatedTrades;
 
+            orders = orders.OrderBy(x => x.OrderDateTime.Value).ToList();
+
             // Simulate trades
             if (simulateTrades)
             {
@@ -334,8 +336,20 @@ namespace TraderTools.Strategy
                             }
 
                             // Process orders
-                            for (var ii = orders.Count - 1; ii >= 0; ii--)
+                            for (var ii = 0; ii < orders.Count; ii++)
                             {
+                                var order = orders[ii];
+                                var candleOpenTimeTicks = m1Candle.OpenTimeTicks;
+                                var candleCloseTimeTicks = m1Candle.CloseTimeTicks;
+
+                                // If candle's open is before order date or open in past and close not after order date
+                                if ((candleOpenTimeTicks <= order.OrderDateTime.Value.Ticks &&
+                                     candleCloseTimeTicks <= order.OrderDateTime.Value.Ticks)
+                                    && candleOpenTimeTicks <= order.OrderDateTime.Value.Ticks)
+                                {
+                                    break;
+                                }
+
                                 orders[ii].SimulateTrade(m1Candle.Low, m1Candle.High, m1Candle.Close,
                                     m1Candle.OpenTimeTicks, m1Candle.CloseTimeTicks, out _);
 
@@ -343,10 +357,12 @@ namespace TraderTools.Strategy
                                 {
                                     openTrades.Add(orders[ii]);
                                     orders.RemoveAt(ii);
+                                    ii--;
                                 }
                                 else if (orders[ii].CloseDateTime != null)
                                 {
                                     orders.RemoveAt(ii);
+                                    ii--;
                                 }
                             }
 

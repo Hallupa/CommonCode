@@ -211,19 +211,20 @@ namespace TraderTools.Core.UI.ViewModels
 
         public Timeframe LargeChartTimeframe { get; set; } = Timeframe.H2;
         public Timeframe SmallChartTimeframe { get; set; } = Timeframe.D1;
+        public bool UpdateCandlesOnViewTrade { get; set; } = true;
 
         public void ViewTrade(TradeDetails tradeDetails)
         {
             if (tradeDetails == null) return;
 
-            ShowTrade(tradeDetails, true);
+            ShowTrade(tradeDetails, UpdateCandlesOnViewTrade);
         }
 
         public void ViewTradeSetup(TradeDetails tradeDetails)
         {
             if (tradeDetails == null) return;
 
-            ShowTradeSetup(tradeDetails, true);
+            ShowTradeSetup(tradeDetails, UpdateCandlesOnViewTrade);
         }
 
         public void SetParentWindow(Window parent)

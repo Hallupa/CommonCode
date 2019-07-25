@@ -269,12 +269,16 @@ namespace TraderTools.Core.Services
                 if (trade.TradeDirection == TradeDirection.Long)
                 {
                     var gainOrLoss = Math.Abs(trade.ClosePrice.Value - trade.EntryPrice.Value);
-                    trade.RMultiple = (gainOrLoss / risk) * (trade.ClosePrice.Value > trade.EntryPrice.Value ? 1 : -1);
+                    trade.RMultiple = risk != 0
+                        ? (decimal?)(gainOrLoss / risk) * (trade.ClosePrice.Value > trade.EntryPrice.Value ? 1 : -1)
+                        : null;
                 }
                 else
                 {
                     var gainOrLoss = Math.Abs(trade.ClosePrice.Value - trade.EntryPrice.Value);
-                    trade.RMultiple = (gainOrLoss / risk) * (trade.ClosePrice.Value > trade.EntryPrice.Value ? -1 : 1);
+                    trade.RMultiple = gainOrLoss != 0
+                        ? (decimal?) (gainOrLoss / risk) * (trade.ClosePrice.Value > trade.EntryPrice.Value ? -1 : 1)
+                        : null;
                 }
             }
             else

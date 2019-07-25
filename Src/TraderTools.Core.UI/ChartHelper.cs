@@ -84,7 +84,7 @@ namespace TraderTools.Core.UI
 
             for (var i = 0; i < candles.Count; i++)
             {
-                time = DateTime.SpecifyKind(new DateTime(candles[i].CloseTimeTicks, DateTimeKind.Utc) + LocalUtcOffset, DateTimeKind.Local);
+                time = new DateTime(candles[i].CloseTimeTicks, DateTimeKind.Utc).ToLocalTime();
 
                 xvalues.Add(time);
                 openValues.Add((double)candles[i].Open);
@@ -125,12 +125,12 @@ namespace TraderTools.Core.UI
                 var signalAndValue = indicator.Process(new SimpleCandle(candle));
                 if (indicator.IsFormed)
                 {
-                    xvalues.Add(DateTime.SpecifyKind(new DateTime(candle.OpenTimeTicks, DateTimeKind.Utc) + LocalUtcOffset, DateTimeKind.Local));
+                    xvalues.Add(new DateTime(candle.OpenTimeTicks, DateTimeKind.Utc).ToLocalTime());
                     yvalues.Add((double)signalAndValue.Value);
                 }
                 else
                 {
-                    xvalues.Add(DateTime.SpecifyKind(new DateTime(candle.OpenTimeTicks, DateTimeKind.Utc) + LocalUtcOffset, DateTimeKind.Local));
+                    xvalues.Add(new DateTime(candle.OpenTimeTicks, DateTimeKind.Utc).ToLocalTime());
                     yvalues.Add(double.NaN);
                 }
             }
