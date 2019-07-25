@@ -19,6 +19,7 @@ namespace TraderTools.Core.UI.ViewModels
         private Dispatcher _dispatcher;
         private bool _includeOpenTrades = false;
         private bool _includeClosedTrades = true;
+        private bool _showIncludeOpenClosedTradesOptions = true;
 
         public ObservableCollectionEx<TradesResultViewModel> Results { get; } = new ObservableCollectionEx<TradesResultViewModel>();
 
@@ -89,6 +90,16 @@ namespace TraderTools.Core.UI.ViewModels
             }
         }
 
+        public bool ShowIncludeOpenClosedTradesOptions
+        {
+            get => _showIncludeOpenClosedTradesOptions;
+            set
+            {
+                _showIncludeOpenClosedTradesOptions = value;
+                OnPropertyChanged();
+            }
+        }
+
         public bool AdvStrategyNaming { get; set; } = false;
 
         public string SelectedResultOption
@@ -144,8 +155,10 @@ namespace TraderTools.Core.UI.ViewModels
                             ShowOptions = false,
                             ShowSubOptions = false,
                             SelectedResultOption = "Strategy",
-                            AdvStrategyNaming = true
-
+                            AdvStrategyNaming = true,
+                            IncludeOpenTrades = true,
+                            IncludeClosedTrades = true,
+                            ShowIncludeOpenClosedTradesOptions = false
                         };
                         result.StrategyResults.UpdateResults();
                     });
