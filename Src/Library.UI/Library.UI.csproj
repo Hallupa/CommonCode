@@ -119,6 +119,9 @@
       <DependentUpon>TokenControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="ViewModels\ProgressViewModel.cs" />
+    <Compile Include="Views\InputView.xaml.cs">
+      <DependentUpon>InputView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\ProgressView.xaml.cs">
       <DependentUpon>ProgressView.xaml</DependentUpon>
     </Compile>
@@ -136,6 +139,10 @@
     <Page Include="TokenEditor\TokenControl.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\InputView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\ProgressView.xaml">
       <Generator>MSBuild:Compile</Generator>
