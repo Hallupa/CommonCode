@@ -146,6 +146,7 @@ namespace TraderTools.Strategy
                         var percent = (timeframeCandleIndexes[H2TimeframeLookupIndex] * 100.0) /
                                       (double)totalH2TimeframeCandles;
                         Log.Info($"StrategyRunner: {market} {percent:0.00}% complete - created {trades.Count} trades");
+                        nextLogTime = DateTime.UtcNow.AddSeconds(logIntervalSeconds);
                     }
 
                     // Update candles for each timeframe
