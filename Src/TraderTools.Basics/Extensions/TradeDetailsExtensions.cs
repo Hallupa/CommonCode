@@ -29,25 +29,25 @@ namespace TraderTools.Basics.Extensions
                 {
                     var stopPrice = Math.Min((decimal)candleHigh, openTrade.StopPrice.Value);
 
-                    openTrade.SetClose(new DateTime(candleOpenTimeTicks, DateTimeKind.Utc), stopPrice, TradeCloseReason.HitStop);
+                    openTrade.SetClose(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), stopPrice, TradeCloseReason.HitStop);
                     updated = true;
                 }
                 else if (openTrade.StopPrice != null && openTrade.TradeDirection.Value == TradeDirection.Short && candleHigh >= (double)openTrade.StopPrice.Value)
                 {
                     var stopPrice = Math.Max((decimal)candleLow, openTrade.StopPrice.Value);
-                    openTrade.SetClose(new DateTime(candleOpenTimeTicks, DateTimeKind.Utc), stopPrice, TradeCloseReason.HitStop);
+                    openTrade.SetClose(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), stopPrice, TradeCloseReason.HitStop);
                     updated = true;
                 }
                 else if (openTrade.LimitPrice != null && openTrade.TradeDirection.Value == TradeDirection.Long && candleHigh >= (double)openTrade.LimitPrice.Value)
                 {
                     var limitPrice = Math.Max((decimal)candleLow, openTrade.LimitPrice.Value);
-                    openTrade.SetClose(new DateTime(candleOpenTimeTicks, DateTimeKind.Utc), limitPrice, TradeCloseReason.HitLimit);
+                    openTrade.SetClose(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), limitPrice, TradeCloseReason.HitLimit);
                     updated = true;
                 }
                 else if (openTrade.LimitPrice != null && openTrade.TradeDirection.Value == TradeDirection.Short && candleLow <= (double)openTrade.LimitPrice.Value)
                 {
                     var limitPrice = Math.Min((decimal)candleHigh, openTrade.LimitPrice.Value);
-                    openTrade.SetClose(new DateTime(candleOpenTimeTicks, DateTimeKind.Utc), limitPrice, TradeCloseReason.HitLimit);
+                    openTrade.SetClose(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), limitPrice, TradeCloseReason.HitLimit);
                     updated = true;
                 }
             }
