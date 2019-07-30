@@ -13,14 +13,14 @@ namespace TraderTools.Core.Services
     [PartCreationPolicy(CreationPolicy.Shared)]
     public class TradeDetailsAutoCalculatorService : ITradeDetailsAutoCalculatorService
     {
-        private List<TradeDetails> _calculatingTrades = new List<TradeDetails>();
+        private List<Trade> _calculatingTrades = new List<Trade>();
 
         [Import] private IBrokersCandlesService candlesService;
         [Import] private BrokersService _brokersService;
         [Import] private IMarketDetailsService _marketsService;
         private CalculateOptions _options = CalculateOptions.All;
 
-        public void AddTrade(TradeDetails trade)
+        public void AddTrade(Trade trade)
         {
             // In-case the trade is already setup, remove then re-add notifications
             trade.PropertyChanged -= TradeOnPropertyChanged;
@@ -33,14 +33,14 @@ namespace TraderTools.Core.Services
             _options = options;
         }
 
-        public void RemoveTrade(TradeDetails trade)
+        public void RemoveTrade(Trade trade)
         {
             trade.PropertyChanged -= TradeOnPropertyChanged;
         }
 
         private void TradeOnPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            var trade = (TradeDetails)sender;
+            var trade = (Trade)sender;
 
             lock (_calculatingTrades)
             {
@@ -65,7 +65,7 @@ namespace TraderTools.Core.Services
             }
         }
 
-        private void RecalculateTrade(TradeDetails trade)
+        private void RecalculateTrade(Trade trade)
         {
             var startTime = trade.OrderDateTime ?? trade.EntryDateTime;
             var broker = _brokersService.Brokers.FirstOrDefault(x => x.Name == trade.Broker);
@@ -287,7 +287,7 @@ namespace TraderTools.Core.Services
             }
         }
 
-        private void UpdateOrderPrice(TradeDetails trade)
+        private void UpdateOrderPrice(Trade trade)
         {
             // Update order prices
             if (trade.OrderPrices.Count > 0)
@@ -300,7 +300,7 @@ namespace TraderTools.Core.Services
             }
         }
 
-        private void UpdateTradePricePerPip(TradeDetails trade, IBroker broker)
+        private void UpdateTradePricePerPip(Trade trade, IBroker broker)
         {
             // Update price/pip
             if (trade.EntryQuantity != null && trade.EntryDateTime != null)

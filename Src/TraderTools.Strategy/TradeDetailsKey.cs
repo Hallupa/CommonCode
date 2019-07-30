@@ -85,7 +85,7 @@ namespace TraderTools.Strategy
             }
         }
 
-        public static TradeDetailsKey Create(TradeDetails trade)
+        public static TradeDetailsKey Create(Trade trade)
         {
             return new TradeDetailsKey
             {

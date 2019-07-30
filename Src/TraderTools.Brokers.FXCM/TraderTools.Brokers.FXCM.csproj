@@ -91,6 +91,7 @@
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="FxcmBroker.cs" />
+    <Compile Include="FxcmBrokerCreateOrderExtension.cs" />
     <Compile Include="ResponseListener.cs" />
     <Compile Include="SessionStatusListener.cs" />
     <Compile Include="O2SessionStatus.cs" />

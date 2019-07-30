@@ -13,7 +13,7 @@ namespace TraderTools.Core.UI.ViewModels
 {
     public class TradesResultsViewModel : DependencyObject, INotifyPropertyChanged
     {
-        private readonly Func<List<TradeDetails>> _getTradesFunc;
+        private readonly Func<List<Trade>> _getTradesFunc;
         private readonly bool _createStrategiesSubResults;
         private string _selectedResultOption = "All";
         private Dispatcher _dispatcher;
@@ -32,7 +32,7 @@ namespace TraderTools.Core.UI.ViewModels
             "Strategy"
         };
 
-        public TradesResultsViewModel(Func<List<TradeDetails>> getTradesFunc, bool createStrategiesSubResults = true)
+        public TradesResultsViewModel(Func<List<Trade>> getTradesFunc, bool createStrategiesSubResults = true)
         {
             _dispatcher = Dispatcher.CurrentDispatcher;
             _getTradesFunc = getTradesFunc;
@@ -174,9 +174,9 @@ namespace TraderTools.Core.UI.ViewModels
             });
         }
 
-        private IEnumerable<IGrouping<string, TradeDetails>> GetGroupedTrades(List<TradeDetails> trades)
+        private IEnumerable<IGrouping<string, Trade>> GetGroupedTrades(List<Trade> trades)
         {
-            IEnumerable<IGrouping<string, TradeDetails>> groupedTrades = null;
+            IEnumerable<IGrouping<string, Trade>> groupedTrades = null;
 
             switch (SelectedResultOption)
             {
@@ -206,13 +206,13 @@ namespace TraderTools.Core.UI.ViewModels
             return groupedTrades;
         }
 
-        private List<IGrouping<string, TradeDetails>> GetTradesGroupedByStrategies(List<TradeDetails> trades)
+        private List<IGrouping<string, Trade>> GetTradesGroupedByStrategies(List<Trade> trades)
         {
             if (AdvStrategyNaming)
             {
                 return trades.SelectMany(t =>
                 {
-                    var ret = new List<(string Name, TradeDetails Trade)>();
+                    var ret = new List<(string Name, Trade Trade)>();
 
                     if (!string.IsNullOrEmpty(t.Strategies))
                     {

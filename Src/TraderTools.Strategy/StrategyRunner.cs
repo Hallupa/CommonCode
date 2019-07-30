@@ -66,7 +66,7 @@ namespace TraderTools.Strategy
 
         public static CachedDetails Cache { get; set; } = new CachedDetails();
 
-        public List<TradeDetails> Run(IStrategy strategy, MarketDetails market, IBroker broker,
+        public List<Trade> Run(IStrategy strategy, MarketDetails market, IBroker broker,
             out int expectedTrades, out int expectedTradesFound,
             DateTime? earliest = null, DateTime? latest = null,
             StopPoint stopPoint = null, bool simulateTrades = true, bool updatePrices = false, bool cacheCandles = true)
@@ -79,7 +79,6 @@ namespace TraderTools.Strategy
             }
 
             var logTimeSeconds = 15;
-            var lastLogTime = DateTime.Now;
             var logInterval = 1000;
             var startTime = Environment.TickCount;
 
@@ -87,15 +86,15 @@ namespace TraderTools.Strategy
             _stopPoint = stopPoint;
             var timeframeCandleIndexes = new TimeframeLookup<int>();
             var timeframesCurrentCandles = new TimeframeLookup<List<BasicCandleAndIndicators>>();
-            var trades = new List<TradeDetails>();
-            var orders = new List<TradeDetails>();
-            var openTrades = new List<TradeDetails>();
-            var closedTrades = new List<TradeDetails>();
+            var trades = new List<Trade>();
+            var orders = new List<Trade>();
+            var openTrades = new List<Trade>();
+            var closedTrades = new List<Trade>();
             var strategyRequiredTimeframes = strategy.CandleTimeframesRequired;
 
 
             var timeframesList = new List<Timeframe>();
-            foreach (var t in new[] { Timeframe.M1, Timeframe.M15, Timeframe.H2, Timeframe.H4, Timeframe.D1 })
+            foreach (var t in new[] { Timeframe.M1, Timeframe.M15, Timeframe.H2 })
             {
                 if ((t == Timeframe.M1 && simulateTrades) || t == Timeframe.M15)
                 {
@@ -218,7 +217,7 @@ namespace TraderTools.Strategy
                         var tickStart = Environment.TickCount;
                         try
                         {
-                            CreateNewTrades(strategy, market, timeframesCurrentCandles, strategyRequiredTimeframes, trades, orders);
+                            CreateNewTrades(strategy, market, timeframesCurrentCandles, trades, orders);
                         }
                         catch (Exception ex)
                         {
@@ -232,7 +231,7 @@ namespace TraderTools.Strategy
                 }
             }
 
-            var updatedTrades = new List<TradeDetails>();
+            var updatedTrades = new List<Trade>();
             lock (Cache.TradesLookup)
             {
                 foreach (var t in trades)
@@ -254,6 +253,20 @@ namespace TraderTools.Strategy
             orders = orders.OrderBy(x => x.OrderDateTime.Value).ToList();
 
             // Simulate trades
+            SimulateTrades(strategy, market, ref expectedTrades, ref expectedTradesFound, simulateTrades, orders, openTrades, timeframesExcludingM1M15, m1Candles, closedTrades, timeframesAllCandles, trades);
+
+            Log.Info($"Run complete in {Environment.TickCount - startTime}ms - {strategy.Name} - {market} - Trades: {trades.Count} Completed trades: {trades.Where(t => t.ClosePrice != null).Count()} Sum R: {trades.Where(t => t.ClosePrice != null).Sum(t => t.RMultiple):0.00}");
+            LogCodeBlockStats.LogCodeBlockStatsReport(_codeBlockStatsList, singleLine: false);
+
+            return trades;
+        }
+
+        private void SimulateTrades(IStrategy strategy, MarketDetails market, ref int expectedTrades,
+            ref int expectedTradesFound, bool simulateTrades, List<Trade> orders, List<Trade> openTrades, List<Timeframe> timeframesExcludingM1M15,
+            List<SimpleCandle> m1Candles, List<Trade> closedTrades, TimeframeLookupBasicCandleAndIndicators timeframesAllCandles, List<Trade> trades)
+        {
+            TimeframeLookup<int> timeframeCandleIndexes;
+            TimeframeLookup<List<BasicCandleAndIndicators>> timeframesCurrentCandles;
             if (simulateTrades)
             {
                 using (_simulateTradesBlockStats.Log())
@@ -281,7 +294,8 @@ namespace TraderTools.Strategy
                             if (DateTime.UtcNow > nextLogTime)
                             {
                                 var percent = (i * 100.0) / m1Candles.Count;
-                                Log.Info($"StrategyRunner: {market.Name} {percent:0.00}% Orders: {orders.Count} Open trades: {openTrades.Count} Closed trades: {closedTrades.Count}");
+                                Log.Info(
+                                    $"StrategyRunner: {market.Name} {percent:0.00}% Orders: {orders.Count} Open trades: {openTrades.Count} Closed trades: {closedTrades.Count}");
                                 nextLogTime = DateTime.UtcNow.AddSeconds(loggingIntervalSeconds);
                             }
 
@@ -406,8 +420,8 @@ namespace TraderTools.Strategy
                                 if (foundTrade.Timeframe == expectedTrade.Timeframe
                                     && foundTrade.InitialStopInPips >= expectedTrade.Pips * 0.87M
                                     && foundTrade.InitialStopInPips <= expectedTrade.Pips * 1.13M
-                                    && foundTrade.OrderPrice >= (decimal)expectedTrade.OrderPrice * 0.95M
-                                    && foundTrade.OrderPrice <= (decimal)expectedTrade.OrderPrice * 1.05M)
+                                    && foundTrade.OrderPrice >= (decimal) expectedTrade.OrderPrice * 0.95M
+                                    && foundTrade.OrderPrice <= (decimal) expectedTrade.OrderPrice * 1.05M)
                                 {
                                     matchedTrades++;
                                     break;
@@ -422,7 +436,7 @@ namespace TraderTools.Strategy
                 }
 
                 // Run complete
-                var tradesToStore = new List<(TradeDetailsKey, TradeDetails)>();
+                var tradesToStore = new List<(TradeDetailsKey, Trade)>();
                 foreach (var trade in trades)
                 {
                     tradesToStore.Add((TradeDetailsKey.Create(trade), trade));
@@ -436,11 +450,6 @@ namespace TraderTools.Strategy
                     }
                 }
             }
-
-            Log.Info($"Run complete in {Environment.TickCount - startTime}ms - {strategy.Name} - {market} - Trades: {trades.Count} Completed trades: {trades.Where(t => t.ClosePrice != null).Count()} Sum R: {trades.Where(t => t.ClosePrice != null).Sum(t => t.RMultiple):0.00}");
-            LogCodeBlockStats.LogCodeBlockStatsReport(_codeBlockStatsList, singleLine: false);
-
-            return trades;
         }
 
         private static List<ExpectedTradeAttribute> GetTests(MarketDetails market, IStrategy strategy)
@@ -458,38 +467,19 @@ namespace TraderTools.Strategy
 
         private void CreateNewTrades(IStrategy strategy, MarketDetails market,
             TimeframeLookup<List<BasicCandleAndIndicators>> timeframeCurrentCandles,
-            Timeframe[] timeframesForNewTrades,
-            List<TradeDetails> trades, List<TradeDetails> orders)
+            List<Trade> trades, List<Trade> orders)
         {
-            foreach (var timeframeToTest in timeframesForNewTrades)
+            var newTrades = strategy.CreateNewTrades(market, timeframeCurrentCandles, null);
+
+            if (newTrades != null && newTrades.Count > 0)
             {
-                if (timeframeCurrentCandles[timeframeToTest].Count == 0)
-                {
-                    continue;
-                }
-
-                List<TradeDetails> newTrades;
-
-                var candle = timeframeCurrentCandles[timeframeToTest][timeframeCurrentCandles[timeframeToTest].Count - 1];
-
-                if (_stopPoint != null && candle.CloseTime() == _stopPoint.DateTime && candle.IsComplete == 1
-                    && _stopPoint.Timeframe == timeframeToTest)
-                {
-                    Debugger.Break();
-                }
-
-                newTrades = strategy.CreateNewTrades(timeframeToTest, market, timeframeCurrentCandles, trades, _calculatorService);
-
-                if (newTrades != null && newTrades.Count > 0)
-                {
-                    trades.AddRange(newTrades);
-                    orders.AddRange(newTrades);
-                }
+                trades.AddRange(newTrades);
+                orders.AddRange(newTrades);
             }
         }
 
         private void UpdateOpenTrades(
-            IStrategy strategy, string market, List<TradeDetails> openTrades,
+            IStrategy strategy, string market, List<Trade> openTrades,
             TimeframeLookup<List<BasicCandleAndIndicators>> timeframeCurrentCandles)
         {
             if (openTrades.Count == 0)

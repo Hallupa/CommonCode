@@ -4,12 +4,12 @@ namespace TraderTools.Basics.Extensions
 {
     public static class TradeDetailsExtensions
     {
-        public static void SimulateTrade(this TradeDetails trade, ICandle candle, out bool updated)
+        public static void SimulateTrade(this Trade trade, ICandle candle, out bool updated)
         {
             trade.SimulateTrade(candle.Low, candle.High, candle.Close, candle.OpenTimeTicks, candle.CloseTimeTicks, out updated);
         }
 
-        public static void SimulateTrade(this TradeDetails trade, double candleLow, double candleHigh,
+        public static void SimulateTrade(this Trade trade, double candleLow, double candleHigh,
             double candleClose, long candleOpenTimeTicks, long candleCloseTimeTicks, out bool updated)
         {
             updated = false;

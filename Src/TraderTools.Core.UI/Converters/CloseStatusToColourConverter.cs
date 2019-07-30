@@ -10,7 +10,7 @@ namespace TraderTools.Core.UI.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            var trade = (TradeDetails) value;
+            var trade = (Trade) value;
 
             if (trade.CloseReason == TradeCloseReason.HitStop)
             {

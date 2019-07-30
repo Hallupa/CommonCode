@@ -20,7 +20,7 @@ namespace TraderTools.Basics
 
     public interface IBrokerAccount
     {
-        List<TradeDetails> Trades { get; set; }
+        List<Trade> Trades { get; set; }
 
         decimal GetBalance(DateTime? dateTimeUtc = null);
 

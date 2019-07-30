@@ -10,7 +10,7 @@ namespace TraderTools.Core.UI.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            var v = (TradeDetails)value;
+            var v = (Trade)value;
 
             if (v != null)
             {

@@ -118,11 +118,11 @@ namespace TraderTools.Core.Services
             return null;
         }
 
-        public void CalculateUSDTProceeds(List<TradeDetails> trades, Action<string> updateProgress, IBrokersCandlesService candlesService, IBroker broker)
+        public void CalculateUSDTProceeds(List<Trade> trades, Action<string> updateProgress, IBrokersCandlesService candlesService, IBroker broker)
         {
             var groupedTrades = trades.GroupBy(x => x.OrderId + " " + x.OrderDateTime.Value.ToString("yyyyMMddHHmm")).ToList();
             var count = 0;
-            var producerConsumer = new ProducerConsumer<IGrouping<string, TradeDetails>>(10, tradeGroup =>
+            var producerConsumer = new ProducerConsumer<IGrouping<string, Trade>>(10, tradeGroup =>
             {
                 try
                 {

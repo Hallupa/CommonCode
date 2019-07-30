@@ -190,18 +190,18 @@ namespace TraderTools.Core.Helpers
             }
         }
 
-        public static List<TradeDetails> GroupTrades(List<TradeDetails> trades)
+        public static List<Trade> GroupTrades(List<Trade> trades)
         {
             // TODO: This needs finishing
             var id = 0;
             var groupedTradesByOrderIdList = trades.GroupBy(t => new
             { OrderId = string.IsNullOrEmpty(t.OrderId) ? (id++).ToString() : t.OrderId, t.Broker }).ToList();
 
-            var simplifiedTrades = new List<TradeDetails>();
+            var simplifiedTrades = new List<Trade>();
             foreach (var groupedTradesByOrderId in groupedTradesByOrderIdList)
             {
                 var firstTrade = groupedTradesByOrderId.First();
-                var trade = new TradeDetails
+                var trade = new Trade
                 {
                     BaseAsset = firstTrade.BaseAsset,
                     Broker = firstTrade.Broker,
