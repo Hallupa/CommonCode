@@ -22,6 +22,7 @@ namespace TraderTools.Strategy
     {
         private IBrokersCandlesService _candlesService;
         private readonly ITradeDetailsAutoCalculatorService _calculatorService;
+        private readonly IMarketDetailsService _marketDetailsService;
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private StopPoint _stopPoint;
         private CodeBlockStats _updateOpenTradesBlockStats;
@@ -41,10 +42,11 @@ namespace TraderTools.Strategy
             _populateCandlesBlockStats = new CodeBlockStats("Populate candles");
         }
 
-        public StrategyRunner(IBrokersCandlesService candleService, ITradeDetailsAutoCalculatorService calculatorService)
+        public StrategyRunner(IBrokersCandlesService candleService, ITradeDetailsAutoCalculatorService calculatorService, IMarketDetailsService marketDetailsService)
         {
             _candlesService = candleService;
             _calculatorService = calculatorService;
+            _marketDetailsService = marketDetailsService;
 
             _updateOpenTradesBlockStats = LogCodeBlockStats.GetCodeBlockStats("Update open trades");
             _createNewTradesBlockStats = new CodeBlockStats("Create new trades");
@@ -217,7 +219,7 @@ namespace TraderTools.Strategy
                         var tickStart = Environment.TickCount;
                         try
                         {
-                            CreateNewTrades(strategy, market, timeframesCurrentCandles, trades, orders);
+                            CreateNewTrades(strategy, market, timeframesCurrentCandles, trades, orders, timeframesExcludingM1M15);
                         }
                         catch (Exception ex)
                         {
@@ -420,8 +422,8 @@ namespace TraderTools.Strategy
                                 if (foundTrade.Timeframe == expectedTrade.Timeframe
                                     && foundTrade.InitialStopInPips >= expectedTrade.Pips * 0.87M
                                     && foundTrade.InitialStopInPips <= expectedTrade.Pips * 1.13M
-                                    && foundTrade.OrderPrice >= (decimal) expectedTrade.OrderPrice * 0.95M
-                                    && foundTrade.OrderPrice <= (decimal) expectedTrade.OrderPrice * 1.05M)
+                                    && foundTrade.OrderPrice >= (decimal)expectedTrade.OrderPrice * 0.95M
+                                    && foundTrade.OrderPrice <= (decimal)expectedTrade.OrderPrice * 1.05M)
                                 {
                                     matchedTrades++;
                                     break;
@@ -467,14 +469,113 @@ namespace TraderTools.Strategy
 
         private void CreateNewTrades(IStrategy strategy, MarketDetails market,
             TimeframeLookup<List<BasicCandleAndIndicators>> timeframeCurrentCandles,
-            List<Trade> trades, List<Trade> orders)
+            List<Trade> trades, List<Trade> orders, List<Timeframe> timeframesExcludingM1M15)
         {
             var newTrades = strategy.CreateNewTrades(market, timeframeCurrentCandles, null, _calculatorService);
 
             if (newTrades != null && newTrades.Count > 0)
             {
+                var timeframe = timeframesExcludingM1M15.First();
+                var latestPrice = (decimal)timeframeCurrentCandles[timeframe][timeframeCurrentCandles[timeframe].Count - 1].Close;
+                RemoveInvalidTrades(newTrades, latestPrice, _marketDetailsService);
+
                 trades.AddRange(newTrades);
                 orders.AddRange(newTrades);
+            }
+        }
+
+        private static void RemoveInvalidTrades(List<Trade> newTrades, decimal latestPrice, IMarketDetailsService marketDetailsService)
+        {
+            // Validate trades
+            for (var i = newTrades.Count - 1; i >= 0; i--)
+            {
+                var t = newTrades[i];
+                var removed = false;
+                if (t.OrderPrice != null)
+                {
+                    if (t.LimitPrice != null)
+                    {
+                        if (t.TradeDirection == TradeDirection.Long && t.LimitPrice <= t.OrderPrice.Value)
+                        {
+                            Log.Error($"Long trade for {t.Market} has limit price below order price. Ignoring trade");
+                            newTrades.RemoveAt(i);
+                            removed = true;
+                        }
+                        else if (t.TradeDirection == TradeDirection.Short && t.LimitPrice >= t.OrderPrice.Value)
+                        {
+                            Log.Error($"Short trade for {t.Market} has limit price above order price. Ignoring trade");
+                            newTrades.RemoveAt(i);
+                            removed = true;
+                        }
+                    }
+
+                    if (t.StopPrices != null && !removed)
+                    {
+                        if (t.TradeDirection == TradeDirection.Long && t.StopPrice >= t.OrderPrice.Value)
+                        {
+                            Log.Error($"Long trade for {t.Market} has stop price above order price. Ignoring trade");
+                            newTrades.RemoveAt(i);
+                            removed = true;
+                        }
+                        else if (t.TradeDirection == TradeDirection.Short && t.StopPrice <= t.OrderPrice.Value)
+                        {
+                            Log.Error($"Short trade for {t.Market} has stop price below order price. Ignoring trade");
+                            newTrades.RemoveAt(i);
+                            removed = true;
+                        }
+                    }
+
+                    if (!removed)
+                    {
+                        if (t.TradeDirection == TradeDirection.Long && t.OrderType == OrderType.LimitEntry && t.OrderPrice.Value >= latestPrice)
+                        {
+                            Log.Error($"Long trade for {t.Market} has limit entry but order price is above latest price. Ignoring trade");
+                            newTrades.RemoveAt(i);
+                            removed = true;
+                        }
+                        else if (t.TradeDirection == TradeDirection.Long && t.OrderType == OrderType.StopEntry && t.OrderPrice.Value <= latestPrice)
+                        {
+                            Log.Error($"Long trade for {t.Market} has stop entry but order price is below latest price. Ignoring trade");
+                            newTrades.RemoveAt(i);
+                            removed = true;
+                        }
+                        else if (t.TradeDirection == TradeDirection.Short && t.OrderType == OrderType.LimitEntry && t.OrderPrice.Value <= latestPrice)
+                        {
+                            Log.Error($"Short trade for {t.Market} has limit entry but order price is below latest price. Ignoring trade");
+                            newTrades.RemoveAt(i);
+                            removed = true;
+                        }
+                        else if (t.TradeDirection == TradeDirection.Short && t.OrderType == OrderType.StopEntry && t.OrderPrice.Value >= latestPrice)
+                        {
+                            Log.Error($"Short trade for {t.Market} has stop entry but order price is above latest price. Ignoring trade");
+                            newTrades.RemoveAt(i);
+                            removed = true;
+                        }
+                    }
+
+                    var maxPips = 4;
+                    if (!removed && t.StopPrice != null)
+                    {
+                        var stopPips = PipsHelper.GetPriceInPips((decimal)Math.Abs(t.StopPrice.Value - t.OrderPrice.Value), marketDetailsService.GetMarketDetails("FXCM", t.Market));
+                        if (stopPips <= maxPips)
+                        {
+                            Log.Error($"Trade for {t.Market} has stop within {maxPips} pips. Ignoring trade");
+                            newTrades.RemoveAt(i);
+                            removed = true;
+                        }
+                    }
+
+                    if (!removed && t.LimitPrice != null)
+                    {
+                        var limitPips = PipsHelper.GetPriceInPips((decimal)Math.Abs(t.LimitPrice.Value - t.OrderPrice.Value), marketDetailsService.GetMarketDetails("FXCM", t.Market));
+                        if (limitPips <= maxPips)
+                        {
+                            Log.Error($"Trade for {t.Market} has stop within {maxPips} pips. Ignoring trade");
+                            newTrades.RemoveAt(i);
+                            removed = true;
+                        }
+                    }
+                }
             }
         }
 

@@ -41,7 +41,7 @@
         <StackPanel Orientation="Horizontal" Grid.Row="1" Grid.ColumnSpan="4" Visibility="{Binding ShowIncludeOpenClosedTradesOptions, Converter={StaticResource BoolToVis}}">
             <Label Content="Include in results: "/>
             <CheckBox Content="Open trades" IsChecked="{Binding IncludeOpenTrades}" VerticalContentAlignment="Center" Margin="2"/>
-            <CheckBox Content="Closed trades" IsChecked="{Binding IncludeClosedTrades}" VerticalContentAlignment="Center" Margin="2"/>
+            <CheckBox Content="Completed trades" IsChecked="{Binding IncludeClosedTrades}" VerticalContentAlignment="Center" Margin="2"/>
         </StackPanel>
 
         <DataGrid Grid.Row="2" Grid.ColumnSpan="4" ScrollViewer.CanContentScroll="False" AutoGenerateColumns="False" ClipboardCopyMode="IncludeHeader"

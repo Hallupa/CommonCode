@@ -24,20 +24,32 @@ namespace TraderTools.Core.Services
 
         public List<IStrategy> Strategies => _strategies.ToList();
 
-        public void RegisterStrategy(IStrategy strategy)
+        public void RegisterStrategy(IStrategy strategy, bool notifyChanged = true)
         {
             _strategies.Add(strategy);
+
+            if (notifyChanged)
+            {
+                _updatedSubject.OnNext(null);
+            }
+        }
+
+        public void NotifyStrategiesChanged()
+        {
             _updatedSubject.OnNext(null);
         }
 
-        public void ClearStrategies()
+        public void ClearStrategies(bool notifyChanged = true)
         {
             for (var i = _strategies.Count - 1; i >= 0; i--)
             {
                 _strategies.Clear();
             }
 
-            _updatedSubject.OnNext(null);
+            if (notifyChanged)
+            {
+                _updatedSubject.OnNext(null);
+            }
         }
 
         public void SetStrategiesToUseRiskSizing(bool useRiskSizing)
@@ -51,7 +63,7 @@ namespace TraderTools.Core.Services
             }
         }
 
-        public void RegisterStrategy(string code)
+        public void RegisterStrategy(string code, bool notifyChanged = true)
         {
             _classNumber++;
 
@@ -98,7 +110,7 @@ namespace TraderTools.Core.Services
             }
 
             var strategy = (IStrategy)Activator.CreateInstance(t);
-            RegisterStrategy(strategy);
+            RegisterStrategy(strategy, notifyChanged);
         }
 
         private static CompilerResults Compile(string code, params string[] assemblies)

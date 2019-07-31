@@ -75,7 +75,7 @@ namespace TraderTools.Core.Trading
                 entryPrice,
                 currentDateTime,
                 OrderKind.EntryPrice,
-                TradeDirection.Short,
+                direction,
                 (decimal)lotSize.Value,
                 market,
                 expiryDateTime,
@@ -89,7 +89,7 @@ namespace TraderTools.Core.Trading
                 0,
                 0,
                 false,
-                (direction == TradeDirection.Long && currentPrice < entryPrice) || (direction == TradeDirection.Short && currentPrice > entryPrice) ? OrderType.LimitEntry : OrderType.StopEntry,
+                (direction == TradeDirection.Long && entryPrice < currentPrice) || (direction == TradeDirection.Short && entryPrice > currentPrice) ? OrderType.LimitEntry : OrderType.StopEntry,
                 _calculator);
 
             return trade;
