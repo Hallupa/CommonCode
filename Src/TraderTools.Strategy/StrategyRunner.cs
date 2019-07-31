@@ -469,7 +469,7 @@ namespace TraderTools.Strategy
             TimeframeLookup<List<BasicCandleAndIndicators>> timeframeCurrentCandles,
             List<Trade> trades, List<Trade> orders)
         {
-            var newTrades = strategy.CreateNewTrades(market, timeframeCurrentCandles, null);
+            var newTrades = strategy.CreateNewTrades(market, timeframeCurrentCandles, null, _calculatorService);
 
             if (newTrades != null && newTrades.Count > 0)
             {

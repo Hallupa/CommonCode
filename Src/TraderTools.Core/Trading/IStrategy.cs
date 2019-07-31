@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using TraderTools.Basics;
-using TraderTools.Core.Services;
 
 namespace TraderTools.Core.Trading
 {
@@ -16,7 +14,8 @@ namespace TraderTools.Core.Trading
         List<Trade> CreateNewTrades(
             MarketDetails market,
             TimeframeLookup<List<BasicCandleAndIndicators>> candlesLookup,
-            List<Trade> existingTrades);
+            List<Trade> existingTrades,
+            ITradeDetailsAutoCalculatorService calculatorService);
 
         void UpdateExistingOpenTrades(
             Trade trade,

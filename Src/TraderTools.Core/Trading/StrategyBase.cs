@@ -36,7 +36,8 @@ namespace TraderTools.Core.Trading
 
         public abstract TimeframeLookup<Indicator[]> CreateTimeframeIndicators();
 
-        public abstract List<Trade> CreateNewTrades(MarketDetails market, TimeframeLookup<List<BasicCandleAndIndicators>> candlesLookup, List<Trade> existingTrades);
+        public abstract List<Trade> CreateNewTrades(
+            MarketDetails market, TimeframeLookup<List<BasicCandleAndIndicators>> candlesLookup, List<Trade> existingTrades, ITradeDetailsAutoCalculatorService calculatorService);
 
         public virtual void UpdateExistingOpenTrades(Trade trade, string market, TimeframeLookup<List<BasicCandleAndIndicators>> candles)
         {
