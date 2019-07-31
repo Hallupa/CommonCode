@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -60,7 +59,7 @@ namespace TraderTools.Basics
         public decimal? Price { get; set; }
     }
 
-    public class TradeDetails : INotifyPropertyChanged
+    public class Trade : INotifyPropertyChanged
     {
         #region Fields
         private decimal? _currentStopPrice = null;
@@ -92,16 +91,16 @@ namespace TraderTools.Basics
 
         #endregion
 
-        public TradeDetails()
+        public Trade()
         {
         }
 
-        public static TradeDetails CreateOrder(string broker, decimal entryOrder, DateTime entryOrderTime, OrderKind orderKind,
+        public static Trade CreateOrder(string broker, decimal entryOrder, DateTime entryOrderTime, OrderKind orderKind,
             TradeDirection direction, decimal amount, string market, DateTime? orderExpireTime,
             decimal? stop, decimal? limit, Timeframe timeframe, string strategies, string comments, int custom1,
             int custom2, int custom3, int custom4, bool alert, OrderType orderType, ITradeDetailsAutoCalculatorService tradeCalculatorService)
         {
-            var trade = new TradeDetails();
+            var trade = new Trade();
             trade.SetOrder(entryOrderTime, entryOrder, market, timeframe, direction, amount, orderExpireTime);
             if (stop != null) trade.AddStopPrice(entryOrderTime, stop.Value);
             if (limit != null) trade.AddLimitPrice(entryOrderTime, limit.Value);

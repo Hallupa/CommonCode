@@ -33,7 +33,7 @@ namespace TraderTools.Core.Broker
 
         public DateTime? AccountLastUpdated { get; set; }
 
-        public List<TradeDetails> Trades { get; set; } = new List<TradeDetails>();
+        public List<Trade> Trades { get; set; } = new List<Trade>();
 
         private Subject<BrokerAccountUpdated> _brokerAccountUpdatedSubject = new Subject<BrokerAccountUpdated>();
 
@@ -64,7 +64,7 @@ namespace TraderTools.Core.Broker
                 if (trade.DataVersion == 0)
                 {
                     tradeCalculatorService.AddTrade(trade);
-                    trade.DataVersion = TradeDetails.CurrentDataVersion;
+                    trade.DataVersion = Trade.CurrentDataVersion;
                 }
             }
 
@@ -187,7 +187,7 @@ namespace TraderTools.Core.Broker
             _brokerAccountUpdatedSubject.OnNext(new BrokerAccountUpdated(this));
         }
 
-        public void SetTrades(List<TradeDetails> trades, ITradeDetailsAutoCalculatorService tradeCalculateService, IBroker broker)
+        public void SetTrades(List<Trade> trades, ITradeDetailsAutoCalculatorService tradeCalculateService, IBroker broker)
         {
             AccountLastUpdated = DateTime.UtcNow;
 
@@ -209,7 +209,7 @@ namespace TraderTools.Core.Broker
             _brokerAccountUpdatedSubject.OnNext(new BrokerAccountUpdated(this));
         }
 
-        public void RemoveTrade(TradeDetails tradeDetails)
+        public void RemoveTrade(Trade tradeDetails)
         {
             Trades.Remove(tradeDetails);
             _brokerAccountUpdatedSubject.OnNext(new BrokerAccountUpdated(this));

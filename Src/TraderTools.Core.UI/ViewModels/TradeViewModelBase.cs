@@ -66,9 +66,9 @@ namespace TraderTools.Core.UI.ViewModels
 
             EditCommand = new DelegateCommand(o => EditTrade());
             DeleteCommand = new DelegateCommand(o => DeleteTrade());
-            ViewTradeCommand = new DelegateCommand(t => ViewTrade((TradeDetails)t));
+            ViewTradeCommand = new DelegateCommand(t => ViewTrade((Trade)t));
             RemoveSelectedLineCommand = new DelegateCommand(t => RemoveSelectedLine());
-            ViewTradeSetupCommand = new DelegateCommand(t => ViewTradeSetup((TradeDetails)t));
+            ViewTradeSetupCommand = new DelegateCommand(t => ViewTradeSetup((Trade)t));
 
             TradesView = (CollectionView)CollectionViewSource.GetDefaultView(Trades);
             TradesView.Filter = TradesViewFilter;
@@ -131,7 +131,7 @@ namespace TraderTools.Core.UI.ViewModels
                                                      | TradeListDisplayOptionsFlag.Status
                                                      | TradeListDisplayOptionsFlag.ClosePrice;
 
-        protected TradeDetails TradeShowingOnChart { get; private set; }
+        protected Trade TradeShowingOnChart { get; private set; }
         public DelegateCommand ViewTradeCommand { get; private set; }
         public DelegateCommand ViewTradeSetupCommand { get; private set; }
 
@@ -147,7 +147,7 @@ namespace TraderTools.Core.UI.ViewModels
 
         public DelegateCommand DeleteCommand { get; }
 
-        public ObservableCollectionEx<TradeDetails> Trades { get; } = new ObservableCollectionEx<TradeDetails>();
+        public ObservableCollectionEx<Trade> Trades { get; } = new ObservableCollectionEx<Trade>();
 
         protected override void SelectedLargeChartTimeChanged()
         {
@@ -156,7 +156,7 @@ namespace TraderTools.Core.UI.ViewModels
 
         private bool TradesViewFilter(object obj)
         {
-            var t = (TradeDetails)obj;
+            var t = (Trade)obj;
             return (ShowOpenTrades && t.EntryPrice != null && t.CloseDateTime == null)
                    || (ShowOrders && t.OrderPrice != null && t.EntryPrice == null && t.CloseDateTime == null)
                    || (ShowClosedTrades && t.CloseDateTime != null);
@@ -164,7 +164,7 @@ namespace TraderTools.Core.UI.ViewModels
 
         [Import] public ChartingService ChartingService { get; private set; }
 
-        public TradeDetails SelectedTrade
+        public Trade SelectedTrade
         {
             get => _selectedTrade;
             set
@@ -203,7 +203,7 @@ namespace TraderTools.Core.UI.ViewModels
         }
 
         private Window _parent;
-        private TradeDetails _selectedTrade;
+        private Trade _selectedTrade;
 
         protected virtual void DeleteTrade()
         {
@@ -213,14 +213,14 @@ namespace TraderTools.Core.UI.ViewModels
         public Timeframe SmallChartTimeframe { get; set; } = Timeframe.D1;
         public bool UpdateCandlesOnViewTrade { get; set; } = true;
 
-        public void ViewTrade(TradeDetails tradeDetails)
+        public void ViewTrade(Trade tradeDetails)
         {
             if (tradeDetails == null) return;
 
             ShowTrade(tradeDetails, UpdateCandlesOnViewTrade);
         }
 
-        public void ViewTradeSetup(TradeDetails tradeDetails)
+        public void ViewTradeSetup(Trade tradeDetails)
         {
             if (tradeDetails == null) return;
 
@@ -258,7 +258,7 @@ namespace TraderTools.Core.UI.ViewModels
         {
         }
 
-        protected void ShowTrade(TradeDetails trade, Timeframe smallChartTimeframe, List<ICandle> smallChartCandles, Timeframe largeChartTimeframe, List<ICandle> largeChartCandles)
+        protected void ShowTrade(Trade trade, Timeframe smallChartTimeframe, List<ICandle> smallChartCandles, Timeframe largeChartTimeframe, List<ICandle> largeChartCandles)
         {
             _dispatcher.BeginInvoke((Action)(() =>
             {
@@ -357,7 +357,7 @@ namespace TraderTools.Core.UI.ViewModels
             }
         }
 
-        private void AddTradeLines(TradeDetails t)
+        private void AddTradeLines(Trade t)
         {
             if (t.ChartLines != null)
             {
@@ -397,9 +397,9 @@ namespace TraderTools.Core.UI.ViewModels
             }
         }
 
-        protected event Action<TradeDetails> TradeShown;
+        protected event Action<Trade> TradeShown;
 
-        protected void ShowTrade(TradeDetails trade, bool updateCandles = false)
+        protected void ShowTrade(Trade trade, bool updateCandles = false)
         {
             // Setup main chart
             SmallChartTimeframe = Timeframe.D1;
@@ -420,7 +420,7 @@ namespace TraderTools.Core.UI.ViewModels
             ShowTrade(trade, SmallChartTimeframe, smallChartCandles, LargeChartTimeframe, largeChartCandles);
         }
 
-        protected void ShowTradeSetup(TradeDetails trade, bool updateCandles = false)
+        protected void ShowTradeSetup(Trade trade, bool updateCandles = false)
         {
             if (trade.StartDateTime == null) return;
 

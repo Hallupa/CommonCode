@@ -130,6 +130,7 @@
     <Compile Include="Trading\IStrategy.cs" />
     <Compile Include="Trading\ITimeframeColour.cs" />
     <Compile Include="Trading\NotExpectedTradeAttribute.cs" />
+    <Compile Include="Trading\StrategyBase.cs" />
     <Compile Include="Trading\TradesAndCandles.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -4,12 +4,12 @@ namespace TraderTools.Basics.Extensions
 {
     public static class TradeDetailsExtensions
     {
-        public static void SimulateTrade(this TradeDetails trade, ICandle candle, out bool updated)
+        public static void SimulateTrade(this Trade trade, ICandle candle, out bool updated)
         {
             trade.SimulateTrade(candle.Low, candle.High, candle.Close, candle.OpenTimeTicks, candle.CloseTimeTicks, out updated);
         }
 
-        public static void SimulateTrade(this TradeDetails trade, double candleLow, double candleHigh,
+        public static void SimulateTrade(this Trade trade, double candleLow, double candleHigh,
             double candleClose, long candleOpenTimeTicks, long candleCloseTimeTicks, out bool updated)
         {
             updated = false;
@@ -142,13 +142,13 @@ namespace TraderTools.Basics.Extensions
                 }
                 else if (order.OrderPrice == null)
                 {
-                    order.SetEntry(new DateTime(candleOpenTimeTicks, DateTimeKind.Utc), (decimal)candleClose, trade.OrderAmount.Value);
+                    order.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal)candleClose, trade.OrderAmount.Value);
                     updated = true;
                 }
 
                 if (trade.EntryPrice == null && order.OrderExpireTime != null && candleCloseTimeTicks >= order.OrderExpireTime.Value.Ticks)
                 {
-                    order.SetExpired(new DateTime(candleOpenTimeTicks, DateTimeKind.Utc));
+                    order.SetExpired(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc));
                     updated = true;
                 }
             }

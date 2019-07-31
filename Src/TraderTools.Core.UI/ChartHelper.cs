@@ -152,7 +152,7 @@ namespace TraderTools.Core.UI
             }));
         }
 
-        public static AnnotationCollection CreateTradeAnnotations(AnnotationCollection annotations, ChartViewModel cvm, TradeAnnotationsToShow annotationsToShow, Timeframe timeframe, IList<ICandle> candles, TradeDetails trade)
+        public static AnnotationCollection CreateTradeAnnotations(AnnotationCollection annotations, ChartViewModel cvm, TradeAnnotationsToShow annotationsToShow, Timeframe timeframe, IList<ICandle> candles, Trade trade)
         {
             // Setup annotations
             if (candles.Count == 0) return annotations;
@@ -233,7 +233,7 @@ namespace TraderTools.Core.UI
         }
 
         private static void AddBuySellMarker(
-            TradeDirection direction, AnnotationCollection annotations, TradeDetails trade,
+            TradeDirection direction, AnnotationCollection annotations, Trade trade,
             DateTime timeLocal, decimal price, bool makeSmaller, bool isFilled = true, Color? colour = null)
         {
             var buyMarker = new BuyMarkerAnnotation();
@@ -264,7 +264,7 @@ namespace TraderTools.Core.UI
         }
 
         public static void AddHorizontalLine(decimal price, DateTime start, DateTime end, IDataSeries dataSeries,
-            AnnotationCollection annotations, TradeDetails trade, Color colour, bool extendLeftAndRight = false, 
+            AnnotationCollection annotations, Trade trade, Color colour, bool extendLeftAndRight = false, 
             bool extendRightIfZeroLength = false, DoubleCollection strokeDashArray = null)
         {
             var dateStartIndex = dataSeries.FindIndex(start, SearchMode.RoundDown);
@@ -334,7 +334,7 @@ namespace TraderTools.Core.UI
         }
 
         public static void SetChartViewModelVisibleRange(
-            TradeDetails trade, ChartViewModel cvm, IList<ICandle> candles, Timeframe timeframe)
+            Trade trade, ChartViewModel cvm, IList<ICandle> candles, Timeframe timeframe)
         {
             if (candles.Count == 0) return;
 

@@ -21,7 +21,7 @@ namespace TraderTools.Core.UI.ViewModels
         private decimal _expectancyR;
         private decimal _totalR;
 
-        public ObservableCollectionEx<TradeDetails> Trades { get; } = new ObservableCollectionEx<TradeDetails>();
+        public ObservableCollectionEx<Trade> Trades { get; } = new ObservableCollectionEx<Trade>();
 
         public string Name
         {

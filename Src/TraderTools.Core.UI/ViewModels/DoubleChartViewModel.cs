@@ -42,7 +42,7 @@ namespace TraderTools.Core.UI.ViewModels
         {
         }
 
-        protected Timeframe GetSelectedTimeframe(TradeDetails selectedTrade)
+        protected Timeframe GetSelectedTimeframe(Trade selectedTrade)
         {
             var timeframe = selectedTrade != null && selectedTrade.Timeframe  != null ? selectedTrade.Timeframe.Value : Timeframe.H2;
 

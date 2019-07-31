@@ -16,7 +16,7 @@ namespace TraderTools.Core.UI.ViewModels
     {
         #region Fields
         private readonly Action _closeWindow;
-        private TradeDetails _trade;
+        private Trade _trade;
         [Import] private BrokersService _brokersService;
         [Import] private IBrokersCandlesService _candlesService;
         [Import] private IMarketDetailsService _marketDetailsService;
@@ -26,7 +26,7 @@ namespace TraderTools.Core.UI.ViewModels
         #endregion
 
         #region Constructors
-        public TradeDetailsViewModel(TradeDetails trade, Action closeWindow)
+        public TradeDetailsViewModel(Trade trade, Action closeWindow)
         {
             _closeWindow = closeWindow;
             DependencyContainer.ComposeParts(this);
@@ -53,7 +53,7 @@ namespace TraderTools.Core.UI.ViewModels
 
         #region Properties
 
-        public TradeDetails Trade
+        public Trade Trade
         {
             get => _trade;
             set

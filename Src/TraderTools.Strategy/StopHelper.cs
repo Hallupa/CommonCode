@@ -20,7 +20,7 @@ namespace TraderTools.Strategy
     public static class StopHelper
     {
         public static void Trail00or50LevelList(
-            TradeDetails trade, string market, TimeframeLookup<List<BasicCandleAndIndicators>> candles)
+            Trade trade, string market, TimeframeLookup<List<BasicCandleAndIndicators>> candles)
         {
             if (trade.TradeDirection == null)
             {

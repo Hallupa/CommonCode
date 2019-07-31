@@ -19,7 +19,6 @@ namespace TraderTools.Brokers.FXCM
     public class FxcmBroker : IDisposable, IBroker
     {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        private O2GSession _session;
         private bool disposedValue = false;
         private O2SessionStatus _sessionStatus;
         private SessionStatusListener _sessionStatusListener;
@@ -27,17 +26,29 @@ namespace TraderTools.Brokers.FXCM
         private string _user;
         private string _password;
 
+        public FxcmBroker()
+        {
+            _rnd = new Random();
+
+            Session = O2GTransport.createSession();
+            _sessionStatusListener = new SessionStatusListener(Session, "", "");
+            Session.useTableManager(O2GTableManagerMode.Yes, null);
+            Session.subscribeSessionStatus(_sessionStatusListener);
+        }
+
+        internal O2GSession Session { get; private set; }
+
         public List<MarketDetails> GetMarketDetailsList()
         {
-            var loginRules = _session.getLoginRules();
+            var loginRules = Session.getLoginRules();
             var offersResponse = loginRules.getTableRefreshResponse(O2GTableType.Offers);
-            var factory = _session.getResponseReaderFactory();
+            var factory = Session.getResponseReaderFactory();
             var accountsResponse = loginRules.getTableRefreshResponse(O2GTableType.Accounts);
             var accountsReader = factory.createAccountsTableReader(accountsResponse);
             var tradingSettingsProvider = loginRules.getTradingSettingsProvider();
             var account = accountsReader.getRow(0);
             var tableManager = GetTableManager();
-            var readerFactory = _session.getResponseReaderFactory();
+            var readerFactory = Session.getResponseReaderFactory();
             var response = loginRules.getTableRefreshResponse(O2GTableType.Offers);
             var responseReader = readerFactory.createOffersTableReader(response);
 
@@ -60,16 +71,6 @@ namespace TraderTools.Brokers.FXCM
             throw new NotImplementedException();
         }
 
-        public FxcmBroker()
-        {
-            _rnd = new Random();
-
-            _session = O2GTransport.createSession();
-            _sessionStatusListener = new SessionStatusListener(_session, "", "");
-            _session.useTableManager(O2GTableManagerMode.Yes, null);
-            _session.subscribeSessionStatus(_sessionStatusListener);
-        }
-
         public void SetUsernamePassword(string user, string password)
         {
             _user = user;
@@ -81,7 +82,7 @@ namespace TraderTools.Brokers.FXCM
             Log.Info("FXCM connecting");
 
             _sessionStatusListener.Reset();
-            _session.login(_user, _password, "http://www.fxcorporate.com/Hosts.jsp", "Real");
+            Session.login(_user, _password, "http://www.fxcorporate.com/Hosts.jsp", "Real");
             if (_sessionStatusListener.WaitEvents() && _sessionStatusListener.Connected)
             {
                 Log.Info("FXCM Connected");
@@ -96,7 +97,7 @@ namespace TraderTools.Brokers.FXCM
         {
             get
             {
-                var currentStatus = _session?.getChartSessionStatus();
+                var currentStatus = Session?.getChartSessionStatus();
 
                 switch (currentStatus)
                 {
@@ -123,7 +124,7 @@ namespace TraderTools.Brokers.FXCM
 
         private O2GTableManager GetTableManager()
         {
-            var tableManager = _session.getTableManager();
+            var tableManager = Session.getTableManager();
             var managerStatus = tableManager.getStatus();
             while (managerStatus == O2GTableManagerStatus.TablesLoading)
             {
@@ -144,17 +145,17 @@ namespace TraderTools.Brokers.FXCM
             var tableManager = GetTableManager();
 
             // Get open trades
-            updateProgressAction("Getting open trades");
+            updateProgressAction?.Invoke("Getting open trades");
             var updated = GetOpenTrades(account, candlesService, marketsService, tableManager, out var openTrades);
 
-            updateProgressAction("Getting recently closed trades");
+            updateProgressAction?.Invoke("Getting recently closed trades");
             updated = GetClosedTrades(account, candlesService, marketsService, tableManager, out var closedTrades) || updated;
 
-            updateProgressAction("Getting orders");
+            updateProgressAction?.Invoke("Getting orders");
             updated = GetOrders(account, candlesService, marketsService, tableManager, out var orders) || updated;
 
             // Update trades from reports API
-            updateProgressAction("Getting historic trades");
+            updateProgressAction?.Invoke("Getting historic trades");
             updated = GetReportTrades(account, candlesService, marketsService) || updated;
 
             // Set any open trades to closed that aren't in the open list
@@ -176,17 +177,17 @@ namespace TraderTools.Brokers.FXCM
                 }
             }
 
-            updateProgressAction("Updating deposits/withdrawals");
+            updateProgressAction?.Invoke("Updating deposits/withdrawals");
             UpdateDepositsWithdrawals(account);
 
             return updated;
         }
 
         private bool GetClosedTrades(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService,
-            O2GTableManager tableManager, out List<TradeDetails> openTradesFound)
+            O2GTableManager tableManager, out List<Trade> openTradesFound)
         {
             O2GTableIterator iterator;
-            openTradesFound = new List<TradeDetails>();
+            openTradesFound = new List<Trade>();
             var openTrades = tableManager.getTable(O2GTableType.ClosedTrades);
 
             iterator = new O2GTableIterator();
@@ -199,7 +200,7 @@ namespace TraderTools.Brokers.FXCM
 
                 if (trade == null)
                 {
-                    trade = new TradeDetails();
+                    trade = new Trade();
                     account.Trades.Add(trade);
                     trade.Market = tradeRow.Instrument;
                     trade.Broker = "FXCM";
@@ -265,10 +266,10 @@ namespace TraderTools.Brokers.FXCM
         }
                 
         private bool GetOpenTrades(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService,
-            O2GTableManager tableManager, out List<TradeDetails> openTradesFound)
+            O2GTableManager tableManager, out List<Trade> openTradesFound)
         {
             O2GTableIterator iterator;
-            openTradesFound = new List<TradeDetails>();
+            openTradesFound = new List<Trade>();
             var openTrades = tableManager.getTable(O2GTableType.Trades);
 
             iterator = new O2GTableIterator();
@@ -281,7 +282,7 @@ namespace TraderTools.Brokers.FXCM
 
                 if (trade == null)
                 {
-                    trade = new TradeDetails();
+                    trade = new Trade();
                     account.Trades.Add(trade);
                     trade.Market = tradeRow.Instrument;
                     trade.Broker = "FXCM";
@@ -370,9 +371,9 @@ namespace TraderTools.Brokers.FXCM
         }
 
         private bool GetOrders(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService,
-            O2GTableManager tableManager, out List<TradeDetails> orders)
+            O2GTableManager tableManager, out List<Trade> orders)
         {
-            orders = new List<TradeDetails>();
+            orders = new List<Trade>();
             var iterator = new O2GTableIterator();
             var offers = tableManager.getTable(O2GTableType.Offers);
             var offersLookup = new Dictionary<string, O2GOfferTableRow>();
@@ -428,7 +429,7 @@ namespace TraderTools.Brokers.FXCM
                 var trade = account.Trades.FirstOrDefault(x => x.Id == orderOrder.TradeID);
                 if (trade == null)
                 {
-                    trade = new TradeDetails();
+                    trade = new Trade();
                     account.Trades.Add(trade);
                     trade.Broker = "FXCM";
                     trade.OrderAmount = orderOrder.Amount;
@@ -648,7 +649,7 @@ namespace TraderTools.Brokers.FXCM
 
                 var existingTrade = brokerAccount.Trades.FirstOrDefault(t => t.Id == id);
 
-                var trade = new TradeDetails
+                var trade = new Trade
                 {
                     Id = id,
                     Broker = "FXCM",
@@ -960,7 +961,7 @@ namespace TraderTools.Brokers.FXCM
         /// <param name="responseListener"></param>
         public void GetHistoryPrices(string instrument, string interval, Timeframe timeframe, DateTime dtFrom, DateTime dtTo, out List<Candle> bidCandles, out List<Candle> askCandles, out List<TickData> ticks)
         {
-            if (_session == null)
+            if (Session == null)
             {
                 Log.Warn($"FXCM not connected so unable to get {instrument} prices for {interval} for date {dtFrom}-{dtTo}");
                 bidCandles = null;
@@ -970,7 +971,7 @@ namespace TraderTools.Brokers.FXCM
             }
 
             Log.Info($"Getting FXCM {instrument} prices for {interval} for date {dtFrom}-{dtTo}");
-            var factory = _session.getRequestFactory();
+            var factory = Session.getRequestFactory();
 
             if (factory == null)
             {
@@ -981,8 +982,8 @@ namespace TraderTools.Brokers.FXCM
                 return;
             }
 
-            var responseListener = new ResponseListener(_session);
-            _session.subscribeResponse(responseListener);
+            var responseListener = new ResponseListener(Session);
+            Session.subscribeResponse(responseListener);
             var o2gTimeframe = factory.Timeframes[interval];
             bidCandles = new List<Candle>();
             askCandles = new List<Candle>();
@@ -1017,7 +1018,7 @@ namespace TraderTools.Brokers.FXCM
                     fromToList.Add((dtFrom, dtFirst));
 
                     responseListener.SetRequestID(request.RequestID);
-                    _session.sendRequest(request);
+                    Session.sendRequest(request);
                     if (responseListener.WaitEvents())
                     {
                         gotData = true;
@@ -1042,7 +1043,7 @@ namespace TraderTools.Brokers.FXCM
 
                 if (response != null && response.Type == O2GResponseType.MarketDataSnapshot)
                 {
-                    O2GResponseReaderFactory readerFactory = _session.getResponseReaderFactory();
+                    O2GResponseReaderFactory readerFactory = Session.getResponseReaderFactory();
                     if (readerFactory != null)
                     {
                         O2GMarketDataSnapshotResponseReader reader = readerFactory.createMarketDataSnapshotReader(response);
@@ -1062,7 +1063,7 @@ namespace TraderTools.Brokers.FXCM
                             break;
                         }
                     }
-                    ConstructCandles(instrument, _session, response, timeframe, out var tmpBidCandles, out var tmpAskCandles, out var tmpTickData);
+                    ConstructCandles(instrument, Session, response, timeframe, out var tmpBidCandles, out var tmpAskCandles, out var tmpTickData);
                     Log.Debug($"FCXM got {tmpBidCandles.Count} candles for {instrument} {timeframe} (Total {bidCandles.Count}) {tmpTickData.Count} ticks (Total {ticks.Count} - {(ticks.Count > 0 ? ticks[ticks.Count - 1].Datetime.ToString() : string.Empty)} - {(ticks.Count > 0 ? ticks[0].Datetime.ToString() : string.Empty)})");
 
                     bidCandles.AddRange(tmpBidCandles);
@@ -1146,15 +1147,15 @@ namespace TraderTools.Brokers.FXCM
                 {
                 }
 
-                if (_session != null)
+                if (Session != null)
                 {
-                    if (_session.getChartSessionStatus() == O2GChartSessionStatusCode.Connected)
+                    if (Session.getChartSessionStatus() == O2GChartSessionStatusCode.Connected)
                     {
                         Disconnect();
                     }
 
-                    _session.Dispose();
-                    _session = null;
+                    Session.Dispose();
+                    Session = null;
                 }
 
                 disposedValue = true;
@@ -1165,10 +1166,10 @@ namespace TraderTools.Brokers.FXCM
         {
             Log.Info("FXCM disconnecting");
 
-            if (_session != null)
+            if (Session != null)
             {
                 _sessionStatusListener.Reset();
-                _session.logout();
+                Session.logout();
                 _sessionStatusListener.WaitEvents();
             }
 
