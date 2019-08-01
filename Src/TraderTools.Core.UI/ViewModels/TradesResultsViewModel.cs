@@ -27,7 +27,7 @@ namespace TraderTools.Core.UI.ViewModels
         {
             "All",
             "Market",
-            "Month (Using entry date)",
+            "Month",
             "Timeframe",
             "Strategy"
         };
@@ -186,11 +186,11 @@ namespace TraderTools.Core.UI.ViewModels
                 case "Market":
                     groupedTrades = trades.GroupBy(x => x.Market).ToList();
                     break;
-                case "Month (Using entry date)":
+                case "Month":
                     var now = DateTime.Now;
                     groupedTrades =
                         from t in trades
-                        let time = t.EntryDateTimeLocal ?? t.OrderDateTimeLocal ?? now
+                        let time = t.CloseDateTimeLocal ?? now
                         group t by $"{time.Year}/{time.Month:00}"
                         into timeGroup
                         select timeGroup;
