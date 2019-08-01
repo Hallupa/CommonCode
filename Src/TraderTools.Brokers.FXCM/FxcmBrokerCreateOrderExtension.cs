@@ -10,7 +10,8 @@ namespace TraderTools.Brokers.FXCM
     {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        public static bool CreateOrder(this FxcmBroker fxcm, string market, double rate, DateTime? expiryDateUtc, decimal amount,
+        public static bool CreateOrder(this FxcmBroker fxcm, string market, double rate, double? rateStop, double? rateLimit,
+            DateTime? expiryDateUtc, decimal amount,
             TradeDirection direction, IBrokersCandlesService candlesService, IMarketDetailsService marketDetailsService)
         {
             var requestFactory = fxcm.Session.getRequestFactory();
@@ -37,20 +38,29 @@ namespace TraderTools.Brokers.FXCM
 
 
             var valuemap = requestFactory.createValueMap();
-            var sOfferID = Guid.NewGuid().ToString();
             valuemap.setString(O2GRequestParamsEnum.Command, Constants.Commands.CreateOrder);
             valuemap.setString(O2GRequestParamsEnum.OrderType, sOrderType);
             valuemap.setString(O2GRequestParamsEnum.AccountID, account.AccountID);
-            valuemap.setString(O2GRequestParamsEnum.OfferID, sOfferID);
+            valuemap.setString(O2GRequestParamsEnum.OfferID, offer.OfferID);
             valuemap.setString(O2GRequestParamsEnum.BuySell, buySell);
             valuemap.setInt(O2GRequestParamsEnum.Amount, (int)amount);
             valuemap.setDouble(O2GRequestParamsEnum.Rate, rate);
             valuemap.setString(O2GRequestParamsEnum.CustomID, "EntryOrder");
 
+            if (rateStop != null)
+            {
+                valuemap.setDouble(O2GRequestParamsEnum.RateStop, rateStop.Value);
+            }
+
+            if (rateLimit != null)
+            {
+                valuemap.setDouble(O2GRequestParamsEnum.RateLimit, rateLimit.Value);
+            }
+
             // Set expiry
             if (expiryDateUtc != null)
             {
-                var expiryStr = expiryDateUtc.Value.ToString("yyyyMMdd-HH:mm:ss.SSS");
+                var expiryStr = expiryDateUtc.Value.ToString("yyyyMMdd-HH:mm:ss");
                 valuemap.setString(O2GRequestParamsEnum.TimeInForce, Constants.TIF.GTD);
                 valuemap.setString(O2GRequestParamsEnum.ExpireDateTime, expiryStr); // UTCTimestamp format: "yyyyMMdd-HH:mm:ss.SSS" (milliseconds are optional)
             }
@@ -63,7 +73,35 @@ namespace TraderTools.Brokers.FXCM
                 return false;
             }
 
-            return true;
+            var responseListener = new ResponseListener(fxcm.Session);
+            fxcm.Session.subscribeResponse(responseListener);
+
+            try
+            {
+                responseListener.SetRequestID(request.RequestID);
+                fxcm.Session.sendRequest(request);
+                if (responseListener.WaitEvents())
+                {
+                    if (!string.IsNullOrEmpty(responseListener.Error))
+                    {
+                        Log.Error($"Unable to create order for {market} - {responseListener.Error}");
+                        return false;
+                    }
+
+                    return true;
+                }
+                else
+                {
+                    Log.Error($"Unable to send order request for market {market}");
+                    return false;
+                }
+
+                return true;
+            }
+            finally
+            {
+                fxcm.Session.unsubscribeResponse(responseListener);
+            }
         }
 
         private static O2GOfferRow GetOffer(O2GSession session, string market)
