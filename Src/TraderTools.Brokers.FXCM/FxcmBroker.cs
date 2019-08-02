@@ -970,7 +970,7 @@ namespace TraderTools.Brokers.FXCM
                 return;
             }
 
-            Log.Info($"Getting FXCM {instrument} prices for {interval} for date {dtFrom}-{dtTo}");
+            Log.Debug($"Getting FXCM {instrument} prices for {interval} for date {dtFrom}-{dtTo}");
             var factory = Session.getRequestFactory();
 
             if (factory == null)
@@ -1078,7 +1078,7 @@ namespace TraderTools.Brokers.FXCM
                 iteration++;
             } while (!reversed && dtFirst > dtFrom);
 
-            Log.Info($"Got {bidCandles.Count} prices for {instrument} {interval} for date {dtFrom}-{dtTo}");
+            Log.Debug($"Got {bidCandles.Count} prices for {instrument} {interval} for date {dtFrom}-{dtTo}");
         }
 
         /// <summary>

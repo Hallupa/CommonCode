@@ -69,7 +69,7 @@ namespace TraderTools.Core.Services
         }
 
         public List<ICandle> GetCandles(IBroker broker, string market, Timeframe timeframe,
-            bool updateCandles, DateTime? minOpenTimeUtc = null, DateTime? maxCloseTimeUtc = null, bool cacheData = true)
+            bool updateCandles, DateTime? minOpenTimeUtc = null, DateTime? maxCloseTimeUtc = null, bool cacheData = true, bool forceUpdate = false)
         {
             var lck = GetLock(broker, market, timeframe);
             var start = EarliestDateTime;
@@ -108,7 +108,7 @@ namespace TraderTools.Core.Services
                     Timeframe = timeframe
                 }, out var updatedDatetime))
                 {
-                    if ((DateTime.UtcNow - updatedDatetime).TotalSeconds < 60 * 30)
+                    if (!forceUpdate && (DateTime.UtcNow - updatedDatetime).TotalSeconds < 60 * 30)
                     {
                         returnCandles = true;
                     }
