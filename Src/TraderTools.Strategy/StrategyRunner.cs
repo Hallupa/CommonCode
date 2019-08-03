@@ -96,11 +96,20 @@ namespace TraderTools.Strategy
 
 
             var timeframesList = new List<Timeframe>();
-            foreach (var t in new[] { Timeframe.M1, Timeframe.M15, Timeframe.H2 })
+            var lowestStrategyTimeframe = strategyRequiredTimeframes.OrderBy(x => x).First();
+            if (lowestStrategyTimeframe > Timeframe.H2)
+            {
+                lowestStrategyTimeframe = Timeframe.H2;
+            }
+
+            foreach (var t in new[] { Timeframe.M1, Timeframe.M15 }.Union(strategyRequiredTimeframes).Union(new List<Timeframe> { lowestStrategyTimeframe }))
             {
                 if ((t == Timeframe.M1 && simulateTrades) || t == Timeframe.M15)
                 {
-                    timeframesList.Add(t);
+                    if (!timeframesList.Contains(t))
+                    {
+                        timeframesList.Add(t);
+                    }
                 }
 
                 if (strategyRequiredTimeframes.Contains(t))
@@ -112,8 +121,9 @@ namespace TraderTools.Strategy
             var timeframes = timeframesList.ToArray();
             var timeframesAllCandles = PopulateCandles(broker, market.Name, timeframes, strategy, updatePrices, cacheCandles, earliest, latest, _candlesService, out var m1Candles);
             var timeframesExcludingM1M15 = timeframes.Where(t => t != Timeframe.M15 && t != Timeframe.M1).ToList();
-            var H2TimeframeLookupIndex = TimeframeLookup<int>.GetLookupIndex(Timeframe.H2);
-            var totalH2TimeframeCandles = timeframesAllCandles[H2TimeframeLookupIndex].Count;
+
+            var lowestStrategyTimeframeLookupIndex = TimeframeLookup<int>.GetLookupIndex(lowestStrategyTimeframe);
+            var lowestStrategyTimeframeCandles = timeframesAllCandles[lowestStrategyTimeframeLookupIndex].Count;
 
             foreach (var timeframe in timeframesExcludingM1M15)
             {
@@ -134,7 +144,7 @@ namespace TraderTools.Strategy
                 var logIntervalSeconds = 5;
                 var nextLogTime = DateTime.UtcNow.AddSeconds(logIntervalSeconds);
 
-                while (timeframeCandleIndexes[H2TimeframeLookupIndex] < totalH2TimeframeCandles)
+                while (timeframeCandleIndexes[lowestStrategyTimeframeLookupIndex] < lowestStrategyTimeframeCandles)
                 {
                     if (stop) break;
 
@@ -144,8 +154,8 @@ namespace TraderTools.Strategy
                     // Log progress
                     if (DateTime.UtcNow > nextLogTime)
                     {
-                        var percent = (timeframeCandleIndexes[H2TimeframeLookupIndex] * 100.0) /
-                                      (double)totalH2TimeframeCandles;
+                        var percent = (timeframeCandleIndexes[lowestStrategyTimeframeLookupIndex] * 100.0) /
+                                      (double)lowestStrategyTimeframeCandles;
                         Log.Info($"StrategyRunner: {market} {percent:0.00}% complete - created {trades.Count} trades");
                         nextLogTime = DateTime.UtcNow.AddSeconds(logIntervalSeconds);
                     }
@@ -162,30 +172,30 @@ namespace TraderTools.Strategy
                         {
                             var timeframeCandle = timeframeAllCandles[ii];
 
-                            if (latest != null && timeframe == Timeframe.H2 && timeframeCandle.OpenTime() > latest.Value)
+                            if (latest != null && timeframe == lowestStrategyTimeframe && timeframeCandle.OpenTime() > latest.Value)
                             {
                                 stop = true;
                                 break;
                             }
 
-                            if (timeframe == Timeframe.H2)
+                            if (timeframe == lowestStrategyTimeframe)
                             {
                                 h2Time = timeframeCandle.OpenTime();
                             }
 
-                            if (timeframe == Timeframe.H2 && timeframeCandle.IsComplete == 0)
+                            if (timeframe == lowestStrategyTimeframe && timeframeCandle.IsComplete == 0)
                             {
                                 timeframeCandleIndexes[timeframeLookupIndex] = ii + 1;
                                 continue;
                             }
-                            else if (timeframe == Timeframe.H2 && timeframeCandle.IsComplete == 1)
+                            else if (timeframe == lowestStrategyTimeframe && timeframeCandle.IsComplete == 1)
                             {
                                 timeframeCandleIndexes[timeframeLookupIndex] = ii + 1;
                                 timeframeCurrentCandles.Add(timeframeCandle);
                                 smallestTimeframeCandle = timeframeCandle;
                                 break;
                             }
-                            else if (timeframe == Timeframe.H2 ||
+                            else if (timeframe == lowestStrategyTimeframe ||
                                      (smallestTimeframeCandle != null && timeframeCandle.CloseTimeTicks <= smallestTimeframeCandle.CloseTimeTicks))
                             {
                                 // Remove incomplete candles if not D1 Tiger or if is D1 Tiger and new candle is complete
@@ -257,7 +267,7 @@ namespace TraderTools.Strategy
             // Simulate trades
             SimulateTrades(strategy, market, ref expectedTrades, ref expectedTradesFound, simulateTrades, orders, openTrades, timeframesExcludingM1M15, m1Candles, closedTrades, timeframesAllCandles, trades);
 
-            Log.Info($"Run complete in {Environment.TickCount - startTime}ms - {strategy.Name} - {market} - Trades: {trades.Count} Completed trades: {trades.Where(t => t.ClosePrice != null).Count()} Sum R: {trades.Where(t => t.ClosePrice != null).Sum(t => t.RMultiple):0.00}");
+            Log.Info($"Run complete in {Environment.TickCount - startTime}ms - {strategy.Name} - {market.Name} - Trades: {trades.Count} Completed trades: {trades.Where(t => t.ClosePrice != null).Count()} Sum R: {trades.Where(t => t.ClosePrice != null).Sum(t => t.RMultiple):0.00}");
             LogCodeBlockStats.LogCodeBlockStatsReport(_codeBlockStatsList, singleLine: false);
 
             return trades;
@@ -475,6 +485,7 @@ namespace TraderTools.Strategy
 
             if (newTrades != null && newTrades.Count > 0)
             {
+                newTrades.ForEach(t => t.Strategies = strategy.Name);
                 var timeframe = timeframesExcludingM1M15.First();
                 var latestPrice = (decimal)timeframeCurrentCandles[timeframe][timeframeCurrentCandles[timeframe].Count - 1].Close;
                 RemoveInvalidTrades(newTrades, latestPrice, _marketDetailsService);
