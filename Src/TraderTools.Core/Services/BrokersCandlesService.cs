@@ -167,7 +167,7 @@ namespace TraderTools.Core.Services
         {
             using (new LogRunTime($"Load and process {broker.Name} {market} {timeframe} candles"))
             {
-                var candlesPath = Path.Combine(BrokersService.DataDirectory, "Candles", $"{broker.Name}_{market.Replace("/", "")}_{timeframe}.dat");
+                var candlesPath = Path.Combine(BrokersService.DataDirectory, "Candles", $"{broker.Name}_{market.Replace("/", "")}_{timeframe}.bin");
 
                 if (File.Exists(candlesPath))
                 {
@@ -194,8 +194,8 @@ namespace TraderTools.Core.Services
         public void SaveCandles(List<ICandle> candles, IBroker broker, string market, Timeframe timeframe)
         {
             var directory = Path.Combine(BrokersService.DataDirectory, "Candles");
-            var candlesTmpPath = Path.Combine(directory, $"{broker.Name}_{market.Replace("/", "")}_{timeframe}_tmp.dat");
-            var candlesFinalPath = Path.Combine(directory, $"{broker.Name}_{market.Replace("/", "")}_{timeframe}.dat");
+            var candlesTmpPath = Path.Combine(directory, $"{broker.Name}_{market.Replace("/", "")}_{timeframe}_tmp.bin");
+            var candlesFinalPath = Path.Combine(directory, $"{broker.Name}_{market.Replace("/", "")}_{timeframe}.bin");
 
             if (!Directory.Exists(directory))
             {

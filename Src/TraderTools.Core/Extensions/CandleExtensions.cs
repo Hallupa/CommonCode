@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using TraderTools.Basics;
+﻿using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
 
 namespace TraderTools.Core.Extensions
@@ -10,12 +7,12 @@ namespace TraderTools.Core.Extensions
     {
         public static CandleColour Colour(this BasicCandleAndIndicators candle)
         {
-            if (candle.Close > candle.Open)
+            if (candle.CloseBid > candle.OpenBid)
             {
                 return CandleColour.White;
             }
 
-            if (candle.Close < candle.Open)
+            if (candle.CloseBid < candle.OpenBid)
             {
                 return CandleColour.Black;
             }

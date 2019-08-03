@@ -54,7 +54,7 @@ namespace TraderTools.Indicators
             LongMa.Reset();
         }
 
-        public SignalAndValue Process(ISimpleCandle candle)
+        public SignalAndValue Process(ICandle candle)
         {
             var shortValue = ShortMa.Process(candle);
             var longValue = LongMa.Process(candle);

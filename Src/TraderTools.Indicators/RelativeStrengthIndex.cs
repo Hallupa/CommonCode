@@ -34,9 +34,9 @@ namespace TraderTools.Indicators
             base.Reset();
         }
 
-        public override SignalAndValue Process(ISimpleCandle candle)
+        public override SignalAndValue Process(ICandle candle)
         {
-            var newValue = candle.Close;
+            var newValue = candle.CloseBid;
 
             if (!_isInitialized)
             {
@@ -51,14 +51,14 @@ namespace TraderTools.Indicators
 
             var delta = newValue - _last;
 
-            var gainValue = _gain.Process(new SimpleCandle
+            var gainValue = _gain.Process(new Candle
             {
-                Close = (float)(delta > 0 ? delta : 0.0),
+                CloseBid = (float)(delta > 0 ? delta : 0.0),
                 IsComplete = candle.IsComplete
             });
-            var lossValue = _loss.Process(new SimpleCandle
+            var lossValue = _loss.Process(new Candle
             {
-                Close = (float)(delta > 0 ? 0.0 : -delta),
+                CloseBid = (float)(delta > 0 ? 0.0 : -delta),
                 IsComplete = candle.IsComplete
             });
 

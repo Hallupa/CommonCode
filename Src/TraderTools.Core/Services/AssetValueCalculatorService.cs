@@ -106,13 +106,13 @@ namespace TraderTools.Core.Services
                         Broker = broker.Name,
                         DateTime = date,
                         Market = market,
-                        Price = candle.Close
+                        Price = candle.CloseBid
                     };
                 }
 
                 Save();
 
-                return candle.Close;
+                return candle.CloseBid;
             }
 
             return null;
@@ -294,7 +294,7 @@ namespace TraderTools.Core.Services
                 var eurUsd = candleService.GetFirstCandleThatClosesBeforeDateTime("EUR/USD", fxcmBroker,
                     TimeframeForGettingPrices, date, updateCandles);
                 success = true;
-                return amount * (decimal)eurUsd.Close;
+                return amount * (decimal)eurUsd.CloseBid;
             }
 
             if (asset == "GBP")
@@ -302,7 +302,7 @@ namespace TraderTools.Core.Services
                 var gbpUsd = candleService.GetFirstCandleThatClosesBeforeDateTime("GBP/USD", fxcmBroker,
                     TimeframeForGettingPrices, date, updateCandles);
                 success = true;
-                return amount * (decimal)gbpUsd.Close;
+                return amount * (decimal)gbpUsd.CloseBid;
             }
 
             if (asset == "USD")

@@ -30,14 +30,14 @@ namespace TraderTools.Indicators
             TrueRange.Reset();
         }
 
-        public SignalAndValue Process(ISimpleCandle candle)
+        public SignalAndValue Process(ICandle candle)
         {
             IsFormed = MovingAverage.IsFormed;
 
             var v = TrueRange.Process(candle);
-            return MovingAverage.Process(new SimpleCandle
+            return MovingAverage.Process(new Candle
             {
-                Close = v.Value,
+                CloseBid = v.Value,
                 IsComplete = candle.IsComplete
             });
         }

@@ -10,7 +10,7 @@ namespace TraderTools.Indicators
         public string Name { get; } = "ParabolicSar";
 
         private double _prevValue;
-        private readonly List<ISimpleCandle> _candles = new List<ISimpleCandle>();
+        private readonly List<ICandle> _candles = new List<ICandle>();
         private bool _longPosition;
         private double _xp;        // Extreme Price
         private double _af;         // Acceleration factor
@@ -44,7 +44,7 @@ namespace TraderTools.Indicators
             throw new NotImplementedException();
         }
 
-        public SignalAndValue Process(ISimpleCandle candle)
+        public SignalAndValue Process(ICandle candle)
         {
             if (_candles.Count == 0)
                 _candles.Add(candle);
@@ -66,9 +66,9 @@ namespace TraderTools.Indicators
 
             if (_candles.Count == 3)
             {
-                _longPosition = _candles[_candles.Count - 1].High > _candles[_candles.Count - 2].High;
-                var max = _candles.Max(t => t.High);
-                var min = _candles.Min(t => t.Low);
+                _longPosition = _candles[_candles.Count - 1].HighBid > _candles[_candles.Count - 2].HighBid;
+                var max = _candles.Max(t => t.HighBid);
+                var min = _candles.Min(t => t.LowBid);
                 _xp = _longPosition ? max : min;
                 _af = Acceleration;
                 var v = (float) (_xp + (_longPosition ? -1 : 1) * (max - min) * _af);
@@ -92,18 +92,18 @@ namespace TraderTools.Indicators
                 {
                     if (_longPosition)
                     {
-                        if (_todaySar > _candles[_candles.Count - 1 - x].Low)
-                            _todaySar = _candles[_candles.Count - 1 - x].Low;
+                        if (_todaySar > _candles[_candles.Count - 1 - x].LowBid)
+                            _todaySar = _candles[_candles.Count - 1 - x].LowBid;
                     }
                     else
                     {
-                        if (_todaySar < _candles[_candles.Count - 1 - x].High)
-                            _todaySar = _candles[_candles.Count - 1 - x].High;
+                        if (_todaySar < _candles[_candles.Count - 1 - x].HighBid)
+                            _todaySar = _candles[_candles.Count - 1 - x].HighBid;
                     }
                 }
 
-                if ((_longPosition && (_candles[_candles.Count - 1].Low < _todaySar || _candles[_candles.Count - 2].Low < _todaySar))
-                        || (!_longPosition && (_candles[_candles.Count - 1].High > _todaySar || _candles[_candles.Count - 2].High > _todaySar)))
+                if ((_longPosition && (_candles[_candles.Count - 1].LowBid < _todaySar || _candles[_candles.Count - 2].LowBid < _todaySar))
+                        || (!_longPosition && (_candles[_candles.Count - 1].HighBid > _todaySar || _candles[_candles.Count - 2].HighBid > _todaySar)))
                 {
                     var v = (float)Reverse();
                     _currentValue = v;
@@ -112,7 +112,7 @@ namespace TraderTools.Indicators
 
                 if (_longPosition)
                 {
-                    if (_prevBar != _candles.Count || _candles[_candles.Count - 1].Low < _prevSar)
+                    if (_prevBar != _candles.Count || _candles[_candles.Count - 1].LowBid < _prevSar)
                     {
                         value = _todaySar;
                         _prevSar = _todaySar;
@@ -120,15 +120,15 @@ namespace TraderTools.Indicators
                     else
                         value = _prevSar;
 
-                    if (_candles[_candles.Count - 1].High > _xp)
+                    if (_candles[_candles.Count - 1].HighBid > _xp)
                     {
-                        _xp = _candles[_candles.Count - 1].High;
+                        _xp = _candles[_candles.Count - 1].HighBid;
                         AfIncrease();
                     }
                 }
                 else if (!_longPosition)
                 {
-                    if (_prevBar != _candles.Count || _candles[_candles.Count - 1].High > _prevSar)
+                    if (_prevBar != _candles.Count || _candles[_candles.Count - 1].HighBid > _prevSar)
                     {
                         value = _todaySar;
                         _prevSar = _todaySar;
@@ -136,9 +136,9 @@ namespace TraderTools.Indicators
                     else
                         value = _prevSar;
 
-                    if (_candles[_candles.Count - 1].Low < _xp)
+                    if (_candles[_candles.Count - 1].LowBid < _xp)
                     {
-                        _xp = _candles[_candles.Count - 1].Low;
+                        _xp = _candles[_candles.Count - 1].LowBid;
                         AfIncrease();
                     }
                 }
@@ -146,15 +146,15 @@ namespace TraderTools.Indicators
             }
             else
             {
-                if (_longPosition && _candles[_candles.Count - 1].High > _xp)
-                    _xp = _candles[_candles.Count - 1].High;
-                else if (!_longPosition && _candles[_candles.Count - 1].Low < _xp)
-                    _xp = _candles[_candles.Count - 1].Low;
+                if (_longPosition && _candles[_candles.Count - 1].HighBid > _xp)
+                    _xp = _candles[_candles.Count - 1].HighBid;
+                else if (!_longPosition && _candles[_candles.Count - 1].LowBid < _xp)
+                    _xp = _candles[_candles.Count - 1].LowBid;
 
                 value = _prevSar;
 
-                _todaySar = TodaySar(_longPosition ? Math.Min(_reverseValue, _candles[_candles.Count - 1].Low) :
-                    Math.Max(_reverseValue, _candles[_candles.Count - 1].High));
+                _todaySar = TodaySar(_longPosition ? Math.Min(_reverseValue, _candles[_candles.Count - 1].LowBid) :
+                    Math.Max(_reverseValue, _candles[_candles.Count - 1].HighBid));
             }
 
             _prevBar = _candles.Count;
@@ -167,13 +167,13 @@ namespace TraderTools.Indicators
         {
             if (Signal == Signal.Long)
             {
-                var lowestSar = Math.Min(Math.Min(todaySar, (double)_candles[_candles.Count - 1].Low), (double)_candles[_candles.Count - 2].Low);
-                todaySar = (double)_candles[_candles.Count - 1].Low > lowestSar ? lowestSar : Reverse();
+                var lowestSar = Math.Min(Math.Min(todaySar, (double)_candles[_candles.Count - 1].LowBid), (double)_candles[_candles.Count - 2].LowBid);
+                todaySar = (double)_candles[_candles.Count - 1].LowBid > lowestSar ? lowestSar : Reverse();
             }
             else
             {
-                var highestSar = Math.Max(Math.Max(todaySar, (double)_candles[_candles.Count - 1].High), (double)_candles[_candles.Count - 2].High);
-                todaySar = (double)_candles[_candles.Count - 1].High < highestSar ? highestSar : Reverse();
+                var highestSar = Math.Max(Math.Max(todaySar, (double)_candles[_candles.Count - 1].HighBid), (double)_candles[_candles.Count - 2].HighBid);
+                todaySar = (double)_candles[_candles.Count - 1].HighBid < highestSar ? highestSar : Reverse();
             }
 
             return todaySar;
@@ -183,14 +183,14 @@ namespace TraderTools.Indicators
         {
             var todaySar = _xp;
 
-            if ((Signal == Signal.Long && _prevSar > (double)_candles[_candles.Count - 1].Low) ||
-                (Signal != Signal.Long && _prevSar < (double)_candles[_candles.Count - 1].High) || _prevBar != _candles.Count)
+            if ((Signal == Signal.Long && _prevSar > (double)_candles[_candles.Count - 1].LowBid) ||
+                (Signal != Signal.Long && _prevSar < (double)_candles[_candles.Count - 1].HighBid) || _prevBar != _candles.Count)
             {
                 Signal = Signal == Signal.Long ? Signal.Short : Signal.Long;
                 _reverseBar = _candles.Count;
                 _reverseValue = _xp;
                 _af = Acceleration;
-                _xp = Signal == Signal.Long ? (double)_candles[_candles.Count - 1].High : (double)_candles[_candles.Count - 1].Low;
+                _xp = Signal == Signal.Long ? (double)_candles[_candles.Count - 1].HighBid : (double)_candles[_candles.Count - 1].LowBid;
                 _prevSar = todaySar;
             }
             else

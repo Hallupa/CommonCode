@@ -775,7 +775,7 @@ namespace TraderTools.Brokers.FXCM
 
         public List<TickData> GetTickData(IBroker broker, string market, DateTime utcStart, DateTime utcEnd)
         {
-            GetHistoryPrices(market, "t1", Timeframe.T1, utcStart, utcEnd, out var bidCandles, out var askCandles, out var ret);
+            GetHistoryPrices(market, "t1", Timeframe.T1, utcStart, utcEnd, out _, out var ret);
 
             return ret;
         }
@@ -817,26 +817,29 @@ namespace TraderTools.Brokers.FXCM
                     throw new ApplicationException($"FXCM unable to update candles for interval {timeframe}");
             }
 
-            GetHistoryPrices(market, interval, timeframe, start, to, out var bidCandles, out var askCandles, out var _);
+            GetHistoryPrices(market, interval, timeframe, start, to, out var loadedCandles, out var _);
 
 
             var existingCandleLookup = new Dictionary<long, ICandle>();
             candles.ForEach(x => existingCandleLookup[x.OpenTimeTicks] = x);
 
-            if (bidCandles != null)
+            if (loadedCandles != null)
             {
-                foreach (var candle in bidCandles.OrderBy(x => x.OpenTimeTicks))
+                foreach (var candle in loadedCandles.OrderBy(x => x.OpenTimeTicks))
                 {
                     if (existingCandleLookup.TryGetValue(candle.OpenTimeTicks, out var existingCandle))
                     {
                         if (existingCandle.IsComplete != candle.IsComplete
                             || existingCandle.CloseTimeTicks != candle.CloseTimeTicks
-                            || existingCandle.Close != candle.Close
-                            || existingCandle.High != candle.High
-                            || existingCandle.Low != candle.Low
-                            || existingCandle.Open != candle.Open
-                            || existingCandle.OpenTimeTicks != candle.OpenTimeTicks
-                            || existingCandle.Volume != candle.Volume)
+                            || !existingCandle.OpenAsk.Equals(candle.OpenAsk)
+                            || !existingCandle.CloseAsk.Equals(candle.CloseAsk)
+                            || !existingCandle.HighAsk.Equals(candle.HighAsk)
+                            || !existingCandle.LowAsk.Equals(candle.LowAsk)
+                            || !existingCandle.OpenBid.Equals(candle.OpenBid)
+                            || !existingCandle.CloseBid.Equals(candle.CloseBid)
+                            || !existingCandle.HighBid.Equals(candle.HighBid)
+                            || !existingCandle.LowBid.Equals(candle.LowBid)
+                            || existingCandle.OpenTimeTicks != candle.OpenTimeTicks)
                         {
                             var index = candles.IndexOf(existingCandle);
                             candles.RemoveAt(index);
@@ -959,13 +962,12 @@ namespace TraderTools.Brokers.FXCM
         /// <param name="dtFrom"></param>
         /// <param name="dtTo"></param>
         /// <param name="responseListener"></param>
-        public void GetHistoryPrices(string instrument, string interval, Timeframe timeframe, DateTime dtFrom, DateTime dtTo, out List<Candle> bidCandles, out List<Candle> askCandles, out List<TickData> ticks)
+        public void GetHistoryPrices(string instrument, string interval, Timeframe timeframe, DateTime dtFrom, DateTime dtTo, out List<Candle> candles, out List<TickData> ticks)
         {
             if (Session == null)
             {
                 Log.Warn($"FXCM not connected so unable to get {instrument} prices for {interval} for date {dtFrom}-{dtTo}");
-                bidCandles = null;
-                askCandles = null;
+                candles = null;
                 ticks = null;
                 return;
             }
@@ -976,8 +978,7 @@ namespace TraderTools.Brokers.FXCM
             if (factory == null)
             {
                 Log.Debug("Unable to connect to FXCM");
-                bidCandles = null;
-                askCandles = null;
+                candles = null;
                 ticks = null;
                 return;
             }
@@ -985,8 +986,7 @@ namespace TraderTools.Brokers.FXCM
             var responseListener = new ResponseListener(Session);
             Session.subscribeResponse(responseListener);
             var o2gTimeframe = factory.Timeframes[interval];
-            bidCandles = new List<Candle>();
-            askCandles = new List<Candle>();
+            candles = new List<Candle>();
             ticks = new List<TickData>();
 
             if (o2gTimeframe == null)
@@ -1063,11 +1063,11 @@ namespace TraderTools.Brokers.FXCM
                             break;
                         }
                     }
-                    ConstructCandles(instrument, Session, response, timeframe, out var tmpBidCandles, out var tmpAskCandles, out var tmpTickData);
-                    Log.Debug($"FCXM got {tmpBidCandles.Count} candles for {instrument} {timeframe} (Total {bidCandles.Count}) {tmpTickData.Count} ticks (Total {ticks.Count} - {(ticks.Count > 0 ? ticks[ticks.Count - 1].Datetime.ToString() : string.Empty)} - {(ticks.Count > 0 ? ticks[0].Datetime.ToString() : string.Empty)})");
+                    ConstructCandles(Session, response, timeframe, out var tmpCandles, out var tmpTickData);
+                    Log.Debug($"FCXM got {tmpCandles.Count} candles for {instrument} {timeframe} (Total {candles.Count}) {tmpTickData.Count} ticks (Total {ticks.Count} - {(ticks.Count > 0 ? ticks[ticks.Count - 1].Datetime.ToString() : string.Empty)} - {(ticks.Count > 0 ? ticks[0].Datetime.ToString() : string.Empty)})");
 
-                    bidCandles.AddRange(tmpBidCandles);
-                    askCandles.AddRange(tmpAskCandles);
+                    candles.AddRange(tmpCandles);
+
                     ticks.AddRange(tmpTickData);
                 }
                 else
@@ -1078,7 +1078,7 @@ namespace TraderTools.Brokers.FXCM
                 iteration++;
             } while (!reversed && dtFirst > dtFrom);
 
-            Log.Debug($"Got {bidCandles.Count} prices for {instrument} {interval} for date {dtFrom}-{dtTo}");
+            Log.Debug($"Got {candles.Count} prices for {instrument} {interval} for date {dtFrom}-{dtTo}");
         }
 
         /// <summary>
@@ -1086,10 +1086,9 @@ namespace TraderTools.Brokers.FXCM
         /// </summary>
         /// <param name="session"></param>
         /// <param name="response"></param>
-        public static void ConstructCandles(string symbol, O2GSession session, O2GResponse response, Timeframe timeframe, out List<Candle> bidCandles, out List<Candle> askCandles, out List<TickData> bidTicks)
+        public static void ConstructCandles(O2GSession session, O2GResponse response, Timeframe timeframe, out List<Candle> candles, out List<TickData> bidTicks)
         {
-            bidCandles = new List<Candle>();
-            askCandles = new List<Candle>();
+            candles = new List<Candle>();
             bidTicks = new List<TickData>();
             O2GResponseReaderFactory factory = session.getResponseReaderFactory();
 
@@ -1100,29 +1099,22 @@ namespace TraderTools.Brokers.FXCM
                 {
                     if (reader.isBar)
                     {
-                        var bidCandle = new Candle();
-                        bidCandle.OpenTimeTicks = DateTime.SpecifyKind(reader.getDate(ii), DateTimeKind.Utc).Ticks;
-                        bidCandle.CloseTimeTicks = new DateTime(bidCandle.OpenTimeTicks).AddSeconds((int)timeframe).Ticks;
-                        bidCandle.IsComplete = bidCandle.CloseTimeTicks <= DateTime.UtcNow.Ticks ? (byte)1 : (byte)0;
-                        bidCandle.Close = reader.getBidClose(ii);
-                        bidCandle.Open = reader.getBidOpen(ii);
-                        bidCandle.High = reader.getBidHigh(ii);
-                        bidCandle.Low = reader.getBidLow(ii);
-                        bidCandle.Timeframe = (int)timeframe;
-                        bidCandle.Volume = reader.getVolume(ii);
-                        bidCandles.Add(bidCandle);
+                        var candle = new Candle();
+                        candle.OpenTimeTicks = DateTime.SpecifyKind(reader.getDate(ii), DateTimeKind.Utc).Ticks;
+                        candle.CloseTimeTicks = new DateTime(candle.OpenTimeTicks).AddSeconds((int)timeframe).Ticks;
+                        candle.IsComplete = candle.CloseTimeTicks <= DateTime.UtcNow.Ticks ? (byte)1 : (byte)0;
 
-                        var askCandle = new Candle();
-                        askCandle.OpenTimeTicks = DateTime.SpecifyKind(reader.getDate(ii), DateTimeKind.Utc).Ticks;
-                        askCandle.CloseTimeTicks = new DateTime(askCandle.OpenTimeTicks).AddSeconds((int)timeframe).Ticks;
-                        askCandle.IsComplete = askCandle.CloseTimeTicks <= DateTime.UtcNow.Ticks ? (byte)1 : (byte)0;
-                        askCandle.Close = reader.getAskClose(ii);
-                        askCandle.Open = reader.getAskOpen(ii);
-                        askCandle.High = reader.getAskHigh(ii);
-                        askCandle.Low = reader.getAskLow(ii);
-                        askCandle.Timeframe = (int)timeframe;
-                        askCandle.Volume = reader.getVolume(ii);
-                        askCandles.Add(askCandle);
+                        candle.CloseBid = (float)reader.getBidClose(ii);
+                        candle.OpenBid = (float)reader.getBidOpen(ii);
+                        candle.HighBid = (float)reader.getBidHigh(ii);
+                        candle.LowBid = (float)reader.getBidLow(ii);
+                        candle.CloseAsk = (float)reader.getAskClose(ii);
+                        candle.OpenAsk = (float)reader.getAskOpen(ii);
+                        candle.HighAsk = (float)reader.getAskHigh(ii);
+                        candle.LowAsk = (float)reader.getAskLow(ii);
+
+                        candles.Add(candle);
+
                     }
                     else
                     {

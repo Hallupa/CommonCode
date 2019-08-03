@@ -6,7 +6,7 @@ namespace TraderTools.Indicators
 {
     public class TrueRange : IIndicator
     {
-        private ISimpleCandle _prevCandle;
+        private ICandle _prevCandle;
 
         public string Name => "TrueRange";
 
@@ -16,13 +16,13 @@ namespace TraderTools.Indicators
         /// <param name="currentCandle">The current candle.</param>
         /// <param name="prevCandle">The previous candle.</param>
         /// <returns>Price components.</returns>
-        private float[] GetPriceMovements(ISimpleCandle currentCandle, ISimpleCandle prevCandle)
+        private float[] GetPriceMovements(ICandle currentCandle, ICandle prevCandle)
         {
             return new[]
             {
-                Math.Abs(currentCandle.High - currentCandle.Low),
-                Math.Abs(prevCandle.Close - currentCandle.High),
-                Math.Abs(prevCandle.Close - currentCandle.Low)
+                Math.Abs(currentCandle.HighBid - currentCandle.LowBid),
+                Math.Abs(prevCandle.CloseBid - currentCandle.HighBid),
+                Math.Abs(prevCandle.CloseBid - currentCandle.LowBid)
             };
         }
 
@@ -34,7 +34,7 @@ namespace TraderTools.Indicators
 
         public bool IsFormed { get; set; }
 
-        public SignalAndValue Process(ISimpleCandle candle)
+        public SignalAndValue Process(ICandle candle)
         {
             if (_prevCandle != null)
             {
@@ -52,7 +52,7 @@ namespace TraderTools.Indicators
             if (candle.IsComplete == 1)
                 _prevCandle = candle;
 
-            return new SignalAndValue(candle.High - candle.Low, IsFormed);
+            return new SignalAndValue(candle.HighBid - candle.LowBid, IsFormed);
         }
     }
 }

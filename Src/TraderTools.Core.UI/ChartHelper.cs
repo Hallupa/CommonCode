@@ -87,10 +87,10 @@ namespace TraderTools.Core.UI
                 time = new DateTime(candles[i].CloseTimeTicks, DateTimeKind.Utc).ToLocalTime();
 
                 xvalues.Add(time);
-                openValues.Add((double)candles[i].Open);
-                highValues.Add((double)candles[i].High);
-                lowValues.Add((double)candles[i].Low);
-                closeValues.Add((double)candles[i].Close);
+                openValues.Add((double)candles[i].OpenBid);
+                highValues.Add((double)candles[i].HighBid);
+                lowValues.Add((double)candles[i].LowBid);
+                closeValues.Add((double)candles[i].CloseBid);
             }
 
             priceDataSeries.Append(xvalues, openValues, highValues, lowValues, closeValues);
@@ -122,7 +122,7 @@ namespace TraderTools.Core.UI
 
             foreach (var candle in candles)
             {
-                var signalAndValue = indicator.Process(new SimpleCandle(candle));
+                var signalAndValue = indicator.Process(candle);
                 if (indicator.IsFormed)
                 {
                     xvalues.Add(new DateTime(candle.OpenTimeTicks, DateTimeKind.Utc).ToLocalTime());
@@ -393,8 +393,8 @@ namespace TraderTools.Core.UI
             var maxy = double.NaN;
             for (var i = min; i < candles.Count; i++)
             {
-                if (double.IsNaN(miny) || candles[i].Low < miny) miny = candles[i].Low;
-                if (double.IsNaN(maxy) || candles[i].High > maxy) maxy = candles[i].High;
+                if (double.IsNaN(miny) || candles[i].LowBid < miny) miny = candles[i].LowBid;
+                if (double.IsNaN(maxy) || candles[i].HighBid > maxy) maxy = candles[i].HighBid;
             }
 
             if (trade.LimitPrice != null && trade.LimitPrice < (decimal)miny) miny = (double)trade.LimitPrice;

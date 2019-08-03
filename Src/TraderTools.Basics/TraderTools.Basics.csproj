@@ -115,7 +115,6 @@
     <Compile Include="IIndicator.cs" />
     <Compile Include="IMarketDetailsService.cs" />
     <Compile Include="Indicator.cs" />
-    <Compile Include="ISimpleCandle.cs" />
     <Compile Include="ITradeDetailsAutoCalculatorService.cs" />
     <Compile Include="Market.cs" />
     <Compile Include="MarketDetails.cs" />
@@ -123,7 +122,6 @@
     <Compile Include="Services.cs" />
     <Compile Include="Signal.cs" />
     <Compile Include="SignalAndValue.cs" />
-    <Compile Include="SimpleCandle.cs" />
     <Compile Include="TickData.cs" />
     <Compile Include="Timeframe.cs" />
     <Compile Include="TimeframeLookup.cs" />

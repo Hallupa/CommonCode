@@ -16,7 +16,7 @@ namespace TraderTools.Indicators
 
         public abstract string Name { get; }
 
-        public abstract SignalAndValue Process(ISimpleCandle candle);
+        public abstract SignalAndValue Process(ICandle candle);
 
         protected List<float> Buffer { get; } = new List<float>();
 

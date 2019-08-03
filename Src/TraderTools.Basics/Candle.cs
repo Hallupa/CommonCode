@@ -4,15 +4,19 @@ using TraderTools.Basics.Extensions;
 
 namespace TraderTools.Basics
 {
-    public struct BasicCandleAndIndicators : ISimpleCandle
+    public struct BasicCandleAndIndicators : ICandle
     {
         public BasicCandleAndIndicators(ICandle candle,
             int signalsCount)
         {
-            High = (float)candle.High;
-            Low = (float)candle.Low;
-            Close = (float)candle.Close;
-            Open = (float)candle.Open;
+            HighBid = (float)candle.HighBid;
+            LowBid = (float)candle.LowBid;
+            CloseBid = (float)candle.CloseBid;
+            OpenBid = (float)candle.OpenBid;
+            HighAsk = (float)candle.HighAsk;
+            LowAsk = (float)candle.LowAsk;
+            CloseAsk = (float)candle.CloseAsk;
+            OpenAsk = (float)candle.OpenAsk;
             CloseTimeTicks = candle.CloseTimeTicks;
             OpenTimeTicks = candle.OpenTimeTicks;
             IsComplete = candle.IsComplete;
@@ -22,19 +26,27 @@ namespace TraderTools.Basics
         public BasicCandleAndIndicators(
             long openTimeTicks,
             long closeTimeTicks,
-            float open,
-            float high,
-            float low,
-            float close,
+            float openBid,
+            float highBid,
+            float lowBid,
+            float closeBid,
+            float openAsk,
+            float highAsk,
+            float lowAsk,
+            float closeAsk,
             byte isComplete,
             int signalsCount)
         {
             OpenTimeTicks = openTimeTicks;
             CloseTimeTicks = closeTimeTicks;
-            Open = open;
-            High = high;
-            Low = low;
-            Close = close;
+            OpenBid = openBid;
+            HighBid = highBid;
+            LowBid = lowBid;
+            CloseBid = closeBid;
+            OpenAsk = openAsk;
+            HighAsk = highAsk;
+            LowAsk = lowAsk;
+            CloseAsk = closeAsk;
             IsComplete = isComplete;
             Indicators = new SignalAndValue[signalsCount];
         }
@@ -42,24 +54,17 @@ namespace TraderTools.Basics
         public long OpenTimeTicks { get; set; }
         public long CloseTimeTicks { get; set; }
 
-        //  [Index(0)]
-        //public DateTime OpenTime { get; }
-        // [Index(1)]
-        // public DateTime CloseTime { get; }
-        // [Index(2)]
-        public float Open { get; }
-       // [Index(3)]
-        public float High { get; }
-      //  [Index(4)]
-        public float Low { get; }
-      //  [Index(5)]
-        public float Close { get; }
-      //  [Index(6)]
-        public byte IsComplete { get; }
-      //  [Index(7)]
+        public float OpenBid { get; set; }
+        public float HighBid { get; set; }
+        public float LowBid { get; set; }
+        public float CloseBid { get; set; }
+        public float OpenAsk { get; set; }
+        public float HighAsk { get; set; }
+        public float LowAsk { get; set; }
+        public float CloseAsk { get; set; }
+        public byte IsComplete { get; set; }
         public SignalAndValue[] Indicators { get; set; }
 
-     //   [IgnoreFormat]
         public SignalAndValue this[Indicator indicator]
         {
             get
@@ -78,40 +83,25 @@ namespace TraderTools.Basics
             Indicators[(int)indicator] = signalValue;
         }
 
-       /* public void Serialise(BinaryWriter stream)
-        {
-            stream.Write(High);
-            stream.Write(Low);
-            stream.Write(Close);
-            stream.Write(Open);
-            stream.Write(CloseTime.Ticks);
-            stream.Write(OpenTime.Ticks);
-            stream.Write(Indicators.Length);
-
-            foreach (var signalAndValue in Indicators)
-            {
-                signalAndValue.Serialise(stream);
-            }
-        }*/
-
         public override string ToString()
         {
-            return $"{this.OpenTime()} {this.CloseTime()} {Close} Open:{Open} Close:{Close} High:{High} Low:{Low} IsComplete:{IsComplete}";
+            return $"{this.OpenTime()} {this.CloseTime()} OpenBid:{OpenBid} CloseBid:{CloseBid} HighBid:{HighBid} LowBid:{LowBid} IsComplete:{IsComplete}";
         }
     }
 
     public interface ICandle
     {
-        double High { get; set; }
-        double Low { get; set; }
-        double Close { get; set; }
-        double Open { get; set; }
+        float HighBid { get; set; }
+        float LowBid { get; set; }
+        float CloseBid { get; set; }
+        float OpenBid { get; set; }
+        float HighAsk { get; set; }
+        float LowAsk { get; set; }
+        float CloseAsk { get; set; }
+        float OpenAsk { get; set; }
         long OpenTimeTicks { get; set; }
         long CloseTimeTicks { get; set; }
         byte IsComplete { get; set; }
-        int Timeframe { get; set; }
-        double Volume { get; set; }
-        int TradeCount { get; set; }
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -120,33 +110,19 @@ namespace TraderTools.Basics
         public Guid Id { get; set; }
         public long OpenTimeTicks { get; set; }
         public long CloseTimeTicks { get; set; }
-        public double Open { get; set; }
-        public double Close { get; set; }
-        public double High { get; set; }
-        public double Low { get; set; }
-        public double Volume { get; set; }
-        public int TradeCount { get; set; }
-        public int Timeframe { get; set; }
+        public float OpenBid { get; set; }
+        public float CloseBid { get; set; }
+        public float HighBid { get; set; }
+        public float LowBid { get; set; }
+        public float OpenAsk { get; set; }
+        public float CloseAsk { get; set; }
+        public float HighAsk { get; set; }
+        public float LowAsk { get; set; }
         public byte IsComplete { get; set; }
-
-        public Candle(SimpleCandle candle)
-        {
-            OpenTimeTicks = candle.OpenTimeTicks;
-            CloseTimeTicks = candle.CloseTimeTicks;
-            High = candle.High;
-            Low = candle.Low;
-            Open = candle.Open;
-            Close = candle.Close;
-            Id = Guid.NewGuid();
-            TradeCount = 0;
-            Timeframe = 0;
-            IsComplete = 1;
-            Volume = 0;
-        }
 
         public override string ToString()
         {
-            return $"OpenTime: {new DateTime(OpenTimeTicks)} CloseTime: {new DateTime(CloseTimeTicks)} Open: {Open} Close: {Close}";
+            return $"OpenTime: {new DateTime(OpenTimeTicks)} CloseTime: {new DateTime(CloseTimeTicks)} Open bid: {OpenBid} Close bid: {CloseBid}";
         }
     }
 }

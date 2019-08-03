@@ -20,12 +20,12 @@ namespace TraderTools.Indicators
 
         public bool IsFormed => HighBuffer.Count >= _length;
         
-        public SignalAndValue Process(ISimpleCandle candle)
+        public SignalAndValue Process(ICandle candle)
         {
             if (candle.IsComplete == 1)
             {
-                HighBuffer.Add(candle.High);
-                LowBuffer.Add(candle.Low);
+                HighBuffer.Add(candle.HighBid);
+                LowBuffer.Add(candle.LowBid);
 
                 if (HighBuffer.Count > _length)
                 {
@@ -39,8 +39,8 @@ namespace TraderTools.Indicators
             var highBuffer = HighBuffer.ToList();
             var lowBuffer = LowBuffer.ToList();
 
-            highBuffer.Add(candle.High);
-            lowBuffer.Add(candle.Low);
+            highBuffer.Add(candle.HighBid);
+            lowBuffer.Add(candle.LowBid);
 
             if (highBuffer.Count > _length)
             {

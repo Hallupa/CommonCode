@@ -43,7 +43,8 @@ namespace TraderTools.Basics.Extensions
 
             // Add incomplete candle
             var latestCandleTimeTicks = largeChartCandles[largeChartCandles.Count - 1].CloseTimeTicks;
-            double? open = null, close = null, high = null, low = null;
+            float? openBid = null, closeBid = null, highBid = null, lowBid = null;
+            float? openAsk = null, closeAsk = null, highAsk = null, lowAsk = null;
             long? openTimeTicks = null, closeTimeTicks = null;
 
             foreach (var smallestTimeframeCandle in smallestTimeframeCandles)
@@ -51,14 +52,18 @@ namespace TraderTools.Basics.Extensions
                 if (smallestTimeframeCandle.OpenTimeTicks >= latestCandleTimeTicks && (smallestTimeframeCandle.CloseTimeTicks <= endTicks || endTicks == -1))
                 {
                     if (openTimeTicks == null) openTimeTicks = smallestTimeframeCandle.OpenTimeTicks;
-                    if (open == null || smallestTimeframeCandle.Open < open)
-                        open = smallestTimeframeCandle.Open;
-                    if (high == null || smallestTimeframeCandle.High > high)
-                        high = smallestTimeframeCandle.High;
-                    if (low == null || smallestTimeframeCandle.Low < low) low = smallestTimeframeCandle.Low;
+
+                    if (openBid == null || smallestTimeframeCandle.OpenBid < openBid) openBid = smallestTimeframeCandle.OpenBid;
+                    if (highBid == null || smallestTimeframeCandle.HighBid > highBid) highBid = smallestTimeframeCandle.HighBid;
+                    if (lowBid == null || smallestTimeframeCandle.LowBid < lowBid) lowBid = smallestTimeframeCandle.LowBid;
+                    closeBid = smallestTimeframeCandle.CloseBid;
+
+                    if (openAsk == null || smallestTimeframeCandle.OpenAsk < openAsk) openAsk = smallestTimeframeCandle.OpenAsk;
+                    if (highAsk == null || smallestTimeframeCandle.HighAsk > highAsk) highAsk = smallestTimeframeCandle.HighAsk;
+                    if (lowAsk == null || smallestTimeframeCandle.LowAsk < lowAsk) lowAsk = smallestTimeframeCandle.LowAsk;
+                    closeAsk = smallestTimeframeCandle.CloseAsk;
 
                     closeTimeTicks = smallestTimeframeCandle.CloseTimeTicks;
-                    close = smallestTimeframeCandle.Close;
                 }
 
                 if (smallestTimeframeCandle.CloseTime() > endUtc)
@@ -67,14 +72,28 @@ namespace TraderTools.Basics.Extensions
                 }
             }
 
-            if (open != null)
+            if (openBid != null)
             {
                 largeChartCandles.Add(new Candle
                 {
-                    Open = open.Value,
-                    Close = close.Value,
-                    High = high.Value,
-                    Low = low.Value,
+                    OpenBid = openBid.Value,
+                    CloseBid = closeBid.Value,
+                    HighBid = highBid.Value,
+                    LowBid = lowBid.Value,
+                    CloseTimeTicks = closeTimeTicks.Value,
+                    OpenTimeTicks = openTimeTicks.Value,
+                    IsComplete = 0
+                });
+            }
+
+            if (openAsk != null)
+            {
+                largeChartCandles.Add(new Candle
+                {
+                    OpenAsk = openAsk.Value,
+                    CloseAsk = closeAsk.Value,
+                    HighAsk = highAsk.Value,
+                    LowAsk = lowAsk.Value,
                     CloseTimeTicks = closeTimeTicks.Value,
                     OpenTimeTicks = openTimeTicks.Value,
                     IsComplete = 0
@@ -116,7 +135,7 @@ namespace TraderTools.Basics.Extensions
             // If market contains GBP, then use the market for the price
             if (market.Contains("GBP"))
             {
-                price = (decimal)candleService.GetFirstCandleThatClosesBeforeDateTime(market, broker, Timeframe.D1, date, updateCandles).Open;
+                price = (decimal)candleService.GetFirstCandleThatClosesBeforeDateTime(market, broker, Timeframe.D1, date, updateCandles).OpenBid;
 
                 if (market.StartsWith("GBP"))
                 {
@@ -142,7 +161,7 @@ namespace TraderTools.Basics.Extensions
                     // Get candle price, if it exists
                     if (marketsService.HasMarketDetails(broker.Name, marketForPrice))
                     {
-                        price = (decimal)candleService.GetFirstCandleThatClosesBeforeDateTime(marketForPrice, broker, Timeframe.D1, date, updateCandles).Open;
+                        price = (decimal)candleService.GetFirstCandleThatClosesBeforeDateTime(marketForPrice, broker, Timeframe.D1, date, updateCandles).OpenBid;
                     }
                     else
                     {
@@ -150,7 +169,7 @@ namespace TraderTools.Basics.Extensions
                         // Try to get $ candle and convert to £
                         var usdCandle = candleService.GetFirstCandleThatClosesBeforeDateTime($"USD/{market.Split('/')[1]}", broker, Timeframe.D1, date, updateCandles);
                         var gbpUSDCandle = candleService.GetFirstCandleThatClosesBeforeDateTime("GBP/USD", broker, Timeframe.D1, date, updateCandles);
-                        price = (decimal)gbpUSDCandle.Open / (decimal)usdCandle.Open;
+                        price = (decimal)gbpUSDCandle.OpenBid / (decimal)usdCandle.OpenBid;
                     }
                 }
 

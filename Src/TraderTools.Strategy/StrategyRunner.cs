@@ -149,7 +149,7 @@ namespace TraderTools.Strategy
                     if (stop) break;
 
                     // Setup
-                    ISimpleCandle smallestTimeframeCandle = null;
+                    ICandle smallestTimeframeCandle = null;
 
                     // Log progress
                     if (DateTime.UtcNow > nextLogTime)
@@ -275,7 +275,7 @@ namespace TraderTools.Strategy
 
         private void SimulateTrades(IStrategy strategy, MarketDetails market, ref int expectedTrades,
             ref int expectedTradesFound, bool simulateTrades, List<Trade> orders, List<Trade> openTrades, List<Timeframe> timeframesExcludingM1M15,
-            List<SimpleCandle> m1Candles, List<Trade> closedTrades, TimeframeLookupBasicCandleAndIndicators timeframesAllCandles, List<Trade> trades)
+            List<ICandle> m1Candles, List<Trade> closedTrades, TimeframeLookupBasicCandleAndIndicators timeframesAllCandles, List<Trade> trades)
         {
             TimeframeLookup<int> timeframeCandleIndexes;
             TimeframeLookup<List<BasicCandleAndIndicators>> timeframesCurrentCandles;
@@ -377,8 +377,7 @@ namespace TraderTools.Strategy
                                     break;
                                 }
 
-                                orders[ii].SimulateTrade(m1Candle.Low, m1Candle.High, m1Candle.Close,
-                                    m1Candle.OpenTimeTicks, m1Candle.CloseTimeTicks, out _);
+                                orders[ii].SimulateTrade(m1Candle, out _);
 
                                 if (orders[ii].EntryDateTime != null)
                                 {
@@ -396,8 +395,7 @@ namespace TraderTools.Strategy
                             // Process open trades
                             for (var ii = openTrades.Count - 1; ii >= 0; ii--)
                             {
-                                openTrades[ii].SimulateTrade(m1Candle.Low, m1Candle.High, m1Candle.Close,
-                                    m1Candle.OpenTimeTicks, m1Candle.CloseTimeTicks, out _);
+                                openTrades[ii].SimulateTrade(m1Candle, out _);
 
                                 if (openTrades[ii].CloseDateTime != null)
                                 {
@@ -487,15 +485,16 @@ namespace TraderTools.Strategy
             {
                 newTrades.ForEach(t => t.Strategies = strategy.Name);
                 var timeframe = timeframesExcludingM1M15.First();
-                var latestPrice = (decimal)timeframeCurrentCandles[timeframe][timeframeCurrentCandles[timeframe].Count - 1].Close;
-                RemoveInvalidTrades(newTrades, latestPrice, _marketDetailsService);
+                var latestBidPrice = (decimal)timeframeCurrentCandles[timeframe][timeframeCurrentCandles[timeframe].Count - 1].CloseBid;
+                var latestAskPrice = (decimal)timeframeCurrentCandles[timeframe][timeframeCurrentCandles[timeframe].Count - 1].CloseAsk;
+                RemoveInvalidTrades(newTrades, latestBidPrice, latestAskPrice, _marketDetailsService);
 
                 trades.AddRange(newTrades);
                 orders.AddRange(newTrades);
             }
         }
 
-        private static void RemoveInvalidTrades(List<Trade> newTrades, decimal latestPrice, IMarketDetailsService marketDetailsService)
+        private static void RemoveInvalidTrades(List<Trade> newTrades, decimal latestBidPrice, decimal latestAskPrice, IMarketDetailsService marketDetailsService)
         {
             // Validate trades
             for (var i = newTrades.Count - 1; i >= 0; i--)
@@ -538,25 +537,25 @@ namespace TraderTools.Strategy
 
                     if (!removed)
                     {
-                        if (t.TradeDirection == TradeDirection.Long && t.OrderType == OrderType.LimitEntry && t.OrderPrice.Value >= latestPrice)
+                        if (t.TradeDirection == TradeDirection.Long && t.OrderType == OrderType.LimitEntry && t.OrderPrice.Value >= latestAskPrice)
                         {
                             Log.Error($"Long trade for {t.Market} has limit entry but order price is above latest price. Ignoring trade");
                             newTrades.RemoveAt(i);
                             removed = true;
                         }
-                        else if (t.TradeDirection == TradeDirection.Long && t.OrderType == OrderType.StopEntry && t.OrderPrice.Value <= latestPrice)
+                        else if (t.TradeDirection == TradeDirection.Long && t.OrderType == OrderType.StopEntry && t.OrderPrice.Value <= latestAskPrice)
                         {
                             Log.Error($"Long trade for {t.Market} has stop entry but order price is below latest price. Ignoring trade");
                             newTrades.RemoveAt(i);
                             removed = true;
                         }
-                        else if (t.TradeDirection == TradeDirection.Short && t.OrderType == OrderType.LimitEntry && t.OrderPrice.Value <= latestPrice)
+                        else if (t.TradeDirection == TradeDirection.Short && t.OrderType == OrderType.LimitEntry && t.OrderPrice.Value <= latestBidPrice)
                         {
                             Log.Error($"Short trade for {t.Market} has limit entry but order price is below latest price. Ignoring trade");
                             newTrades.RemoveAt(i);
                             removed = true;
                         }
-                        else if (t.TradeDirection == TradeDirection.Short && t.OrderType == OrderType.StopEntry && t.OrderPrice.Value >= latestPrice)
+                        else if (t.TradeDirection == TradeDirection.Short && t.OrderType == OrderType.StopEntry && t.OrderPrice.Value >= latestBidPrice)
                         {
                             Log.Error($"Short trade for {t.Market} has stop entry but order price is above latest price. Ignoring trade");
                             newTrades.RemoveAt(i);
@@ -704,10 +703,14 @@ namespace TraderTools.Strategy
                             var incompleteCandle = new BasicCandleAndIndicators(
                                 prevCandle.Value.OpenTimeTicks,
                                 m15Candle.CloseTimeTicks,
-                                prevCandle.Value.Open,
-                                (float)(m15Candle.High > prevCandle.Value.High ? m15Candle.High : prevCandle.Value.High),
-                                (float)(m15Candle.Low < prevCandle.Value.Low ? m15Candle.Low : prevCandle.Value.Low),
-                                (float)m15Candle.Close,
+                                prevCandle.Value.OpenBid,
+                                (float)(m15Candle.HighBid > prevCandle.Value.HighBid ? m15Candle.HighBid : prevCandle.Value.HighBid),
+                                (float)(m15Candle.LowBid < prevCandle.Value.LowBid ? m15Candle.LowBid : prevCandle.Value.LowBid),
+                                (float)m15Candle.CloseBid,
+                                prevCandle.Value.OpenAsk,
+                                (float)(m15Candle.HighAsk > prevCandle.Value.HighAsk ? m15Candle.HighAsk : prevCandle.Value.HighAsk),
+                                (float)(m15Candle.LowAsk < prevCandle.Value.LowAsk ? m15Candle.LowAsk : prevCandle.Value.LowAsk),
+                                (float)m15Candle.CloseAsk,
                                 0,
                                 timeframeMaxIndicatorValues[timeframeLookupIndex]
                             );
@@ -730,10 +733,14 @@ namespace TraderTools.Strategy
                             var incompleteCandle = new BasicCandleAndIndicators(
                                 m15Candle.OpenTimeTicks,
                                 m15Candle.CloseTimeTicks,
-                                (float)m15Candle.Open,
-                                (float)m15Candle.High,
-                                (float)m15Candle.Low,
-                                (float)m15Candle.Close,
+                                (float)m15Candle.OpenBid,
+                                (float)m15Candle.HighBid,
+                                (float)m15Candle.LowBid,
+                                (float)m15Candle.CloseBid,
+                                (float)m15Candle.OpenAsk,
+                                (float)m15Candle.HighAsk,
+                                (float)m15Candle.LowAsk,
+                                (float)m15Candle.CloseAsk,
                                 0,
                                 timeframeMaxIndicatorValues[timeframeLookupIndex]
                             );
@@ -772,7 +779,7 @@ namespace TraderTools.Strategy
             DateTime? earliest,
             DateTime? latest,
             IBrokersCandlesService candlesService,
-            out List<SimpleCandle> m1Candles)
+            out List<ICandle> m1Candles)
         {
             m1Candles = null;
             var timeframes = timeframesForStrategy.ToList();
@@ -797,9 +804,8 @@ namespace TraderTools.Strategy
 
                     if (!gotM1Candles)
                     {
-                        var loadedM1Candles = candlesService.GetCandles(broker, market, Timeframe.M1, updatePrices, cacheData: false,
-                            minOpenTimeUtc: earliestCandle, maxCloseTimeUtc: latest).ToList();
-                        m1Candles = loadedM1Candles.Select(c => new SimpleCandle(c)).ToList();
+                        m1Candles = candlesService.GetCandles(broker, market, Timeframe.M1, updatePrices,
+                            cacheData: false, minOpenTimeUtc: earliestCandle, maxCloseTimeUtc: latest);
 
                         lock (Cache.M1CandlesLookup)
                         {

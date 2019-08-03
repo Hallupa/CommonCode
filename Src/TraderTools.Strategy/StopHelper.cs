@@ -76,15 +76,15 @@ namespace TraderTools.Strategy
                 var currentStop = trade.StopPrice.Value;
 
                 if (trade.TradeDirection == TradeDirection.Long && nextStop.Value > currentStop && Math.Abs(nextStop.Value - currentStop) > (decimal)priceAdjust
-                    && Math.Abs(nextStop.Value - (decimal)candle.High) >= initialStopDistance
-                    && Math.Abs(nextStop.Value - (decimal)prevCandle.High) >= initialStopDistance)
+                    && Math.Abs(nextStop.Value - (decimal)candle.HighBid) >= initialStopDistance
+                    && Math.Abs(nextStop.Value - (decimal)prevCandle.HighBid) >= initialStopDistance)
                 {
                     trade.AddStopPrice(candle.CloseTime(), nextStop.Value);
                 }
 
                 if (trade.TradeDirection == TradeDirection.Short && nextStop.Value < currentStop && Math.Abs(nextStop.Value - currentStop) > (decimal)priceAdjust
-                    && Math.Abs(nextStop.Value - (decimal)candle.Low) >= initialStopDistance
-                    && Math.Abs(nextStop.Value - (decimal)prevCandle.Low) >= initialStopDistance)
+                    && Math.Abs(nextStop.Value - (decimal)candle.LowAsk) >= initialStopDistance
+                    && Math.Abs(nextStop.Value - (decimal)prevCandle.LowAsk) >= initialStopDistance)
                 {
                     trade.AddStopPrice(candle.CloseTime(), nextStop.Value);
                 }
