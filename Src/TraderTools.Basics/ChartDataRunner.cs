@@ -96,8 +96,7 @@ namespace TraderTools.Basics
                                 OpenTimeTicks = lowestCandle.OpenTimeTicks,
                                 HighBid = lowestCandle.HighBid,
                                 LowBid = lowestCandle.LowBid,
-                                IsComplete =  0,
-                                Id = Guid.NewGuid()
+                                IsComplete =  0
                             });
                         }
                     }

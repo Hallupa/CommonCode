@@ -107,7 +107,6 @@ namespace TraderTools.Basics
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct Candle : ICandle
     {
-        public Guid Id { get; set; }
         public long OpenTimeTicks { get; set; }
         public long CloseTimeTicks { get; set; }
         public float OpenBid { get; set; }
