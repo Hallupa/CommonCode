@@ -26,7 +26,7 @@ namespace TraderTools.Core.Services
     public class BrokersCandlesService : IBrokersCandlesService
     {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        public static DateTime EarliestDateTime = new DateTime(2013, 1, 1);
+        private static DateTime _earliestDateTime = new DateTime(2010, 1, 1);
         private DataDirectoryService _dataDirectoryService;
 
         private Dictionary<(IBroker broker, string Market, Timeframe TimeFrame), List<ICandle>> _candlesLookup
@@ -74,7 +74,7 @@ namespace TraderTools.Core.Services
             bool updateCandles, DateTime? minOpenTimeUtc = null, DateTime? maxCloseTimeUtc = null, bool cacheData = true, bool forceUpdate = false)
         {
             var lck = GetLock(broker, market, timeframe);
-            var start = EarliestDateTime;
+            var start = _earliestDateTime;
 
             lock (lck)
             {
