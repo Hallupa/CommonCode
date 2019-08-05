@@ -1,16 +1,16 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Reflection;
+using Hallupa.Library;
 using log4net;
 using TraderTools.Basics;
-using TraderTools.Basics.Extensions;
 using TraderTools.Core.Services;
-using TraderTools.Core.Trading;
 
 namespace TraderTools.Core.Broker
 {
@@ -35,6 +35,9 @@ namespace TraderTools.Core.Broker
 
         public List<Trade> Trades { get; set; } = new List<Trade>();
 
+        [JsonIgnore]
+        [Import] private DataDirectoryService _dataDirectoryService;
+
         private Subject<BrokerAccountUpdated> _brokerAccountUpdatedSubject = new Subject<BrokerAccountUpdated>();
 
         public List<DepositWithdrawal> DepositsWithdrawals { get; set; } = new List<DepositWithdrawal>();
@@ -42,13 +45,17 @@ namespace TraderTools.Core.Broker
 
         public IObservable<BrokerAccountUpdated> AccountUpdatedObservable => _brokerAccountUpdatedSubject.AsObservable();
 
-        public static BrokerAccount LoadAccount(
-            string dataPath,
-            IBroker broker,
-            IBrokersCandlesService candles,
-            ITradeDetailsAutoCalculatorService tradeCalculatorService)
+        public BrokerAccount()
         {
-            var accountPath = Path.Combine(dataPath, "BrokerAccounts", $"{broker.Name}_Account.json");
+            DependencyContainer.ComposeParts(this);
+        }
+
+        public static BrokerAccount LoadAccount(
+            IBroker broker,
+            ITradeDetailsAutoCalculatorService tradeCalculatorService,
+            DataDirectoryService dataDirectoryService)
+        {
+            var accountPath = Path.Combine(dataDirectoryService.MainDirectoryWithApplicationName, "BrokerAccounts", $"{broker.Name}_Account.json");
 
             if (!File.Exists(accountPath))
             {
@@ -56,6 +63,7 @@ namespace TraderTools.Core.Broker
             }
 
             var account = JsonConvert.DeserializeObject<BrokerAccount>(File.ReadAllText(accountPath));
+            DependencyContainer.ComposeParts(account);
 
             foreach (var trade in account.Trades)
             {
@@ -91,9 +99,9 @@ namespace TraderTools.Core.Broker
             return depositWithdrawTotal + openTradesTotal + closedTradesTotal;
         }
 
-        public void SaveAccount(string dataPath)
+        public void SaveAccount()
         {
-            var mainPath = Path.Combine(dataPath, "BrokerAccounts");
+            var mainPath = Path.Combine(_dataDirectoryService.MainDirectoryWithApplicationName, "BrokerAccounts");
 
             if (!Directory.Exists(mainPath))
             {

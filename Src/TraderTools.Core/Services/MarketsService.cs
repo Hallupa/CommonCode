@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
+using Hallupa.Library;
 using Newtonsoft.Json;
 using TraderTools.Basics;
 
@@ -15,10 +16,14 @@ namespace TraderTools.Core.Services
         private string _path;
         private List<Market> _marketData;
         private List<IDisposable> _marketSubscriptions = new List<IDisposable>();
+        private DataDirectoryService _dataDirectoryService;
 
-        public MarketsService()
+        [ImportingConstructor]
+        public MarketsService(DataDirectoryService dataDirectoryService)
         {
-            _path = Path.Combine(BrokersService.DataDirectory, "Markets", "MarketData.json");
+            _dataDirectoryService = dataDirectoryService;
+
+            _path = Path.Combine(_dataDirectoryService.MainDirectory, "Markets", "MarketData.json");
             var directory = Path.GetDirectoryName(_path);
 
             if (!Directory.Exists(directory))

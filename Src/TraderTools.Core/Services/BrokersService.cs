@@ -14,10 +14,8 @@ namespace TraderTools.Core.Services
     public class BrokersService :  IDisposable
     {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        public static string DataDirectory { get; set; }
         public Dictionary<IBroker, BrokerAccount> AccountsLookup { get; private set; } = new Dictionary<IBroker, BrokerAccount>();
-        private List<IBroker> _connectedBrokers = new List<IBroker>();
-        private bool disposedValue = false;
+        private bool _disposedValue = false;
         public List<IBroker> Brokers { get; } = new List<IBroker>();
 
         public void AddBrokers(IEnumerable<IBroker> brokers)
@@ -36,13 +34,11 @@ namespace TraderTools.Core.Services
             }
         }
 
-        public void LoadBrokerAccounts(
-            IBrokersCandlesService candlesService,
-            ITradeDetailsAutoCalculatorService tradeCalculatorService)
+        public void LoadBrokerAccounts(ITradeDetailsAutoCalculatorService tradeCalculatorService, DataDirectoryService dataDirectoryService)
         {
             foreach (var broker in Brokers)
             {
-                var account = BrokerAccount.LoadAccount(DataDirectory, broker, candlesService, tradeCalculatorService);
+                var account = BrokerAccount.LoadAccount(broker, tradeCalculatorService, dataDirectoryService);
                 
                 if (account == null)
                 {
@@ -64,7 +60,7 @@ namespace TraderTools.Core.Services
         #region IDisposable
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (!_disposedValue)
             {
                 if (disposing)
                 {
@@ -82,7 +78,7 @@ namespace TraderTools.Core.Services
 
                 Brokers.Clear();
 
-                disposedValue = true;
+                _disposedValue = true;
             }
         }
 

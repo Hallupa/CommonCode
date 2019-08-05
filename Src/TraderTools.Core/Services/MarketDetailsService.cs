@@ -15,11 +15,14 @@ namespace TraderTools.Core.Services
     public class MarketDetailsService : IMarketDetailsService
     {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
         private Dictionary<string, MarketDetails> _marketDetailsList = new Dictionary<string, MarketDetails>();
+        private DataDirectoryService _dataDirectoryService;
 
-        public MarketDetailsService()
+        [ImportingConstructor]
+        public MarketDetailsService(DataDirectoryService dataDirectoryService)
         {
+            _dataDirectoryService = dataDirectoryService;
+
             LoadMarketDetailsList();
         }
 
@@ -56,7 +59,7 @@ namespace TraderTools.Core.Services
             {
                 lock (_marketDetailsList)
                 {
-                    var marketDetailsListPath = Path.Combine(BrokersService.DataDirectory, "MarketDetails.json");
+                    var marketDetailsListPath = Path.Combine(_dataDirectoryService.MainDirectory, "MarketDetails.json");
 
                     File.WriteAllText(
                         marketDetailsListPath,
@@ -79,7 +82,7 @@ namespace TraderTools.Core.Services
             {
                 lock (_marketDetailsList)
                 {
-                    var marketDetailsListPath = Path.Combine(BrokersService.DataDirectory, "MarketDetails.json");
+                    var marketDetailsListPath = Path.Combine(_dataDirectoryService.MainDirectory, "MarketDetails.json");
 
                     if (File.Exists(marketDetailsListPath))
                     {

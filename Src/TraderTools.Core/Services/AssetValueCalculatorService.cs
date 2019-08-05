@@ -10,7 +10,6 @@ using log4net;
 using Newtonsoft.Json;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
-using TraderTools.Core.Broker;
 
 namespace TraderTools.Core.Services
 {
@@ -18,6 +17,8 @@ namespace TraderTools.Core.Services
     [PartCreationPolicy(CreationPolicy.Shared)]
     public class AssetValueCalculatorService
     {
+        [Import] private DataDirectoryService _dataDirectoryService;
+
         private class CachedPrice
         {
             public string Broker { get; set; }
@@ -31,10 +32,11 @@ namespace TraderTools.Core.Services
         private const Timeframe TimeframeForGettingPrices = Timeframe.H1;
         private DateTime? _lastSave;
 
-        public string FilePath => Path.Combine(BrokersService.DataDirectory, "CachedPrices.json");
+        public string FilePath => Path.Combine(_dataDirectoryService.MainDirectory, "CachedPrices.json");
 
         public AssetValueCalculatorService()
         {
+            DependencyContainer.ComposeParts(this);
             Load();
         }
 

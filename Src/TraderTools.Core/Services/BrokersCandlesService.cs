@@ -26,17 +26,19 @@ namespace TraderTools.Core.Services
     public class BrokersCandlesService : IBrokersCandlesService
     {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
         public static DateTime EarliestDateTime = new DateTime(2013, 1, 1);
+        private DataDirectoryService _dataDirectoryService;
 
         private Dictionary<(IBroker broker, string Market, Timeframe TimeFrame), List<ICandle>> _candlesLookup
             = new Dictionary<(IBroker broker, string Market, Timeframe TimeFrame), List<ICandle>>();
 
         private Dictionary<LastUpdatedMarket, DateTime> _lastUpdated = new Dictionary<LastUpdatedMarket, DateTime>();
 
-        public BrokersCandlesService()
+        [ImportingConstructor]
+        public BrokersCandlesService(DataDirectoryService dataDirectoryService)
         {
-            _savePath = Path.Combine(BrokersService.DataDirectory, "LastBrokerMarketUpdates.json");
+            _dataDirectoryService = dataDirectoryService;
+            _savePath = Path.Combine(_dataDirectoryService.MainDirectory, "LastBrokerMarketUpdates.json");
             if (File.Exists(_savePath))
             {
                 var data = JsonConvert.DeserializeObject<List<(LastUpdatedMarket, DateTime)>>(File.ReadAllText(_savePath));
@@ -163,11 +165,11 @@ namespace TraderTools.Core.Services
             }
         }
 
-        private static ICandle[] LoadBrokerCandles(IBroker broker, string market, Timeframe timeframe)
+        private ICandle[] LoadBrokerCandles(IBroker broker, string market, Timeframe timeframe)
         {
             using (new LogRunTime($"Load and process {broker.Name} {market} {timeframe} candles"))
             {
-                var candlesPath = Path.Combine(BrokersService.DataDirectory, "Candles", $"{broker.Name}_{market.Replace("/", "")}_{timeframe}.bin");
+                var candlesPath = Path.Combine(_dataDirectoryService.MainDirectory, "Candles", $"{broker.Name}_{market.Replace("/", "")}_{timeframe}.bin");
 
                 if (File.Exists(candlesPath))
                 {
@@ -193,7 +195,7 @@ namespace TraderTools.Core.Services
 
         public void SaveCandles(List<ICandle> candles, IBroker broker, string market, Timeframe timeframe)
         {
-            var directory = Path.Combine(BrokersService.DataDirectory, "Candles");
+            var directory = Path.Combine(_dataDirectoryService.MainDirectory, "Candles");
             var candlesTmpPath = Path.Combine(directory, $"{broker.Name}_{market.Replace("/", "")}_{timeframe}_tmp.bin");
             var candlesFinalPath = Path.Combine(directory, $"{broker.Name}_{market.Replace("/", "")}_{timeframe}.bin");
 

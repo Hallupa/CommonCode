@@ -9,7 +9,6 @@ using System.Reflection;
 using Hallupa.Library;
 using log4net;
 using TraderTools.Basics;
-using TraderTools.Core.Broker;
 
 namespace TraderTools.Core.Services
 {
@@ -18,6 +17,13 @@ namespace TraderTools.Core.Services
     public class TickDataService
     {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private DataDirectoryService _dataDirectoryService;
+
+        [ImportingConstructor]
+        public TickDataService(DataDirectoryService dataDirectoryService)
+        {
+            _dataDirectoryService = dataDirectoryService;
+        }
 
         private void TrySaveData(List<bool> completedIndexes, List<TickData> tickDataItems, string path, ref int saveUptoIndex)
         {
@@ -86,7 +92,7 @@ namespace TraderTools.Core.Services
         public List<TickData> GetTickData(string market, IBroker broker, bool updateData)
         {
             Log.Info($"Getting tick data for {market}");
-            var path = Path.Combine(BrokersService.DataDirectory, "TickData", $"{market.Replace("/", "")}.dat");
+            var path = Path.Combine(_dataDirectoryService.MainDirectory, "TickData", $"{market.Replace("/", "")}.dat");
             var start = new DateTime(2017, 1, 1);
             var end = DateTime.UtcNow;
 
