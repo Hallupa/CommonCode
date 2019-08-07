@@ -7,8 +7,8 @@
     <ProjectGuid>{F7C5DF66-FAFB-4148-BE9F-5E830A500B31}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>TraderTools.Strategy</RootNamespace>
-    <AssemblyName>TraderTools.Strategy</AssemblyName>
+    <RootNamespace>TraderTools.Simulation</RootNamespace>
+    <AssemblyName>TraderTools.Simulation</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -51,8 +51,7 @@
     <Compile Include="IndicatorsHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StopHelper.cs" />
-    <Compile Include="StopPoint.cs" />
-    <Compile Include="StrategyRunner.cs" />
+    <Compile Include="SimulationRunner.cs" />
     <Compile Include="TradeDetailsKey.cs" />
   </ItemGroup>
   <ItemGroup>

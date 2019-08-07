@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using TraderTools.Basics;
 
-namespace TraderTools.Strategy
+namespace TraderTools.Simulation
 {
     public class CachedDetails
     {

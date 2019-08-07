@@ -122,7 +122,7 @@
     <Compile Include="Converters\BoolToValueConverter.cs" />
     <Compile Include="Converters\EnumToIntConverter.cs" />
     <Compile Include="Converters\CloseStatusToColourConverter.cs" />
-    <Compile Include="Converters\ProfitToColourConverter.cs" />
+    <Compile Include="Converters\ValueToColourConverter.cs" />
     <Compile Include="DoubleChartView.xaml.cs">
       <DependentUpon>DoubleChartView.xaml</DependentUpon>
     </Compile>

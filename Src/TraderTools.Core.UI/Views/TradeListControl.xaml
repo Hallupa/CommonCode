@@ -16,7 +16,7 @@
             <converters:BoolToVisibilityConverter x:Key="BoolToVis"/>
             <converters:FlagsToVisibilityConverter x:Key="FlagsToVis"/>
             <converters1:CloseStatusToColourConverter x:Key="StatusToColour"/>
-            <converters1:ProfitToColourConverter x:Key="ProfitToColour"/>
+            <converters1:ValueToColourConverter x:Key="ValueToColour"/>
             <Style TargetType="DataGridColumnHeader">
                 <Setter Property="HorizontalContentAlignment" Value="Center"/>
             </Style>
@@ -139,7 +139,7 @@
                 <DataGridTextColumn Header="Profit" Binding="{Binding Profit, StringFormat={}£{0:0.00}, Mode=OneWay}" IsReadOnly="True" Width="60">
                     <DataGridTextColumn.CellStyle>
                         <Style TargetType="{x:Type DataGridCell}">
-                            <Setter Property="Background" Value="{Binding ., Converter={StaticResource ProfitToColour}}" />
+                            <Setter Property="Background" Value="{Binding Profit, Converter={StaticResource ValueToColour}}" />
                             <Setter Property="Foreground" Value="Black"/>
                             <Style.Triggers>
                                 <Trigger Property="IsSelected" Value="True">
@@ -149,7 +149,19 @@
                         </Style>
                     </DataGridTextColumn.CellStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="Result R" Binding="{Binding RMultiple, StringFormat={}{0:0.00}, Mode=OneWay}" IsReadOnly="True" Width="60" Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.ResultR}, Mode=OneWay}"/>
+                <DataGridTextColumn Header="Result R" Binding="{Binding RMultiple, StringFormat={}{0:0.00}, Mode=OneWay}" IsReadOnly="True" Width="60" Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.ResultR}, Mode=OneWay}">
+                    <DataGridTextColumn.CellStyle>
+                        <Style TargetType="{x:Type DataGridCell}">
+                            <Setter Property="Background" Value="{Binding RMultiple, Converter={StaticResource ValueToColour}}" />
+                            <Setter Property="Foreground" Value="Black"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Foreground" Value="Black"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTextColumn.CellStyle>
+                </DataGridTextColumn>
                 
                 <DataGridTemplateColumn Header="Strategies" Width="350" IsReadOnly="False"
                                         Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.Strategies}, Mode=OneWay}">

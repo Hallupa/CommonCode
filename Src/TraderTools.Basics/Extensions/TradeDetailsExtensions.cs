@@ -64,6 +64,24 @@ namespace TraderTools.Basics.Extensions
                 }
             }
 
+            // Process market orders
+            if (trade.EntryPrice == null && trade.OrderPrice == null
+                                         && ((candleOpenTimeTicks <= trade.OrderDateTime.Value.Ticks
+                                              && candleCloseTimeTicks >= trade.OrderDateTime.Value.Ticks) ||
+                                             candleOpenTimeTicks >= trade.OrderDateTime.Value.Ticks))
+            {
+                if (trade.TradeDirection == TradeDirection.Long)
+                {
+                    trade.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal)candleAskClose, trade.OrderAmount.Value);
+                    updated = true;
+                }
+                else
+                {
+                    trade.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal)candleBidClose, trade.OrderAmount.Value);
+                    updated = true;
+                }
+            }
+
             // Try to fill order
             if (trade.EntryPrice == null && trade.OrderPrice != null 
                                          && ((candleOpenTimeTicks <= trade.OrderDateTime.Value.Ticks

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Hallupa.Library;
@@ -8,23 +7,19 @@ using log4net;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
 using TraderTools.Basics.Helpers;
-using TraderTools.Core;
-using TraderTools.Core.Helpers;
-using TraderTools.Core.Services;
 using TraderTools.Core.Trading;
 
-namespace TraderTools.Strategy
+namespace TraderTools.Simulation
 {
     /// <summary>
     /// -Set trade expire/close/entry/etc to M1 candle open time so they appear in the correct position on the chart.
     /// </summary>
-    public class StrategyRunner
+    public class SimulationRunner
     {
         private IBrokersCandlesService _candlesService;
         private readonly ITradeDetailsAutoCalculatorService _calculatorService;
         private readonly IMarketDetailsService _marketDetailsService;
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        private StopPoint _stopPoint;
         private CodeBlockStats _updateOpenTradesBlockStats;
         private CodeBlockStats _createNewTradesBlockStats;
         private CodeBlockStats _fillOrExpireOrdersBlockStats;
@@ -37,12 +32,12 @@ namespace TraderTools.Strategy
         private CodeBlockStats _createOrdersBlockStats;
         private List<CodeBlockStats> _codeBlockStatsList = new List<CodeBlockStats>();
 
-        static StrategyRunner()
+        static SimulationRunner()
         {
             _populateCandlesBlockStats = new CodeBlockStats("Populate candles");
         }
 
-        public StrategyRunner(IBrokersCandlesService candleService, ITradeDetailsAutoCalculatorService calculatorService, IMarketDetailsService marketDetailsService)
+        public SimulationRunner(IBrokersCandlesService candleService, ITradeDetailsAutoCalculatorService calculatorService, IMarketDetailsService marketDetailsService)
         {
             _candlesService = candleService;
             _calculatorService = calculatorService;
@@ -69,12 +64,9 @@ namespace TraderTools.Strategy
         public static CachedDetails Cache { get; set; } = new CachedDetails();
 
         public List<Trade> Run(IStrategy strategy, MarketDetails market, IBroker broker,
-            out int expectedTrades, out int expectedTradesFound,
             DateTime? earliest = null, DateTime? latest = null,
-            StopPoint stopPoint = null, bool simulateTrades = true, bool updatePrices = false, bool cacheCandles = true)
+            bool simulateTrades = true, bool updatePrices = false, bool cacheCandles = true)
         {
-            expectedTrades = 0;
-            expectedTradesFound = 0;
             if (strategy == null)
             {
                 return null;
@@ -85,10 +77,8 @@ namespace TraderTools.Strategy
             var startTime = Environment.TickCount;
 
             Log.Debug($"Running - {strategy.Name} on {market}");
-            _stopPoint = stopPoint;
             var timeframeCandleIndexes = new TimeframeLookup<int>();
             var timeframesCurrentCandles = new TimeframeLookup<List<BasicCandleAndIndicators>>();
-            var trades = new List<Trade>();
             var orders = new List<Trade>();
             var openTrades = new List<Trade>();
             var closedTrades = new List<Trade>();
@@ -102,9 +92,9 @@ namespace TraderTools.Strategy
                 lowestStrategyTimeframe = Timeframe.H2;
             }
 
-            foreach (var t in new[] { Timeframe.M1, Timeframe.M15 }.Union(strategyRequiredTimeframes).Union(new List<Timeframe> { lowestStrategyTimeframe }))
+            foreach (var t in new[] { Timeframe.M15 }.Union(strategyRequiredTimeframes).Union(new List<Timeframe> { lowestStrategyTimeframe }))
             {
-                if ((t == Timeframe.M1 && simulateTrades) || t == Timeframe.M15)
+                if (t == Timeframe.M15)
                 {
                     if (!timeframesList.Contains(t))
                     {
@@ -119,7 +109,7 @@ namespace TraderTools.Strategy
             }
 
             var timeframes = timeframesList.ToArray();
-            var timeframesAllCandles = PopulateCandles(broker, market.Name, timeframes, strategy, updatePrices, cacheCandles, earliest, latest, _candlesService, out var m1Candles);
+            var timeframesAllCandles = PopulateCandles(broker, market.Name, simulateTrades, timeframes, strategy, updatePrices, cacheCandles, earliest, latest, _candlesService, out var m1Candles);
             var timeframesExcludingM1M15 = timeframes.Where(t => t != Timeframe.M15 && t != Timeframe.M1).ToList();
 
             var lowestStrategyTimeframeLookupIndex = TimeframeLookup<int>.GetLookupIndex(lowestStrategyTimeframe);
@@ -156,7 +146,7 @@ namespace TraderTools.Strategy
                     {
                         var percent = (timeframeCandleIndexes[lowestStrategyTimeframeLookupIndex] * 100.0) /
                                       (double)lowestStrategyTimeframeCandles;
-                        Log.Info($"StrategyRunner: {market} {percent:0.00}% complete - created {trades.Count} trades");
+                        Log.Info($"StrategyRunner: {market} {percent:0.00}% complete - created {orders.Count + closedTrades.Count + openTrades.Count} trades");
                         nextLogTime = DateTime.UtcNow.AddSeconds(logIntervalSeconds);
                     }
 
@@ -229,7 +219,7 @@ namespace TraderTools.Strategy
                         var tickStart = Environment.TickCount;
                         try
                         {
-                            CreateNewTrades(strategy, market, timeframesCurrentCandles, trades, orders, timeframesExcludingM1M15);
+                            AddNewTrades(orders, strategy, market, timeframesCurrentCandles, timeframesExcludingM1M15);
                         }
                         catch (Exception ex)
                         {
@@ -243,241 +233,193 @@ namespace TraderTools.Strategy
                 }
             }
 
-            var updatedTrades = new List<Trade>();
+            // Find cached trades
             lock (Cache.TradesLookup)
             {
-                foreach (var t in trades)
+                foreach (var t in orders)
                 {
                     if (Cache.TradesLookup.TryGetValue(TradeDetailsKey.Create(t), out var existingTrade))
                     {
-                        updatedTrades.Add(existingTrade);
-                        orders.Remove(t);
-                    }
-                    else
-                    {
-                        updatedTrades.Add(t);
+                        if (existingTrade.CloseDateTime != null)
+                        {
+                            closedTrades.Add(existingTrade);
+                            orders.Remove(t);
+                        }
+                        else if (existingTrade.EntryDateTime != null)
+                        {
+                            openTrades.Add(existingTrade);
+                            orders.Remove(t);
+                        }
                     }
                 }
             }
-
-            trades = updatedTrades;
 
             orders = orders.OrderBy(x => x.OrderDateTime.Value).ToList();
 
-            // Simulate trades
-            SimulateTrades(strategy, market, ref expectedTrades, ref expectedTradesFound, simulateTrades, orders, openTrades, timeframesExcludingM1M15, m1Candles, closedTrades, timeframesAllCandles, trades);
-
-            Log.Info($"Run complete in {Environment.TickCount - startTime}ms - {strategy.Name} - {market.Name} - Trades: {trades.Count} Completed trades: {trades.Where(t => t.ClosePrice != null).Count()} Sum R: {trades.Where(t => t.ClosePrice != null).Sum(t => t.RMultiple):0.00}");
-            LogCodeBlockStats.LogCodeBlockStatsReport(_codeBlockStatsList, singleLine: false);
-
-            return trades;
-        }
-
-        private void SimulateTrades(IStrategy strategy, MarketDetails market, ref int expectedTrades,
-            ref int expectedTradesFound, bool simulateTrades, List<Trade> orders, List<Trade> openTrades, List<Timeframe> timeframesExcludingM1M15,
-            List<ICandle> m1Candles, List<Trade> closedTrades, TimeframeLookupBasicCandleAndIndicators timeframesAllCandles, List<Trade> trades)
-        {
-            TimeframeLookup<int> timeframeCandleIndexes;
-            TimeframeLookup<List<BasicCandleAndIndicators>> timeframesCurrentCandles;
             if (simulateTrades)
             {
-                using (_simulateTradesBlockStats.Log())
-                {
-                    if (orders.Count > 0 || openTrades.Count > 0)
-                    {
-                        timeframeCandleIndexes = new TimeframeLookup<int>();
-                        timeframesCurrentCandles = new TimeframeLookup<List<BasicCandleAndIndicators>>();
+                // Simulate trades
+                SimulateTrades(strategy, market, orders, openTrades, closedTrades, timeframesExcludingM1M15, m1Candles, timeframesAllCandles);
+            }
 
+            Log.Info($"Run complete in {Environment.TickCount - startTime}ms - {strategy.Name} - {market.Name} - Trades: {orders.Count + closedTrades.Count + openTrades.Count} Completed trades: {closedTrades.Count()} Sum R: {closedTrades.Sum(t => t.RMultiple):0.00}");
+            LogCodeBlockStats.LogCodeBlockStatsReport(_codeBlockStatsList, singleLine: false);
+
+            return orders.Union(closedTrades).Union(openTrades).ToList();
+        }
+
+        public void SimulateTrades(IStrategy strategy, MarketDetails market, List<Trade> orders, List<Trade> openTrades, List<Trade> closedTrades,
+            List<Timeframe> timeframesExcludingM1M15,
+            List<ICandle> m1Candles, TimeframeLookupBasicCandleAndIndicators timeframesAllCandles)
+        {
+            orders = orders.OrderBy(x => x.OrderDateTime).ToList();
+            TimeframeLookup<int> timeframeCandleIndexes;
+            TimeframeLookup<List<BasicCandleAndIndicators>> timeframesCurrentCandles;
+            using (_simulateTradesBlockStats.Log())
+            {
+                if (orders.Count > 0 || openTrades.Count > 0)
+                {
+                    timeframeCandleIndexes = new TimeframeLookup<int>();
+                    timeframesCurrentCandles = new TimeframeLookup<List<BasicCandleAndIndicators>>();
+
+                    foreach (var timeframe in timeframesExcludingM1M15)
+                    {
+                        var timeframeLookupIndex = TimeframeLookup<int>.GetLookupIndex(timeframe);
+
+                        if (timeframeCandleIndexes[timeframeLookupIndex] == 0)
+                        {
+                            timeframesCurrentCandles[timeframeLookupIndex] = new List<BasicCandleAndIndicators>();
+                        }
+                    }
+
+                    var loggingIntervalSeconds = 5;
+                    var nextLogTime = DateTime.UtcNow.AddSeconds(loggingIntervalSeconds);
+
+                    for (var i = 0; i < m1Candles.Count; i++)
+                    {
+                        if (DateTime.UtcNow > nextLogTime)
+                        {
+                            var percent = (i * 100.0) / m1Candles.Count;
+                            Log.Info(
+                                $"StrategyRunner: {market.Name} {percent:0.00}% Orders: {orders.Count} Open trades: {openTrades.Count} Closed trades: {closedTrades.Count}");
+                            nextLogTime = DateTime.UtcNow.AddSeconds(loggingIntervalSeconds);
+                        }
+
+                        var m1Candle = m1Candles[i];
+
+                        // Setup
+                        var completedCandleAddedExcludingM1 = false;
+                        var candleAddedExcludingM1 = false;
+
+                        // Update candles for each timeframe
                         foreach (var timeframe in timeframesExcludingM1M15)
                         {
                             var timeframeLookupIndex = TimeframeLookup<int>.GetLookupIndex(timeframe);
+                            var timeframeAllCandles = timeframesAllCandles[timeframeLookupIndex];
+                            var timeframeCurrentCandles = timeframesCurrentCandles[timeframeLookupIndex];
 
-                            if (timeframeCandleIndexes[timeframeLookupIndex] == 0)
+                            for (var ii = timeframeCandleIndexes[timeframeLookupIndex];
+                                ii < timeframeAllCandles.Count;
+                                ii++)
                             {
-                                timeframesCurrentCandles[timeframeLookupIndex] = new List<BasicCandleAndIndicators>();
-                            }
-                        }
-
-                        var loggingIntervalSeconds = 5;
-                        var nextLogTime = DateTime.UtcNow.AddSeconds(loggingIntervalSeconds);
-
-                        for (var i = 0; i < m1Candles.Count; i++)
-                        {
-                            if (DateTime.UtcNow > nextLogTime)
-                            {
-                                var percent = (i * 100.0) / m1Candles.Count;
-                                Log.Info(
-                                    $"StrategyRunner: {market.Name} {percent:0.00}% Orders: {orders.Count} Open trades: {openTrades.Count} Closed trades: {closedTrades.Count}");
-                                nextLogTime = DateTime.UtcNow.AddSeconds(loggingIntervalSeconds);
-                            }
-
-                            var m1Candle = m1Candles[i];
-
-                            // Setup
-                            var completedCandleAddedExcludingM1 = false;
-                            var candleAddedExcludingM1 = false;
-
-                            // Update candles for each timeframe
-                            foreach (var timeframe in timeframesExcludingM1M15)
-                            {
-                                var timeframeLookupIndex = TimeframeLookup<int>.GetLookupIndex(timeframe);
-                                var timeframeAllCandles = timeframesAllCandles[timeframeLookupIndex];
-                                var timeframeCurrentCandles = timeframesCurrentCandles[timeframeLookupIndex];
-
-                                for (var ii = timeframeCandleIndexes[timeframeLookupIndex];
-                                    ii < timeframeAllCandles.Count;
-                                    ii++)
+                                var timeframeCandle = timeframeAllCandles[ii];
+                                if (timeframeCandle.CloseTimeTicks <= m1Candle.CloseTimeTicks)
                                 {
-                                    var timeframeCandle = timeframeAllCandles[ii];
-                                    if (timeframeCandle.CloseTimeTicks <= m1Candle.CloseTimeTicks)
-                                    {
-                                        // Remove incomplete candles if not D1 Tiger or if is D1 Tiger and new candle is complete
+                                    // Remove incomplete candles if not D1 Tiger or if is D1 Tiger and new candle is complete
 
-                                        for (var iii = timeframeCurrentCandles.Count - 1; iii >= 0; iii--)
+                                    for (var iii = timeframeCurrentCandles.Count - 1; iii >= 0; iii--)
+                                    {
+                                        if (timeframeCurrentCandles[iii].IsComplete == 0)
                                         {
-                                            if (timeframeCurrentCandles[iii].IsComplete == 0)
-                                            {
-                                                timeframeCurrentCandles.RemoveAt(iii);
-                                            }
-                                            else
-                                            {
-                                                break;
-                                            }
+                                            timeframeCurrentCandles.RemoveAt(iii);
                                         }
+                                        else
+                                        {
+                                            break;
+                                        }
+                                    }
 
-                                        timeframeCurrentCandles.Add(timeframeCandle);
-                                        timeframeCandleIndexes[timeframeLookupIndex] = ii + 1;
-                                        candleAddedExcludingM1 = true;
-                                    }
-                                    else
-                                    {
-                                        break;
-                                    }
+                                    timeframeCurrentCandles.Add(timeframeCandle);
+                                    timeframeCandleIndexes[timeframeLookupIndex] = ii + 1;
+                                    candleAddedExcludingM1 = true;
                                 }
-                            }
-
-                            if (candleAddedExcludingM1)
-                            {
-                                // Update open trades
-                                UpdateOpenTrades(strategy, market.Name, openTrades, timeframesCurrentCandles);
-                            }
-
-                            // Process orders
-                            for (var ii = 0; ii < orders.Count; ii++)
-                            {
-                                var order = orders[ii];
-                                var candleOpenTimeTicks = m1Candle.OpenTimeTicks;
-                                var candleCloseTimeTicks = m1Candle.CloseTimeTicks;
-
-                                // If candle's open is before order date or open in past and close not after order date
-                                if ((candleOpenTimeTicks <= order.OrderDateTime.Value.Ticks &&
-                                     candleCloseTimeTicks <= order.OrderDateTime.Value.Ticks)
-                                    && candleOpenTimeTicks <= order.OrderDateTime.Value.Ticks)
+                                else
                                 {
                                     break;
                                 }
-
-                                orders[ii].SimulateTrade(m1Candle, out _);
-
-                                if (orders[ii].EntryDateTime != null)
-                                {
-                                    openTrades.Add(orders[ii]);
-                                    orders.RemoveAt(ii);
-                                    ii--;
-                                }
-                                else if (orders[ii].CloseDateTime != null)
-                                {
-                                    orders.RemoveAt(ii);
-                                    ii--;
-                                }
-                            }
-
-                            // Process open trades
-                            for (var ii = openTrades.Count - 1; ii >= 0; ii--)
-                            {
-                                openTrades[ii].SimulateTrade(m1Candle, out _);
-
-                                if (openTrades[ii].CloseDateTime != null)
-                                {
-                                    closedTrades.Add(openTrades[ii]);
-                                    openTrades.RemoveAt(ii);
-                                }
                             }
                         }
-                    }
-                }
 
-                // Check results
-                var expectedTradesForStrategy = GetTests(market, strategy);
-                if (expectedTradesForStrategy.Count > 0)
-                {
-                    Log.Info($"Found {expectedTradesForStrategy.Count} expected trades");
-
-                    var matchedTrades = 0;
-                    foreach (var expectedTrade in expectedTradesForStrategy)
-                    {
-                        var results = trades.Where(t =>
-                                t.OrderDateTime.Value.Year == expectedTrade.Year &&
-                                t.OrderDateTime.Value.Month == expectedTrade.Month &&
-                                t.OrderDateTime.Value.Day == expectedTrade.Day &&
-                                t.OrderDateTime.Value.Hour == expectedTrade.OrderHourUtc)
-                            .ToList();
-
-                        if (results.Count > 0)
+                        if (candleAddedExcludingM1)
                         {
-                            foreach (var foundTrade in results)
+                            // Update open trades
+                            UpdateOpenTrades(strategy, market.Name, openTrades, timeframesCurrentCandles);
+                        }
+
+                        // Process orders
+                        for (var ii = 0; ii < orders.Count; ii++)
+                        {
+                            var order = orders[ii];
+                            var candleOpenTimeTicks = m1Candle.OpenTimeTicks;
+                            var candleCloseTimeTicks = m1Candle.CloseTimeTicks;
+
+                            // If candle's open is before order date or open in past and close not after order date
+                            if ((candleOpenTimeTicks <= order.OrderDateTime.Value.Ticks &&
+                                 candleCloseTimeTicks <= order.OrderDateTime.Value.Ticks)
+                                && candleOpenTimeTicks <= order.OrderDateTime.Value.Ticks)
                             {
-                                if (foundTrade.Timeframe == expectedTrade.Timeframe
-                                    && foundTrade.InitialStopInPips >= expectedTrade.Pips * 0.87M
-                                    && foundTrade.InitialStopInPips <= expectedTrade.Pips * 1.13M
-                                    && foundTrade.OrderPrice >= (decimal)expectedTrade.OrderPrice * 0.95M
-                                    && foundTrade.OrderPrice <= (decimal)expectedTrade.OrderPrice * 1.05M)
-                                {
-                                    matchedTrades++;
-                                    break;
-                                }
+                                break;
+                            }
+
+                            orders[ii].SimulateTrade(m1Candle, out _);
+
+                            if (orders[ii].EntryDateTime != null)
+                            {
+                                openTrades.Add(orders[ii]);
+                                orders.RemoveAt(ii);
+                                ii--;
+                            }
+                            else if (orders[ii].CloseDateTime != null)
+                            {
+                                orders.RemoveAt(ii);
+                                ii--;
+                            }
+                        }
+
+                        // Process open trades
+                        for (var ii = openTrades.Count - 1; ii >= 0; ii--)
+                        {
+                            openTrades[ii].SimulateTrade(m1Candle, out _);
+
+                            if (openTrades[ii].CloseDateTime != null)
+                            {
+                                closedTrades.Add(openTrades[ii]);
+                                openTrades.RemoveAt(ii);
                             }
                         }
                     }
-
-                    Log.Info($"Expected trades found {matchedTrades}/{expectedTradesForStrategy.Count}");
-                    expectedTrades = expectedTradesForStrategy.Count;
-                    expectedTradesFound = matchedTrades;
-                }
-
-                // Run complete
-                var tradesToStore = new List<(TradeDetailsKey, Trade)>();
-                foreach (var trade in trades)
-                {
-                    tradesToStore.Add((TradeDetailsKey.Create(trade), trade));
-                }
-
-                lock (Cache.TradesLookup)
-                {
-                    foreach (var tradeToStore in tradesToStore)
-                    {
-                        Cache.TradesLookup[tradeToStore.Item1] = tradeToStore.Item2;
-                    }
                 }
             }
-        }
 
-        private static List<ExpectedTradeAttribute> GetTests(MarketDetails market, IStrategy strategy)
-        {
-            var expectedTrades = strategy.GetType().GetCustomAttributes<ExpectedTradeAttribute>();
-
-            var ret = new List<ExpectedTradeAttribute>();
-            foreach (var expectedTrade in expectedTrades.Where(e => e.Market == market.Name))
+            // Run complete - cache results
+            var tradesToStore = new List<(TradeDetailsKey, Trade)>();
+            foreach (var trade in orders.Union(openTrades).Union(closedTrades))
             {
-                ret.Add(expectedTrade);
+                tradesToStore.Add((TradeDetailsKey.Create(trade), trade));
             }
 
-            return ret;
+            lock (Cache.TradesLookup)
+            {
+                foreach (var tradeToStore in tradesToStore)
+                {
+                    Cache.TradesLookup[tradeToStore.Item1] = tradeToStore.Item2;
+                }
+            }
         }
 
-        private void CreateNewTrades(IStrategy strategy, MarketDetails market,
+        private void AddNewTrades(List<Trade> ordersList, IStrategy strategy, MarketDetails market,
             TimeframeLookup<List<BasicCandleAndIndicators>> timeframeCurrentCandles,
-            List<Trade> trades, List<Trade> orders, List<Timeframe> timeframesExcludingM1M15)
+            List<Timeframe> timeframesExcludingM1M15)
         {
             var newTrades = strategy.CreateNewTrades(market, timeframeCurrentCandles, null, _calculatorService);
 
@@ -489,8 +431,7 @@ namespace TraderTools.Strategy
                 var latestAskPrice = (decimal)timeframeCurrentCandles[timeframe][timeframeCurrentCandles[timeframe].Count - 1].CloseAsk;
                 RemoveInvalidTrades(newTrades, latestBidPrice, latestAskPrice, _marketDetailsService);
 
-                trades.AddRange(newTrades);
-                orders.AddRange(newTrades);
+                ordersList.AddRange(newTrades);
             }
         }
 
@@ -593,7 +534,7 @@ namespace TraderTools.Strategy
             IStrategy strategy, string market, List<Trade> openTrades,
             TimeframeLookup<List<BasicCandleAndIndicators>> timeframeCurrentCandles)
         {
-            if (openTrades.Count == 0)
+            if (openTrades.Count == 0 || strategy == null)
             {
                 return;
             }
@@ -717,15 +658,6 @@ namespace TraderTools.Strategy
 
                             timeframeAllCandlesProcessed[timeframeLookupIndex].Add(incompleteCandle);
                             UpdateIndicators(timeframeIndicators, timeframeLookupIndex, incompleteCandle);
-
-                            /*var timeframeIndicatorItems = timeframeIndicators[timeframeLookupIndex];
-                            if (timeframeIndicatorItems != null)
-                            {
-                                foreach (var timeframeIndicator in timeframeIndicatorItems)
-                                {
-                                    timeframeIndicator.Item2.RollbackLastValue();
-                                }
-                            }*/
                         }
                         else
                         {
@@ -747,15 +679,6 @@ namespace TraderTools.Strategy
 
                             timeframeAllCandlesProcessed[timeframeLookupIndex].Add(incompleteCandle);
                             UpdateIndicators(timeframeIndicators, timeframeLookupIndex, incompleteCandle);
-
-                            /*var timeframeIndicatorItems = timeframeIndicators[timeframeLookupIndex];
-                            if (timeframeIndicatorItems != null)
-                            {
-                                foreach (var timeframeIndicator in timeframeIndicatorItems)
-                                {
-                                    timeframeIndicator.Item2.RollbackLastValue();
-                                }
-                            }*/
                         }
                     }
                 }
@@ -769,9 +692,10 @@ namespace TraderTools.Strategy
             return timeframeAllCandlesProcessed;
         }
 
-        public static TimeframeLookupBasicCandleAndIndicators PopulateCandles(
+        public TimeframeLookupBasicCandleAndIndicators PopulateCandles(
             IBroker broker,
             string market,
+            bool getM1Candles,
             Timeframe[] timeframesForStrategy,
             IStrategy strategy,
             bool updatePrices,
@@ -784,25 +708,25 @@ namespace TraderTools.Strategy
             m1Candles = null;
             var timeframes = timeframesForStrategy.ToList();
 
-            var timeframesExcludingM1D1Tiger = timeframes.Where(t => t != Timeframe.M1).ToArray();
-            var timeframesExcludingM1M15 = timeframes.Where(t => t != Timeframe.M1 && t != Timeframe.M15).ToArray();
+            var timeframesExcludingM1 = timeframes.ToArray();
+            var timeframesExcludingM1M15 = timeframes.Where(t => t != Timeframe.M15).ToArray();
             var earliestCandle = earliest != null ? (DateTime?)earliest.Value.AddDays(-100) : null;
 
             var ret = new TimeframeLookupBasicCandleAndIndicators();
 
             using (_populateCandlesBlockStats.Log())
             {
-                // Get M1 candles
-                if (timeframes.Contains(Timeframe.M1))
+                if (getM1Candles)
                 {
-                    bool gotM1Candles;
+                    // Get M1 candles
+                    bool gotM1CandlesFromCache;
 
                     lock (Cache.M1CandlesLookup)
                     {
-                        gotM1Candles = Cache.M1CandlesLookup.TryGetValue(market, out m1Candles);
+                        gotM1CandlesFromCache = Cache.M1CandlesLookup.TryGetValue(market, out m1Candles);
                     }
 
-                    if (!gotM1Candles)
+                    if (!gotM1CandlesFromCache)
                     {
                         m1Candles = candlesService.GetCandles(broker, market, Timeframe.M1, updatePrices,
                             cacheData: false, minOpenTimeUtc: earliestCandle, maxCloseTimeUtc: latest);
@@ -811,10 +735,7 @@ namespace TraderTools.Strategy
                         {
                             Cache.M1CandlesLookup[market] = m1Candles;
                         }
-                    }
 
-                    if (!gotM1Candles)
-                    {
                         // Unload in separate block so M1 candles can be collected
                         candlesService.UnloadCandles(market, Timeframe.M1, broker);
 
@@ -848,7 +769,7 @@ namespace TraderTools.Strategy
                 if (missingCandles)
                 {
                     var candlesLookup = new TimeframeLookup<List<ICandle>>();
-                    foreach (var timeframe in timeframesExcludingM1D1Tiger)
+                    foreach (var timeframe in timeframesExcludingM1)
                     {
                         var candles = candlesService.GetCandles(broker, market, timeframe, updatePrices, cacheData: false,
                             minOpenTimeUtc: earliestCandle, maxCloseTimeUtc: latest);
@@ -874,7 +795,7 @@ namespace TraderTools.Strategy
                         ret[Timeframe.D1] = null;
                     }
 
-                    foreach (var timeframe in timeframesExcludingM1D1Tiger)
+                    foreach (var timeframe in timeframesExcludingM1)
                     {
                         candlesService.UnloadCandles(market, timeframe, broker);
                     }

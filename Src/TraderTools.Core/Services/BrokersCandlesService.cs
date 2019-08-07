@@ -110,7 +110,7 @@ namespace TraderTools.Core.Services
                     Timeframe = timeframe
                 }, out var updatedDatetime))
                 {
-                    if (!forceUpdate && (DateTime.UtcNow - updatedDatetime).TotalSeconds < 60 * 30)
+                    if (candles != null && candles.Count > 0 && !forceUpdate && (DateTime.UtcNow - updatedDatetime).TotalSeconds < 60 * 30)
                     {
                         returnCandles = true;
                     }

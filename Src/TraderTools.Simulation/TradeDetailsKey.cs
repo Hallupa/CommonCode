@@ -1,7 +1,7 @@
 ﻿using System;
 using TraderTools.Basics;
 
-namespace TraderTools.Strategy
+namespace TraderTools.Simulation
 {
     public struct TradeDetailsKey
     {
@@ -26,7 +26,7 @@ namespace TraderTools.Strategy
 
         public DateTime OrderTime { get; set; }
         public string Market { get; set; }
-        public Timeframe Timeframe { get; set; }
+        public Timeframe? Timeframe { get; set; }
         public decimal OrderPrice { get; set; }
         public decimal? InitialStop { get; set; }
         public decimal? InitialLimit { get; set; }
@@ -91,7 +91,7 @@ namespace TraderTools.Strategy
             {
                 OrderTime = trade.OrderDateTime.Value,
                 Market = trade.Market,
-                Timeframe = trade.Timeframe.Value,
+                Timeframe = trade.Timeframe,
                 InitialStop = trade.InitialStop,
                 InitialLimit = trade.InitialLimit,
                 OrderPrice = trade.OrderPrice ?? decimal.MinValue,

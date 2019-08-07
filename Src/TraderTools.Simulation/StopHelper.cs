@@ -2,10 +2,9 @@
 using System.Collections.Generic;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
-using TraderTools.Core.Trading;
 
 
-namespace TraderTools.Strategy
+namespace TraderTools.Simulation
 {
     public enum StopStrategy
     {

@@ -6,7 +6,7 @@ namespace TraderTools.Basics
     {
         MarketDetails GetMarketDetails(string broker, string market);
 
-        List<MarketDetails> GetAlMarketDetails();
+        List<MarketDetails> GetAllMarketDetails();
 
         void AddMarketDetails(MarketDetails marketDetails);
 

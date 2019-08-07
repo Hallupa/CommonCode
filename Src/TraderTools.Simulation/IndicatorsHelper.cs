@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using TraderTools.Basics;
-using TraderTools.Core.Trading;
 using TraderTools.Indicators;
 
-namespace TraderTools.Strategy
+namespace TraderTools.Simulation
 {
     public static class IndicatorsHelper
     {

@@ -17,6 +17,11 @@ namespace TraderTools.Core.UI.Converters
                 return new SolidColorBrush(Color.FromRgb(255, 210, 210));
             }
 
+            if (trade.CloseReason == TradeCloseReason.HitLimit)
+            {
+                return new SolidColorBrush(Color.FromRgb(210, 255, 210));
+            }
+
             if (trade.CloseDateTime == null && trade.EntryPrice != null)
             {
                 return new SolidColorBrush(Color.FromRgb(210, 255, 210));

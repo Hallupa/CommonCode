@@ -36,7 +36,7 @@ namespace TraderTools.Core.Services
             }
         }
 
-        public List<MarketDetails> GetAlMarketDetails()
+        public List<MarketDetails> GetAllMarketDetails()
         {
             lock (_marketDetailsList)
             {
