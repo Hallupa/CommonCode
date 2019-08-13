@@ -85,13 +85,13 @@ namespace TraderTools.Core.UI.ChartModifiers
         /// <param name="e"></param>
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            LinkedChartSurface.Annotations.CollectionChanged -= AnnotationsOnCollectionChanged;
+            if (LinkedChartSurface != null) LinkedChartSurface.Annotations.CollectionChanged -= AnnotationsOnCollectionChanged;
             ParentSurface.Annotations.CollectionChanged -= AnnotationsOnCollectionChanged;
 
-            LinkedChartSurface.Annotations.CollectionChanged += AnnotationsOnCollectionChanged;
+            if (LinkedChartSurface != null) LinkedChartSurface.Annotations.CollectionChanged += AnnotationsOnCollectionChanged;
             ParentSurface.Annotations.CollectionChanged += AnnotationsOnCollectionChanged;
 
-            if (LinkedChartSurface.Annotations.Count > 0)
+            if (LinkedChartSurface != null && LinkedChartSurface.Annotations.Count > 0)
             {
                 AnnotationsOnCollectionChanged(sender, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, LinkedChartSurface.Annotations.ToList()));
             }

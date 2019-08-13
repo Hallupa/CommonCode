@@ -103,7 +103,7 @@
         </Grid.RowDefinitions>
 
         <!-- s:ThemeManager.Theme="BlackSteel" -->
-        <Label Grid.Row="0" Grid.Column="0" FontWeight="Bold">Day chart</Label>
+        <Label Grid.Row="0" Grid.Column="0" FontWeight="Bold" Content="{Binding SmallChartTimeframe}"/>
 
         <Border Grid.Column="0" Grid.Row="1" BorderBrush="DarkGray" BorderThickness="1" Margin="5,5,0,5" Padding="5">
             <s:SciChartGroup ItemsSource="{Binding ChartViewModelSmaller1.ChartPaneViewModels}"

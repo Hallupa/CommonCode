@@ -57,6 +57,11 @@ namespace TraderTools.Basics
 
         public DateTime Date { get; set; }
         public decimal? Price { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Date} {Price}";
+        }
     }
 
     public class Trade : INotifyPropertyChanged
@@ -282,15 +287,15 @@ namespace TraderTools.Basics
         
         public bool Alert { get; set; }
         
-        public int Custom1 { get; set; }
+        public int? Custom1 { get; set; }
         
-        public int Custom2 { get; set; }
+        public int? Custom2 { get; set; }
         
-        public int Custom3 { get; set; }
+        public int? Custom3 { get; set; }
         
-        public int Custom4 { get; set; }
+        public int? Custom4 { get; set; }
         
-        public int Custom5 { get; set; }
+        public int? Custom5 { get; set; }
 
         public string CustomText1 { get; set; }
 
@@ -435,6 +440,8 @@ namespace TraderTools.Basics
             get => _rMultiple;
             set
             {
+                if (_rMultiple == value) return;
+
                 _rMultiple = value;
                 OnPropertyChanged();
             }

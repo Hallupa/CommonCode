@@ -66,7 +66,7 @@ namespace TraderTools.Core.UI.ViewModels
 
             EditCommand = new DelegateCommand(o => EditTrade());
             DeleteCommand = new DelegateCommand(o => DeleteTrade());
-            ViewTradeCommand = new DelegateCommand(t => ViewTrade((Trade)t));
+            ViewTradeCommand = new DelegateCommand(t => ViewTrade((Trade)t, true));
             RemoveSelectedLineCommand = new DelegateCommand(t => RemoveSelectedLine());
             ViewTradeSetupCommand = new DelegateCommand(t => ViewTradeSetup((Trade)t));
 
@@ -74,6 +74,8 @@ namespace TraderTools.Core.UI.ViewModels
             TradesView.Filter = TradesViewFilter;
 
             _dispatcher = Dispatcher.CurrentDispatcher;
+
+            LargeChartTimeframe = Timeframe.H2;
         }
 
         private void RemoveSelectedLine()
@@ -132,8 +134,8 @@ namespace TraderTools.Core.UI.ViewModels
                                                      | TradeListDisplayOptionsFlag.ClosePrice;
 
         protected Trade TradeShowingOnChart { get; private set; }
-        public DelegateCommand ViewTradeCommand { get; private set; }
-        public DelegateCommand ViewTradeSetupCommand { get; private set; }
+        public DelegateCommand ViewTradeCommand { get; protected set; }
+        public DelegateCommand ViewTradeSetupCommand { get; protected set; }
 
         public DelegateCommand RemoveSelectedLineCommand { get; private set; }
 
@@ -157,9 +159,9 @@ namespace TraderTools.Core.UI.ViewModels
         private bool TradesViewFilter(object obj)
         {
             var t = (Trade)obj;
-            return (ShowOpenTrades && t.EntryPrice != null && t.CloseDateTime == null)
+            return ((ShowOpenTrades && t.EntryPrice != null && t.CloseDateTime == null)
                    || (ShowOrders && t.OrderPrice != null && t.EntryPrice == null && t.CloseDateTime == null)
-                   || (ShowClosedTrades && t.CloseDateTime != null);
+                   || (ShowClosedTrades && t.CloseDateTime != null));// && t.Id == "34728772";
         }
 
         [Import] public ChartingService ChartingService { get; private set; }
@@ -175,7 +177,7 @@ namespace TraderTools.Core.UI.ViewModels
         }
 
         public static readonly DependencyProperty ShowOpenTradesProperty = DependencyProperty.Register("ShowOpenTrades", typeof(bool), typeof(TradeViewModelBase), new PropertyMetadata(true, ShowTradesChanged));
-        public static readonly DependencyProperty ShowClosedTradesProperty = DependencyProperty.Register("ShowClosedTrades", typeof(bool), typeof(TradeViewModelBase), new PropertyMetadata(true, ShowTradesChanged));
+        public static readonly DependencyProperty ShowClosedTradesProperty = DependencyProperty.Register("ShowClosedTrades", typeof(bool), typeof(TradeViewModelBase), new PropertyMetadata(false, ShowTradesChanged));
         public static readonly DependencyProperty ShowOrdersProperty = DependencyProperty.Register("ShowOrders", typeof(bool), typeof(TradeViewModelBase), new PropertyMetadata(true, ShowTradesChanged));
 
         private static void ShowTradesChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -211,20 +213,19 @@ namespace TraderTools.Core.UI.ViewModels
 
         public Timeframe LargeChartTimeframe { get; set; } = Timeframe.H2;
         public Timeframe SmallChartTimeframe { get; set; } = Timeframe.D1;
-        public bool UpdateCandlesOnViewTrade { get; set; } = true;
 
-        public void ViewTrade(Trade tradeDetails)
+        public void ViewTrade(Trade tradeDetails, bool updatePrices)
         {
             if (tradeDetails == null) return;
 
-            ShowTrade(tradeDetails, UpdateCandlesOnViewTrade);
+            ShowTrade(tradeDetails, updatePrices);
         }
 
-        public void ViewTradeSetup(Trade tradeDetails)
+        public void ViewTradeSetup(Trade tradeDetails, bool updatePrices = true)
         {
             if (tradeDetails == null) return;
 
-            ShowTradeSetup(tradeDetails, UpdateCandlesOnViewTrade);
+            ShowTradeSetup(tradeDetails, updatePrices);
         }
 
         public void SetParentWindow(Window parent)
@@ -401,9 +402,6 @@ namespace TraderTools.Core.UI.ViewModels
 
         protected void ShowTrade(Trade trade, bool updateCandles = false)
         {
-            // Setup main chart
-            SmallChartTimeframe = Timeframe.D1;
-
             DateTime? start = null, end = null;
 
             if (LargeChartTimeframe == Timeframe.M1)

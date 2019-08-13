@@ -29,11 +29,6 @@ namespace TraderTools.Brokers.FXCM
         public FxcmBroker()
         {
             _rnd = new Random();
-
-            Session = O2GTransport.createSession();
-            _sessionStatusListener = new SessionStatusListener(Session, "", "");
-            Session.useTableManager(O2GTableManagerMode.Yes, null);
-            Session.subscribeSessionStatus(_sessionStatusListener);
         }
 
         internal O2GSession Session { get; private set; }
@@ -80,6 +75,11 @@ namespace TraderTools.Brokers.FXCM
         public void Connect()
         {
             Log.Info("FXCM connecting");
+
+            Session = O2GTransport.createSession();
+            _sessionStatusListener = new SessionStatusListener(Session, "", "");
+            Session.useTableManager(O2GTableManagerMode.Yes, null);
+            Session.subscribeSessionStatus(_sessionStatusListener);
 
             _sessionStatusListener.Reset();
             Session.login(_user, _password, "http://www.fxcorporate.com/Hosts.jsp", "Real");
@@ -205,12 +205,13 @@ namespace TraderTools.Brokers.FXCM
                     trade.Market = tradeRow.Instrument;
                     trade.Broker = "FXCM";
                     trade.Id = tradeRow.TradeID;
-                    trade.EntryDateTime = DateTime.SpecifyKind(tradeRow.OpenTime, DateTimeKind.Utc);
+                    trade.EntryDateTime = DateTime.SpecifyKind(tradeRow.OpenTime, DateTimeKind.Utc); // Checked with Trading Station - these are returned in UTC
                     trade.CloseDateTime = DateTime.SpecifyKind(tradeRow.CloseTime, DateTimeKind.Utc);
                     trade.EntryPrice = (decimal)tradeRow.OpenRate;
 
                     trade.EntryQuantity = tradeRow.Amount;
                     trade.GrossProfitLoss = (decimal)tradeRow.GrossPL;
+                    trade.Rollover = (decimal)tradeRow.RolloverInterest;
                     trade.TradeDirection = tradeRow.BuySell == "S" ? TradeDirection.Short : TradeDirection.Long;
                     trade.PricePerPip = candlesService.GetGBPPerPip(
                         marketsService, this, trade.Market, trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
@@ -301,6 +302,7 @@ namespace TraderTools.Brokers.FXCM
                     }
 
                     trade.EntryQuantity = tradeRow.Amount;
+                    trade.Rollover = (decimal)tradeRow.RolloverInterest;
                     trade.GrossProfitLoss = (decimal)tradeRow.GrossPL;
                     trade.TradeDirection = tradeRow.BuySell == "S" ? TradeDirection.Short : TradeDirection.Long;
                     trade.PricePerPip = candlesService.GetGBPPerPip(
@@ -345,20 +347,34 @@ namespace TraderTools.Brokers.FXCM
 
                     if (!tradeRow.Limit.Equals(0))
                     {
-                        if (trade.LimitPrices.Count == 0 ||
-                            trade.LimitPrices[trade.LimitPrices.Count - 1].Price != (decimal)tradeRow.Limit)
+                        if (trade.LimitPrices.Count == 0 || trade.LimitPrices[trade.LimitPrices.Count - 1].Price != (decimal)tradeRow.Limit)
                         {
                             trade.AddLimitPrice(DateTime.UtcNow, (decimal)tradeRow.Limit);
+                            addedOrUpdatedOpenTrade = true;
+                        }
+                    }
+                    else
+                    {
+                        if (trade.LimitPrices.Count > 0 && trade.LimitPrices[trade.LimitPrices.Count - 1].Price != null)
+                        {
+                            trade.AddLimitPrice(DateTime.UtcNow, null);
                             addedOrUpdatedOpenTrade = true;
                         }
                     }
 
                     if (!tradeRow.Stop.Equals(0))
                     {
-                        if (trade.StopPrices.Count == 0 ||
-                            trade.StopPrices[trade.StopPrices.Count - 1].Price != (decimal)tradeRow.Stop)
+                        if (trade.StopPrices.Count == 0 || trade.StopPrices[trade.StopPrices.Count - 1].Price != (decimal)tradeRow.Stop)
                         {
                             trade.AddStopPrice(DateTime.UtcNow, (decimal)tradeRow.Stop);
+                            addedOrUpdatedOpenTrade = true;
+                        }
+                    }
+                    else
+                    {
+                        if (trade.StopPrices.Count > 0 && trade.StopPrices[trade.StopPrices.Count - 1].Price != null)
+                        {
+                            trade.AddStopPrice(DateTime.UtcNow, null);
                             addedOrUpdatedOpenTrade = true;
                         }
                     }
@@ -416,7 +432,7 @@ namespace TraderTools.Brokers.FXCM
                     continue;
                 }
 
-                var time = DateTime.SpecifyKind(orderOrder.StatusTime, DateTimeKind.Utc);
+                var time = DateTime.SpecifyKind(orderOrder.StatusTime, DateTimeKind.Utc); // Checked with Trading Station - this is UTC Time
                 var expiry = DateTime.SpecifyKind(orderOrder.ExpireDate, DateTimeKind.Utc);
                 var instrument = orderOffer.Instrument;
                 var orderPrice = orderOrder.Rate;
@@ -572,7 +588,7 @@ namespace TraderTools.Brokers.FXCM
             var endDate = DateTime.UtcNow.ToString("m/d/yyyy");
             var outputFormat = "csv-web";
             var locale = "enu";
-            var extra = "";
+            var extra = "&timeformat=UTC";
 
             ReportServer server = new ReportServer();
             string[] lines;
@@ -649,6 +665,8 @@ namespace TraderTools.Brokers.FXCM
 
                 var existingTrade = brokerAccount.Trades.FirstOrDefault(t => t.Id == id);
 
+                // Time here isn't in UTC time but is in Server Time
+
                 var trade = new Trade
                 {
                     Id = id,
@@ -656,9 +674,9 @@ namespace TraderTools.Brokers.FXCM
                     Market = market,
                     EntryQuantity = decimal.Parse(quantity),
                     EntryPrice = !string.IsNullOrEmpty(sold) ? decimal.Parse(sold) : decimal.Parse(bought),
-                    EntryDateTime = DateTime.ParseExact(date, "M/d/y h:m tt", CultureInfo.InvariantCulture), // 3/28/18 7:59 PM
+                    EntryDateTime = DateTime.SpecifyKind(DateTime.ParseExact(date, "M/d/y h:m tt", CultureInfo.InvariantCulture), DateTimeKind.Utc),
                     ClosePrice = !string.IsNullOrEmpty(sold2) ? decimal.Parse(sold2) : decimal.Parse(bought2),
-                    CloseDateTime = DateTime.ParseExact(date2, "M/d/y h:m tt", CultureInfo.InvariantCulture),
+                    CloseDateTime = DateTime.SpecifyKind(DateTime.ParseExact(date2, "M/d/y h:m tt", CultureInfo.InvariantCulture), DateTimeKind.Utc),
                     TradeDirection = !string.IsNullOrEmpty(sold) ? TradeDirection.Short : TradeDirection.Long,
                     OrderKind = condition == "Mkt" ? OrderKind.Market : OrderKind.EntryPrice,
                     GrossProfitLoss = decimal.Parse(grossProfitLoss2),

@@ -5,14 +5,15 @@ namespace TraderTools.Basics
     [Flags]
     public enum CalculateOptions
     {
-        All = 0,
-        ExcludePricePerPip = 1
+        Default = 0,
+        ExcludePricePerPip = 1,
+        IncludeOpenTradesInRMultipleCalculation
     }
 
     public interface ITradeDetailsAutoCalculatorService
     {
         void AddTrade(Trade trade);
         void RemoveTrade(Trade trade);
-        void SetOptions(CalculateOptions options);
+        void RecalculateTrade(Trade trade, CalculateOptions options = CalculateOptions.Default);
     }
 }

@@ -15,10 +15,9 @@ namespace TraderTools.Core.Services
     {
         private List<Trade> _calculatingTrades = new List<Trade>();
 
-        [Import] private IBrokersCandlesService candlesService;
+        [Import] private IBrokersCandlesService _candlesService;
         [Import] private BrokersService _brokersService;
         [Import] private IMarketDetailsService _marketsService;
-        private CalculateOptions _options = CalculateOptions.All;
 
         public void AddTrade(Trade trade)
         {
@@ -26,11 +25,6 @@ namespace TraderTools.Core.Services
             trade.PropertyChanged -= TradeOnPropertyChanged;
             trade.PropertyChanged += TradeOnPropertyChanged;
             TradeOnPropertyChanged(trade, new PropertyChangedEventArgs(string.Empty));
-        }
-
-        public void SetOptions(CalculateOptions options)
-        {
-            _options = options;
         }
 
         public void RemoveTrade(Trade trade)
@@ -65,7 +59,7 @@ namespace TraderTools.Core.Services
             }
         }
 
-        private void RecalculateTrade(Trade trade)
+        public void RecalculateTrade(Trade trade, CalculateOptions options = CalculateOptions.Default)
         {
             var startTime = trade.OrderDateTime ?? trade.EntryDateTime;
             var broker = _brokersService.Brokers.FirstOrDefault(x => x.Name == trade.Broker);
@@ -92,142 +86,12 @@ namespace TraderTools.Core.Services
 
             UpdateOrderPrice(trade);
 
-            // Initial stop is stop at entry point or order point
-            if (trade.StopPrices.Count > 0)
-            {
-                DatePrice entryOrOrderStop = null;
+            UpdateStop(trade);
 
-                // Get entry or order stop price
-                if (trade.EntryDateTime == null)
-                {
-                    entryOrOrderStop = trade.StopPrices[0];
-                }
-                else
-                {
-                    entryOrOrderStop = trade.StopPrices[0];
-                    for (var i = 1; i < trade.StopPrices.Count; i++)
-                    {
-                        if (trade.StopPrices[i].Date > trade.EntryDateTime.Value) break;
-                        entryOrOrderStop = trade.StopPrices[i];
-                    }
-                }
-
-                var stop = entryOrOrderStop;
-                
-                // Update initial stop pips
-                if (trade.EntryPrice != null || trade.OrderPrice != null)
-                {
-                    var price = trade.EntryPrice ?? trade.OrderPrice.Value;
-
-                    if (stop.Price != null)
-                    {
-                        var stopInPips = Math.Abs(
-                            _marketsService.GetPriceInPips(trade.Broker, stop.Price.Value, trade.Market) -
-                            _marketsService.GetPriceInPips(trade.Broker, price, trade.Market));
-                        trade.InitialStopInPips = stopInPips;
-                        trade.InitialStop = entryOrOrderStop.Price;
-                    }
-                    else
-                    {
-                        trade.InitialStopInPips = null;
-                        trade.InitialStop = null;
-                    }
-
-                    // Update current stop
-                    stop = trade.StopPrices.Last();
-                    if (stop.Price != null)
-                    {
-                        var stopInPips = Math.Abs(
-                            _marketsService.GetPriceInPips(trade.Broker, stop.Price.Value, trade.Market) -
-                            _marketsService.GetPriceInPips(trade.Broker, price, trade.Market));
-                        trade.StopInPips = stopInPips;
-                    }
-                    else
-                    {
-                        trade.StopInPips = null;
-                    }
-                }
-                else
-                {
-                    trade.StopInPips = null;
-                    trade.InitialStopInPips = null;
-                    trade.InitialStop = null;
-                }
-
-                trade.StopPrice = stop.Price;
-            }
-            else
-            {
-                trade.StopInPips = null;
-                trade.StopPrice = null;
-                trade.InitialStopInPips = null;
-                trade.InitialStop = null;
-            }
-
-            // Update limit pips
-            if (trade.LimitPrices.Count > 0)
-            {
-                DatePrice entryOrOrderLimit = null;
-
-                // Get entry or order limit price
-                if (trade.EntryDateTime == null)
-                {
-                    entryOrOrderLimit = trade.LimitPrices[0];
-                }
-                else
-                {
-                    entryOrOrderLimit = trade.LimitPrices[0];
-                    for (var i = 1; i < trade.LimitPrices.Count; i++)
-                    {
-                        if (trade.LimitPrices[i].Date > trade.EntryDateTime.Value) break;
-                        entryOrOrderLimit = trade.LimitPrices[i];
-                    }
-                }
-
-                // Update initial limit
-                if (trade.EntryPrice != null || trade.OrderPrice != null)
-                {
-                    var price = trade.EntryPrice ?? trade.OrderPrice.Value;
-                    var limit = entryOrOrderLimit;
-                    var limitInPips = Math.Abs(
-                        _marketsService.GetPriceInPips(trade.Broker, limit.Price.Value, trade.Market) -
-                        _marketsService.GetPriceInPips(trade.Broker, price, trade.Market));
-                    trade.InitialLimitInPips = limitInPips;
-
-                    // Update current limit
-                    limit = trade.LimitPrices.Last();
-                    if (limit.Price != null)
-                    {
-                        limitInPips = Math.Abs(
-                            _marketsService.GetPriceInPips(trade.Broker, limit.Price.Value, trade.Market) -
-                            _marketsService.GetPriceInPips(trade.Broker, price, trade.Market));
-                        trade.LimitInPips = limitInPips;
-                        trade.LimitPrice = limit.Price;
-                    }
-                    else
-                    {
-                        trade.LimitInPips = null;
-                        trade.LimitPrice = null;
-                    }
-                }
-                else
-                {
-                    trade.LimitInPips = null;
-                    trade.LimitPrice = null;
-                }
-
-                trade.InitialLimit = entryOrOrderLimit.Price;
-
-            }
-            else
-            {
-                trade.LimitInPips = null;
-                trade.LimitPrice = null;
-                trade.InitialLimitInPips = null;
-            }
+            UpdateLimit(trade);
 
             // Update price per pip
-            if (!_options.HasFlag(CalculateOptions.ExcludePricePerPip))
+            if (!options.HasFlag(CalculateOptions.ExcludePricePerPip))
             {
                 UpdateTradePricePerPip(trade, broker);
             }
@@ -277,13 +141,171 @@ namespace TraderTools.Core.Services
                 {
                     var gainOrLoss = Math.Abs(trade.ClosePrice.Value - trade.EntryPrice.Value);
                     trade.RMultiple = gainOrLoss != 0
-                        ? (decimal?) (gainOrLoss / risk) * (trade.ClosePrice.Value > trade.EntryPrice.Value ? -1 : 1)
+                        ? (decimal?)(gainOrLoss / risk) * (trade.ClosePrice.Value > trade.EntryPrice.Value ? -1 : 1)
+                        : null;
+                }
+            }
+            else if (trade.EntryPrice != null && trade.ClosePrice == null && trade.InitialStop != null && options.HasFlag(CalculateOptions.IncludeOpenTradesInRMultipleCalculation))
+            {
+                var stopPrice = trade.InitialStop.Value;
+                var risk = Math.Abs(stopPrice - trade.EntryPrice.Value);
+                var currentCandle = _candlesService.GetCandles(_brokersService.GetBroker(trade.Broker), trade.Market, Timeframe.D1, false, cacheData: false).Last();
+                if (trade.TradeDirection == TradeDirection.Long)
+                {
+                    var gainOrLoss = Math.Abs((decimal)currentCandle.CloseBid - trade.EntryPrice.Value);
+                    trade.RMultiple = risk != 0
+                        ? (decimal?)(gainOrLoss / risk) * ((decimal)currentCandle.CloseBid > trade.EntryPrice.Value ? 1 : -1)
+                        : null;
+                }
+                else
+                {
+                    var gainOrLoss = Math.Abs((decimal)currentCandle.CloseAsk - trade.EntryPrice.Value);
+                    trade.RMultiple = gainOrLoss != 0
+                        ? (decimal?)(gainOrLoss / risk) * ((decimal)currentCandle.CloseAsk > trade.EntryPrice.Value ? -1 : 1)
                         : null;
                 }
             }
             else
             {
                 trade.RMultiple = null;
+            }
+        }
+
+        private void UpdateStop(Trade trade)
+        {
+            // Initial stop is stop at entry point or order point
+            if (trade.StopPrices.Count > 0)
+            {
+                DatePrice entryOrOrderStop = null;
+
+                // Get entry or order stop price
+                if (trade.EntryDateTime == null)
+                {
+                    entryOrOrderStop = trade.StopPrices[0];
+                }
+                else
+                {
+                    entryOrOrderStop = trade.StopPrices[0];
+                    for (var i = 1; i < trade.StopPrices.Count; i++)
+                    {
+                        if (trade.StopPrices[i].Date > trade.EntryDateTime.Value) break;
+                        entryOrOrderStop = trade.StopPrices[i];
+                    }
+                }
+
+                var stop = entryOrOrderStop;
+
+                // Update initial stop pips
+                if (trade.EntryPrice != null || trade.OrderPrice != null)
+                {
+                    var price = trade.EntryPrice ?? trade.OrderPrice.Value;
+
+                    if (stop.Price != null)
+                    {
+                        var stopInPips = Math.Abs(
+                            _marketsService.GetPriceInPips(trade.Broker, stop.Price.Value, trade.Market) -
+                            _marketsService.GetPriceInPips(trade.Broker, price, trade.Market));
+                        trade.InitialStopInPips = stopInPips;
+                        trade.InitialStop = entryOrOrderStop.Price;
+                    }
+                    else
+                    {
+                        trade.InitialStopInPips = null;
+                        trade.InitialStop = null;
+                    }
+
+                    // Update current stop
+                    stop = trade.StopPrices.Last();
+                    if (stop.Price != null)
+                    {
+                        var stopInPips = Math.Abs(
+                            _marketsService.GetPriceInPips(trade.Broker, stop.Price.Value, trade.Market) -
+                            _marketsService.GetPriceInPips(trade.Broker, price, trade.Market));
+                        trade.StopInPips = stopInPips;
+                    }
+                    else
+                    {
+                        trade.StopInPips = null;
+                    }
+                }
+                else
+                {
+                    trade.StopInPips = null;
+                    trade.InitialStopInPips = null;
+                    trade.InitialStop = null;
+                }
+
+                trade.StopPrice = stop.Price;
+            }
+            else
+            {
+                trade.StopInPips = null;
+                trade.StopPrice = null;
+                trade.InitialStopInPips = null;
+                trade.InitialStop = null;
+            }
+        }
+
+        private void UpdateLimit(Trade trade)
+        {
+            // Update limit
+            if (trade.LimitPrices.Count > 0)
+            {
+                DatePrice entryOrOrderLimit = null;
+
+                // Get entry or order limit price
+                if (trade.EntryDateTime == null)
+                {
+                    entryOrOrderLimit = trade.LimitPrices[0];
+                }
+                else
+                {
+                    entryOrOrderLimit = trade.LimitPrices[0];
+                    for (var i = 1; i < trade.LimitPrices.Count; i++)
+                    {
+                        if (trade.LimitPrices[i].Date > trade.EntryDateTime.Value) break;
+                        entryOrOrderLimit = trade.LimitPrices[i];
+                    }
+                }
+
+                // Update initial limit
+                var price = trade.EntryPrice ?? trade.OrderPrice;
+                if (price != null)
+                {
+                    var limit = entryOrOrderLimit;
+                    var limitInPips = Math.Abs(
+                        _marketsService.GetPriceInPips(trade.Broker, limit.Price.Value, trade.Market) -
+                        _marketsService.GetPriceInPips(trade.Broker, price.Value, trade.Market));
+                    trade.InitialLimitInPips = limitInPips;
+                }
+                else
+                {
+                    trade.InitialLimitInPips = null;
+                }
+
+                trade.InitialLimit = entryOrOrderLimit.Price;
+
+                // Update current limit
+                var lastlimit = trade.LimitPrices.Last();
+                trade.LimitPrice = lastlimit.Price;
+
+                if (lastlimit.Price != null && price != null)
+                {
+                    var limitInPips = Math.Abs(
+                        _marketsService.GetPriceInPips(trade.Broker, lastlimit.Price.Value, trade.Market) -
+                        _marketsService.GetPriceInPips(trade.Broker, price.Value, trade.Market));
+                    trade.LimitInPips = limitInPips;
+                }
+                else
+                {
+                    trade.LimitInPips = null;
+                }
+            }
+            else
+            {
+                trade.LimitInPips = null;
+                trade.LimitPrice = null;
+                trade.InitialLimitInPips = null;
             }
         }
 
@@ -307,7 +329,7 @@ namespace TraderTools.Core.Services
             {
                 if (broker != null)
                 {
-                    trade.PricePerPip = candlesService.GetGBPPerPip(_marketsService, broker, trade.Market,
+                    trade.PricePerPip = _candlesService.GetGBPPerPip(_marketsService, broker, trade.Market,
                         trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
                 }
                 else

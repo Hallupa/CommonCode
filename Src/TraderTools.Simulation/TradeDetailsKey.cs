@@ -30,11 +30,11 @@ namespace TraderTools.Simulation
         public decimal OrderPrice { get; set; }
         public decimal? InitialStop { get; set; }
         public decimal? InitialLimit { get; set; }
-        public int Custom1 { get; set; }
-        public int Custom2 { get; set; }
-        public int Custom3 { get; set; }
-        public int Custom4 { get; set; }
-        public int Custom5 { get; set; }
+        public int? Custom1 { get; set; }
+        public int? Custom2 { get; set; }
+        public int? Custom3 { get; set; }
+        public int? Custom4 { get; set; }
+        public int? Custom5 { get; set; }
         public TradeDirection Direction { get; set; }
         public DateTime ExpiryDate { get; set; }
 

@@ -16,10 +16,5 @@ namespace TraderTools.Core.Trading
             TimeframeLookup<List<BasicCandleAndIndicators>> candlesLookup,
             List<Trade> existingTrades,
             ITradeDetailsAutoCalculatorService calculatorService);
-
-        void UpdateExistingOpenTrades(
-            Trade trade,
-            string market,
-            TimeframeLookup<List<BasicCandleAndIndicators>> candles);
     }
 }

@@ -18,8 +18,57 @@ namespace TraderTools.Simulation
 
     public static class StopHelper
     {
-        public static void Trail00or50LevelList(
-            Trade trade, string market, TimeframeLookup<List<BasicCandleAndIndicators>> candles)
+        public static void TrailIndicator(Trade trade, Timeframe trailTimeframe, Indicator trailIndicator, TimeframeLookup<List<BasicCandleAndIndicators>> candles, long currentTimeTicks)
+        {
+            if (trade.TradeDirection == null || trade.EntryPrice == null || trade.ClosePrice != null)
+            {
+                return;
+            }
+
+            var trailStopTimeframeCandles = candles[trailTimeframe];
+            var candle = trailStopTimeframeCandles[trailStopTimeframeCandles.Count - 1];
+
+            // Only update the stop once per candle
+            if (trade.StopPrices.Count > 0 && trade.StopPrices[trade.StopPrices.Count - 1].Date.AddSeconds((int)trailTimeframe) > candle.CloseTime()) return;
+            if (trade.StopPrices.Count == 0 || trade.StopPrices[0].Price == null) return;
+            if (!candle[trailIndicator].IsFormed) return;
+
+            // Get initial stop distance from indicator
+            var indicatorStopDiff = 0M;
+            for (var i = candles[trailTimeframe].Count - 1; i >= 0; i--)
+            {
+                var c = candles[trailTimeframe][i];
+                if (c.OpenTimeTicks <= trade.StopPrices[0].Date.Ticks)
+                {
+                    indicatorStopDiff = Math.Abs((decimal)candles[trailTimeframe][i][trailIndicator].Value - trade.StopPrices[0].Price.Value);
+                    break;
+                }
+            }
+
+
+            if (trade.TradeDirection == TradeDirection.Long)
+            {
+                var newStop = (decimal)candle[trailIndicator].Value - indicatorStopDiff;
+
+                if (newStop > trade.StopPrice.Value)
+                {
+                    trade.AddStopPrice(new DateTime(currentTimeTicks, DateTimeKind.Utc), (decimal)newStop);
+                    trade.StopPrice = (decimal)newStop;
+                }
+            }
+            else
+            {
+                var newStop = (decimal)candle[trailIndicator].Value + indicatorStopDiff;
+
+                if (newStop < trade.StopPrice.Value)
+                {
+                    trade.AddStopPrice(new DateTime(currentTimeTicks, DateTimeKind.Utc), (decimal)newStop);
+                    trade.StopPrice = (decimal)newStop;
+                }
+            }
+        }
+
+        public static void Trail00or50LevelList(Trade trade, string market, TimeframeLookup<List<BasicCandleAndIndicators>> candles)
         {
             if (trade.TradeDirection == null)
             {

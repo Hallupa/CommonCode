@@ -39,10 +39,6 @@ namespace TraderTools.Core.Trading
         public abstract List<Trade> CreateNewTrades(
             MarketDetails market, TimeframeLookup<List<BasicCandleAndIndicators>> candlesLookup, List<Trade> existingTrades, ITradeDetailsAutoCalculatorService calculatorService);
 
-        public virtual void UpdateExistingOpenTrades(Trade trade, string market, TimeframeLookup<List<BasicCandleAndIndicators>> candles)
-        {
-        }
-
         protected Trade CreateOrder(
             string market, DateTime? expiryDateTime, decimal entryPrice, TradeDirection direction, decimal currentPrice, DateTime currentDateTime,
             decimal limit, decimal stop, decimal riskPercent)

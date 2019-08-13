@@ -24,7 +24,8 @@ namespace TraderTools.Core.UI.Views
         EntryValue = 2048,
         Strategies = 4096,
         Risk = 8192,
-        Status = 16384
+        Status = 16384,
+        Rollover = 32768
     }
 
     /// <summary>
