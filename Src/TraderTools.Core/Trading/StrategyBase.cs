@@ -41,7 +41,7 @@ namespace TraderTools.Core.Trading
 
         protected Trade CreateOrder(
             string market, DateTime? expiryDateTime, decimal entryPrice, TradeDirection direction, decimal currentPrice, DateTime currentDateTime,
-            decimal limit, decimal stop, decimal riskPercent)
+            decimal? limit, decimal stop, decimal riskPercent)
         {
             int? lotSize = 1000;
 
