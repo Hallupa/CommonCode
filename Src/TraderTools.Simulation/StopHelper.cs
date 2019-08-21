@@ -18,6 +18,42 @@ namespace TraderTools.Simulation
 
     public static class StopHelper
     {
+        /// <summary>
+        /// https://help.fxcm.com/markets/Trading/Execution-Rollover/Order-Types/876471181/What-is-a-Trailing-Stop-and-how-do-I-place-it.htm
+        /// </summary>
+        public static void TrailDynamicStop(Trade trade, TimeframeLookup<List<BasicCandleAndIndicators>> candles, long currentTimeTicks)
+        {
+            if (trade.TradeDirection == null || trade.EntryPrice == null || trade.ClosePrice != null)
+            {
+                return;
+            }
+
+            var candle = candles[Timeframe.H2][candles[Timeframe.H2].Count - 1];
+
+            // Only update the stop every hour
+            if (trade.StopPrices.Count > 0 && trade.StopPrices[trade.StopPrices.Count - 1].Date.AddMinutes(60).Ticks >
+                currentTimeTicks) return;
+
+
+            var initialDiff = trade.EntryPrice.Value - trade.StopPrices[0].Price.Value;
+            var newStop = trade.TradeDirection == TradeDirection.Long
+                ? (decimal) candle.CloseBid - initialDiff
+                : (decimal) candle.CloseAsk - initialDiff;
+
+            if (trade.TradeDirection == TradeDirection.Long && newStop > trade.StopPrice)
+            {
+                trade.AddStopPrice(new DateTime(currentTimeTicks, DateTimeKind.Utc), (decimal)newStop);
+                trade.StopPrice = (decimal)newStop;
+            }
+
+            if (trade.TradeDirection == TradeDirection.Short && newStop < trade.StopPrice)
+            {
+                trade.AddStopPrice(new DateTime(currentTimeTicks, DateTimeKind.Utc), (decimal)newStop);
+                trade.StopPrice = (decimal)newStop;
+            }
+        }
+
+
         public static void TrailIndicator(Trade trade, Timeframe trailTimeframe, Indicator trailIndicator, TimeframeLookup<List<BasicCandleAndIndicators>> candles, long currentTimeTicks)
         {
             if (trade.TradeDirection == null || trade.EntryPrice == null || trade.ClosePrice != null)
@@ -29,7 +65,7 @@ namespace TraderTools.Simulation
             var candle = trailStopTimeframeCandles[trailStopTimeframeCandles.Count - 1];
 
             // Only update the stop once per candle
-            if (trade.StopPrices.Count > 0 && trade.StopPrices[trade.StopPrices.Count - 1].Date.AddSeconds((int)trailTimeframe) > candle.CloseTime()) return;
+            if (trade.StopPrices.Count > 0 && trade.StopPrices[trade.StopPrices.Count - 1].Date.AddSeconds((int)trailTimeframe).Ticks > currentTimeTicks) return;
             if (trade.StopPrices.Count == 0 || trade.StopPrices[0].Price == null) return;
             if (!candle[trailIndicator].IsFormed) return;
 
