@@ -87,6 +87,7 @@ namespace TraderTools.Core.Services
                     .Replace($"public {className}", "public Test" + _classNumber)
                     .Replace($"private {className}", "public Test" + _classNumber),
                 "System.dll", "System.Core.dll", "TraderTools.Core.dll", "Hallupa.Library.dll", "TraderTools.Indicators.dll", "TraderTools.Basics.dll",
+                "TraderTools.Simulation.dll",
                 @"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\PresentationCore.dll",
                 @"C:\Windows\Microsoft.NET\Framework\v4.0.30319\System.ComponentModel.Composition.dll");
 
