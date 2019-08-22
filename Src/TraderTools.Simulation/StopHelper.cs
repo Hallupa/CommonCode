@@ -21,7 +21,7 @@ namespace TraderTools.Simulation
         /// <summary>
         /// https://help.fxcm.com/markets/Trading/Execution-Rollover/Order-Types/876471181/What-is-a-Trailing-Stop-and-how-do-I-place-it.htm
         /// </summary>
-        public static void TrailDynamicStop(Trade trade, TimeframeLookup<List<BasicCandleAndIndicators>> candles, long currentTimeTicks)
+        public static void TrailDynamicStop(Trade trade, TimeframeLookup<List<CandleAndIndicators>> candles, long currentTimeTicks)
         {
             if (trade.TradeDirection == null || trade.EntryPrice == null || trade.ClosePrice != null)
             {
@@ -37,8 +37,8 @@ namespace TraderTools.Simulation
 
             var initialDiff = trade.EntryPrice.Value - trade.StopPrices[0].Price.Value;
             var newStop = trade.TradeDirection == TradeDirection.Long
-                ? (decimal) candle.CloseBid - initialDiff
-                : (decimal) candle.CloseAsk - initialDiff;
+                ? (decimal) candle.Candle.CloseBid - initialDiff
+                : (decimal) candle.Candle.CloseAsk - initialDiff;
 
             if (trade.TradeDirection == TradeDirection.Long && newStop > trade.StopPrice)
             {
@@ -54,7 +54,7 @@ namespace TraderTools.Simulation
         }
 
 
-        public static void TrailIndicator(Trade trade, Timeframe trailTimeframe, Indicator trailIndicator, TimeframeLookup<List<BasicCandleAndIndicators>> candles, long currentTimeTicks)
+        public static void TrailIndicator(Trade trade, Timeframe trailTimeframe, Indicator trailIndicator, TimeframeLookup<List<CandleAndIndicators>> candles, long currentTimeTicks)
         {
             if (trade.TradeDirection == null || trade.EntryPrice == null || trade.ClosePrice != null)
             {
@@ -74,7 +74,7 @@ namespace TraderTools.Simulation
             for (var i = candles[trailTimeframe].Count - 1; i >= 0; i--)
             {
                 var c = candles[trailTimeframe][i];
-                if (c.OpenTimeTicks <= trade.StopPrices[0].Date.Ticks)
+                if (c.Candle.OpenTimeTicks <= trade.StopPrices[0].Date.Ticks)
                 {
                     indicatorStopDiff = Math.Abs((decimal)candles[trailTimeframe][i][trailIndicator].Value - trade.StopPrices[0].Price.Value);
                     break;
@@ -104,7 +104,7 @@ namespace TraderTools.Simulation
             }
         }
 
-        public static void Trail00or50LevelList(Trade trade, string market, TimeframeLookup<List<BasicCandleAndIndicators>> candles)
+        public static void Trail00or50LevelList(Trade trade, string market, TimeframeLookup<List<CandleAndIndicators>> candles)
         {
             if (trade.TradeDirection == null)
             {
@@ -125,7 +125,7 @@ namespace TraderTools.Simulation
             var prevCandle = trailStopTimeframeCandles[trailStopTimeframeCandles.Count - 2];
 
             // Only update the stop once per candle
-            if (trade.StopPrices.Count > 0 && trade.StopPrices[trade.StopPrices.Count - 1].Date.AddSeconds((int)trailStopTimeframe) > candle.CloseTime()) return;
+            if (trade.StopPrices.Count > 0 && trade.StopPrices[trade.StopPrices.Count - 1].Date.AddSeconds((int)trailStopTimeframe) > candle.Candle.CloseTime()) return;
 
             var initialStopDistance = Math.Abs((trade.OrderPrice ?? trade.EntryPrice.Value) - trade.InitialStop.Value);
             
@@ -160,17 +160,17 @@ namespace TraderTools.Simulation
                 var currentStop = trade.StopPrice.Value;
 
                 if (trade.TradeDirection == TradeDirection.Long && nextStop.Value > currentStop && Math.Abs(nextStop.Value - currentStop) > (decimal)priceAdjust
-                    && Math.Abs(nextStop.Value - (decimal)candle.HighBid) >= initialStopDistance
-                    && Math.Abs(nextStop.Value - (decimal)prevCandle.HighBid) >= initialStopDistance)
+                    && Math.Abs(nextStop.Value - (decimal)candle.Candle.HighBid) >= initialStopDistance
+                    && Math.Abs(nextStop.Value - (decimal)prevCandle.Candle.HighBid) >= initialStopDistance)
                 {
-                    trade.AddStopPrice(candle.CloseTime(), nextStop.Value);
+                    trade.AddStopPrice(candle.Candle.CloseTime(), nextStop.Value);
                 }
 
                 if (trade.TradeDirection == TradeDirection.Short && nextStop.Value < currentStop && Math.Abs(nextStop.Value - currentStop) > (decimal)priceAdjust
-                    && Math.Abs(nextStop.Value - (decimal)candle.LowAsk) >= initialStopDistance
-                    && Math.Abs(nextStop.Value - (decimal)prevCandle.LowAsk) >= initialStopDistance)
+                    && Math.Abs(nextStop.Value - (decimal)candle.Candle.LowAsk) >= initialStopDistance
+                    && Math.Abs(nextStop.Value - (decimal)prevCandle.Candle.LowAsk) >= initialStopDistance)
                 {
-                    trade.AddStopPrice(candle.CloseTime(), nextStop.Value);
+                    trade.AddStopPrice(candle.Candle.CloseTime(), nextStop.Value);
                 }
             }
         }
@@ -187,7 +187,7 @@ namespace TraderTools.Simulation
         /// <param name="priceAdjustRatio"></param>
         /// <returns></returns>
         public static decimal? GetNextStop(
-            BasicCandleAndIndicators candle, TradeDirection direction, string market, decimal currentEma,
+            CandleAndIndicators candle, TradeDirection direction, string market, decimal currentEma,
             out double priceAdjust, Timeframe priceAdjustTimeframe = Timeframe.H2, double priceAdjustRatio = double.NaN)
         {
             // TODO needs fixing

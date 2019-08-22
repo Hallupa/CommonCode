@@ -20,7 +20,7 @@ namespace TraderTools.Indicators
             _mean.Length = Length;
         }
 
-        public override SignalAndValue Process(ICandle candle)
+        public override SignalAndValue Process(Candle candle)
         {
             var aveP = (candle.HighBid + candle.LowBid + candle.CloseBid) / 3.0;
 

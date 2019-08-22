@@ -37,7 +37,7 @@ namespace TraderTools.Core.Trading
         public abstract TimeframeLookup<Indicator[]> CreateTimeframeIndicators();
 
         public abstract List<Trade> CreateNewTrades(
-            MarketDetails market, TimeframeLookup<List<BasicCandleAndIndicators>> candlesLookup, List<Trade> existingTrades, ITradeDetailsAutoCalculatorService calculatorService);
+            MarketDetails market, TimeframeLookup<List<CandleAndIndicators>> candlesLookup, List<Trade> existingTrades, ITradeDetailsAutoCalculatorService calculatorService);
 
         protected Trade CreateOrder(
             string market, DateTime? expiryDateTime, decimal entryPrice, TradeDirection direction, decimal currentPrice, DateTime currentDateTime,

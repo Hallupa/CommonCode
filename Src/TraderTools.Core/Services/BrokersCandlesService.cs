@@ -29,8 +29,8 @@ namespace TraderTools.Core.Services
         private static DateTime _earliestDateTime = new DateTime(2010, 1, 1);
         private DataDirectoryService _dataDirectoryService;
 
-        private Dictionary<(IBroker broker, string Market, Timeframe TimeFrame), List<ICandle>> _candlesLookup
-            = new Dictionary<(IBroker broker, string Market, Timeframe TimeFrame), List<ICandle>>();
+        private Dictionary<(IBroker broker, string Market, Timeframe TimeFrame), List<Candle>> _candlesLookup
+            = new Dictionary<(IBroker broker, string Market, Timeframe TimeFrame), List<Candle>>();
 
         private Dictionary<LastUpdatedMarket, DateTime> _lastUpdated = new Dictionary<LastUpdatedMarket, DateTime>();
 
@@ -70,7 +70,7 @@ namespace TraderTools.Core.Services
             }
         }
 
-        public List<ICandle> GetCandles(IBroker broker, string market, Timeframe timeframe,
+        public List<Candle> GetCandles(IBroker broker, string market, Timeframe timeframe,
             bool updateCandles, DateTime? minOpenTimeUtc = null, DateTime? maxCloseTimeUtc = null, bool cacheData = true, bool forceUpdate = false)
         {
             var lck = GetLock(broker, market, timeframe);
@@ -78,7 +78,7 @@ namespace TraderTools.Core.Services
 
             lock (lck)
             {
-                List<ICandle> candles;
+                List<Candle> candles;
                 lock (_candlesLookup)
                 {
                     _candlesLookup.TryGetValue((broker, market, timeframe), out candles);
@@ -86,7 +86,7 @@ namespace TraderTools.Core.Services
 
                 if (candles == null || candles.Count == 0)
                 {
-                    candles = LoadBrokerCandles(broker, market, timeframe).ToList();
+                    candles = LoadBrokerCandles(broker, market, timeframe);
 
                     if (cacheData && candles != null)
                     {
@@ -144,28 +144,32 @@ namespace TraderTools.Core.Services
                     }
                 }
 
-
-                var ret = new List<ICandle>();
-                for (var i = 0; i < candles.Count; i++)
+                if (maxCloseTimeUtc != null || minOpenTimeUtc != null)
                 {
-                    var candle = candles[i];
-                    if ((maxCloseTimeUtc == null || candle.CloseTimeTicks <= maxCloseTimeUtc.Value.Ticks)
-                        && (minOpenTimeUtc == null || candle.OpenTimeTicks >= minOpenTimeUtc.Value.Ticks))
+                    var ret = new List<Candle>();
+                    for (var i = 0; i < candles.Count; i++)
                     {
-                        ret.Add(candle);
-
-                        if (maxCloseTimeUtc != null && candle.CloseTimeTicks > maxCloseTimeUtc.Value.Ticks)
+                        var candle = candles[i];
+                        if ((maxCloseTimeUtc == null || candle.CloseTimeTicks <= maxCloseTimeUtc.Value.Ticks)
+                            && (minOpenTimeUtc == null || candle.OpenTimeTicks >= minOpenTimeUtc.Value.Ticks))
                         {
-                            break;
+                            ret.Add(candle);
+
+                            if (maxCloseTimeUtc != null && candle.CloseTimeTicks > maxCloseTimeUtc.Value.Ticks)
+                            {
+                                break;
+                            }
                         }
                     }
+
+                    return ret;
                 }
 
-                return ret;
+                return candles;
             }
         }
 
-        private ICandle[] LoadBrokerCandles(IBroker broker, string market, Timeframe timeframe)
+        private List<Candle> LoadBrokerCandles(IBroker broker, string market, Timeframe timeframe)
         {
             using (new LogRunTime($"Load and process {broker.Name} {market} {timeframe} candles"))
             {
@@ -186,14 +190,14 @@ namespace TraderTools.Core.Services
                     Marshal.Copy(data, 0, handle2.AddrOfPinnedObject(), data.Length);// do the copy
                     handle2.Free();// cleanup the handle
 
-                    return ret.Cast<ICandle>().ToArray();
+                    return new List<Candle>(ret);
                 }
             }
 
-            return new ICandle[0];
+            return new List<Candle>();
         }
 
-        public void SaveCandles(List<ICandle> candles, IBroker broker, string market, Timeframe timeframe)
+        public void SaveCandles(List<Candle> candles, IBroker broker, string market, Timeframe timeframe)
         {
             var directory = Path.Combine(_dataDirectoryService.MainDirectory, "Candles");
             var candlesTmpPath = Path.Combine(directory, $"{broker.Name}_{market.Replace("/", "")}_{timeframe}_tmp.bin");
@@ -209,8 +213,8 @@ namespace TraderTools.Core.Services
                 File.Delete(candlesTmpPath);
             }
 
-            var candlesArray = candles.Cast<Candle>().ToArray();
-            var size = Marshal.SizeOf(typeof(Candle)) * candlesArray.Length;
+            var candlesArray = candles;
+            var size = Marshal.SizeOf(typeof(Candle)) * candlesArray.Count;
             var bytes = new byte[size];
             var gcHandle = GCHandle.Alloc(candlesArray, GCHandleType.Pinned);
             var ptr = gcHandle.AddrOfPinnedObject();

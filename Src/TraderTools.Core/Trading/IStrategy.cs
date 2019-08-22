@@ -13,7 +13,7 @@ namespace TraderTools.Core.Trading
 
         List<Trade> CreateNewTrades(
             MarketDetails market,
-            TimeframeLookup<List<BasicCandleAndIndicators>> candlesLookup,
+            TimeframeLookup<List<CandleAndIndicators>> candlesLookup,
             List<Trade> existingTrades,
             ITradeDetailsAutoCalculatorService calculatorService);
     }

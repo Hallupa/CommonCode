@@ -72,7 +72,7 @@ namespace TraderTools.Core.UI
             }
         }
 
-        public static void SetChartViewModelPriceData(IList<ICandle> candles, ChartViewModel cvm, Timeframe timeframe)
+        public static void SetChartViewModelPriceData(IList<Candle> candles, ChartViewModel cvm, Timeframe timeframe)
         {
             var priceDataSeries = new OhlcDataSeries<DateTime, double>();
             var time = new DateTime(0);
@@ -114,7 +114,7 @@ namespace TraderTools.Core.UI
             }
         }
 
-        public static IDataSeries CreateIndicatorSeries(string market, IIndicator indicator, Color color, Timeframe timeframe, IList<ICandle> candles)
+        public static IDataSeries CreateIndicatorSeries(string market, IIndicator indicator, Color color, Timeframe timeframe, IList<Candle> candles)
         {
             var series = new XyDataSeries<DateTime, double>();
             var xvalues = new List<DateTime>();
@@ -140,7 +140,7 @@ namespace TraderTools.Core.UI
             return series;
         }
 
-        public static void AddIndicator(ChartPaneViewModel paneViewModel, string market, IIndicator indicator, Color color, Timeframe timeframe, IList<ICandle> candles)
+        public static void AddIndicator(ChartPaneViewModel paneViewModel, string market, IIndicator indicator, Color color, Timeframe timeframe, IList<Candle> candles)
         {
             var series = CreateIndicatorSeries(market, indicator, color, timeframe, candles);
 
@@ -152,7 +152,7 @@ namespace TraderTools.Core.UI
             }));
         }
 
-        public static AnnotationCollection CreateTradeAnnotations(AnnotationCollection annotations, ChartViewModel cvm, TradeAnnotationsToShow annotationsToShow, Timeframe timeframe, IList<ICandle> candles, Trade trade)
+        public static AnnotationCollection CreateTradeAnnotations(AnnotationCollection annotations, ChartViewModel cvm, TradeAnnotationsToShow annotationsToShow, Timeframe timeframe, IList<Candle> candles, Trade trade)
         {
             // Setup annotations
             if (candles.Count == 0) return annotations;
@@ -334,7 +334,7 @@ namespace TraderTools.Core.UI
         }
 
         public static void SetChartViewModelVisibleRange(
-            Trade trade, ChartViewModel cvm, IList<ICandle> candles, Timeframe timeframe)
+            Trade trade, ChartViewModel cvm, IList<Candle> candles, Timeframe timeframe)
         {
             if (candles.Count == 0) return;
 
@@ -379,7 +379,7 @@ namespace TraderTools.Core.UI
 
             var candlesAfterTrade = (int)(candlesBeforeTrade * 0.1);
 
-            var min = candles.IndexOf(startCandle) - candlesBeforeTrade;
+            var min = candles.IndexOf(startCandle.Value) - candlesBeforeTrade;
             var max = candles.IndexOf(endCandle) + candlesAfterTrade;
 
             if (min < 0)

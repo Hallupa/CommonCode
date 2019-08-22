@@ -34,7 +34,7 @@ namespace TraderTools.Indicators
 
         public override string Name => $"EMA{Length}";
 
-        public override SignalAndValue Process(ICandle candle)
+        public override SignalAndValue Process(Candle candle)
         {
             var newValue = candle.CloseBid;
 

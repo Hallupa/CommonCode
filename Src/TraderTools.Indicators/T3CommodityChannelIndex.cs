@@ -27,7 +27,7 @@ namespace TraderTools.Indicators
         public bool IsFormed => _cci.IsFormed;
         public string Name => "T3-CCI";
 
-        public SignalAndValue Process(ICandle candle)
+        public SignalAndValue Process(Candle candle)
         {
             Func<float, float> nz = x => float.IsNaN(x) ? 0 : x;
 

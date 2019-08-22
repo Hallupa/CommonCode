@@ -17,7 +17,7 @@ namespace TraderTools.Indicators
 
         public override string Name => $"SMA{Length}";
 
-        public override SignalAndValue Process(ICandle candle)
+        public override SignalAndValue Process(Candle candle)
         {
             var newValue = candle.CloseBid;
 

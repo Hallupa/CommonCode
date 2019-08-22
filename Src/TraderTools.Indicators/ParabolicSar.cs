@@ -10,7 +10,7 @@ namespace TraderTools.Indicators
         public string Name { get; } = "ParabolicSar";
 
         private double _prevValue;
-        private readonly List<ICandle> _candles = new List<ICandle>();
+        private readonly List<Candle> _candles = new List<Candle>();
         private bool _longPosition;
         private double _xp;        // Extreme Price
         private double _af;         // Acceleration factor
@@ -44,7 +44,7 @@ namespace TraderTools.Indicators
             throw new NotImplementedException();
         }
 
-        public SignalAndValue Process(ICandle candle)
+        public SignalAndValue Process(Candle candle)
         {
             if (_candles.Count == 0)
                 _candles.Add(candle);

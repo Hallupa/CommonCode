@@ -20,7 +20,7 @@ namespace TraderTools.Indicators
         public bool IsFormed => SignalMa.IsFormed;
         public string Name { get; }
 
-        public SignalAndValue Process(ICandle candle)
+        public SignalAndValue Process(Candle candle)
         {
             var value = Macd.Process(candle);
             return SignalMa.Process(new Candle

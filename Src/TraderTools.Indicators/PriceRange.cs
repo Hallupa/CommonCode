@@ -20,7 +20,7 @@ namespace TraderTools.Indicators
 
         public bool IsFormed => HighBuffer.Count >= _length;
         
-        public SignalAndValue Process(ICandle candle)
+        public SignalAndValue Process(Candle candle)
         {
             if (candle.IsComplete == 1)
             {

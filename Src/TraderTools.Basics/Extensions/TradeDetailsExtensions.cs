@@ -4,7 +4,7 @@ namespace TraderTools.Basics.Extensions
 {
     public static class TradeDetailsExtensions
     {
-        public static void SimulateTrade(this Trade trade, ICandle candle, out bool updated)
+        public static void SimulateTrade(this Trade trade, Candle candle, out bool updated)
         {
             SimulateTrade(trade, candle.LowBid, candle.HighBid, candle.CloseBid,
                 candle.LowAsk, candle.HighAsk, candle.CloseAsk,

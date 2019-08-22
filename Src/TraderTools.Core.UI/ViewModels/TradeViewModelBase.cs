@@ -259,7 +259,7 @@ namespace TraderTools.Core.UI.ViewModels
         {
         }
 
-        protected void ShowTrade(Trade trade, Timeframe smallChartTimeframe, List<ICandle> smallChartCandles, Timeframe largeChartTimeframe, List<ICandle> largeChartCandles)
+        protected void ShowTrade(Trade trade, Timeframe smallChartTimeframe, List<Candle> smallChartCandles, Timeframe largeChartTimeframe, List<Candle> largeChartCandles)
         {
             _dispatcher.BeginInvoke((Action)(() =>
             {
@@ -291,8 +291,8 @@ namespace TraderTools.Core.UI.ViewModels
             }));
         }
 
-        protected void ViewCandles(string market, Timeframe smallChartTimeframe, List<ICandle> smallChartCandles,
-            Timeframe largeChartTimeframe, List<ICandle> largeChartCandles)
+        protected void ViewCandles(string market, Timeframe smallChartTimeframe, List<Candle> smallChartCandles,
+            Timeframe largeChartTimeframe, List<Candle> largeChartCandles)
         {
             ChartHelper.SetChartViewModelPriceData(largeChartCandles, ChartViewModel, largeChartTimeframe);
 

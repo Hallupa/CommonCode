@@ -103,6 +103,7 @@
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Candle.cs" />
+    <Compile Include="CandleAndIndicators.cs" />
     <Compile Include="ChartDataRunner.cs" />
     <Compile Include="DepositWithdrawal.cs" />
     <Compile Include="Extensions\BrokerCandlesServiceExtensions.cs" />

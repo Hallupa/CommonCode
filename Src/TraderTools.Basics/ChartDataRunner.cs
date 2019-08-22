@@ -6,17 +6,17 @@ namespace TraderTools.Basics
 {
     public class ChartDataRunner
     {
-        private List<ICandle> _lowestTimeframeCandles;
+        private List<Candle> _lowestTimeframeCandles;
         private Timeframe _lowestTimeframe;
         private List<Timeframe> _timeframesExcludingLowest;
 
-        public ChartDataRunner(List<(List<ICandle> Candles, Timeframe Timeframe)> allTimeframesCandles)
+        public ChartDataRunner(List<(List<Candle> Candles, Timeframe Timeframe)> allTimeframesCandles)
         {
             foreach (var candlesAndTimeframe in allTimeframesCandles)
             {
                 AllCandles.Add(candlesAndTimeframe.Timeframe, candlesAndTimeframe.Candles);
                 CandlesIndexes[candlesAndTimeframe.Timeframe] = 0;
-                CurrentCandles[candlesAndTimeframe.Timeframe] = new List<ICandle>();
+                CurrentCandles[candlesAndTimeframe.Timeframe] = new List<Candle>();
             }
 
             var lowestTimeframe = allTimeframesCandles.OrderBy(x => x.Timeframe).First();
@@ -26,9 +26,9 @@ namespace TraderTools.Basics
         }
 
         public TimeframeLookup<int> CandlesIndexes { get; } = new TimeframeLookup<int>();
-        public TimeframeLookup<List<ICandle>> AllCandles { get; }= new TimeframeLookup<List<ICandle>>();
-        public TimeframeLookup<List<ICandle>> CurrentCandles { get; } = new TimeframeLookup<List<ICandle>>();
-        public ICandle LatestSmallestTimeframeCandle { get; private set; }
+        public TimeframeLookup<List<Candle>> AllCandles { get; }= new TimeframeLookup<List<Candle>>();
+        public TimeframeLookup<List<Candle>> CurrentCandles { get; } = new TimeframeLookup<List<Candle>>();
+        public Candle LatestSmallestTimeframeCandle { get; private set; }
         public bool IsComplete { get; private set; }
         public bool IsFinalCandle => CurrentCandles[Timeframe.D1].Count == AllCandles[Timeframe.D1].Count;
 

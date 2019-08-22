@@ -26,7 +26,7 @@ namespace TraderTools.Indicators
             _prevFinalValue = 0;
         }
 
-        public SignalAndValue Process(ICandle candle)
+        public SignalAndValue Process(Candle candle)
         {
             var newValue = candle.CloseBid;
 

@@ -7,6 +7,6 @@ namespace TraderTools.Core.Trading
 {
     public interface ITimeframeColour
     {
-        Color? GetColour(List<BasicCandleAndIndicators> candles, int index, string market, Timeframe timeframe);
+        Color? GetColour(List<CandleAndIndicators> candles, int index, string market, Timeframe timeframe);
     }
 }

@@ -34,7 +34,7 @@ namespace TraderTools.Indicators
             base.Reset();
         }
 
-        public override SignalAndValue Process(ICandle candle)
+        public override SignalAndValue Process(Candle candle)
         {
             var newValue = candle.CloseBid;
 

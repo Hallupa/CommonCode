@@ -11,7 +11,7 @@ namespace TraderTools.Basics.Extensions
 
     public static class CandleExtensions
     {
-        public static CandleColour Colour(this ICandle candle)
+        public static CandleColour Colour(this Candle candle)
         {
             if (candle.CloseBid > candle.OpenBid)
             {
@@ -26,12 +26,12 @@ namespace TraderTools.Basics.Extensions
             return CandleColour.None;
         }
 
-        public static DateTime OpenTime(this ICandle candle)
+        public static DateTime OpenTime(this Candle candle)
         {
             return new DateTime(candle.OpenTimeTicks, DateTimeKind.Utc);
         }
 
-        public static DateTime CloseTime(this ICandle candle)
+        public static DateTime CloseTime(this Candle candle)
         {
             return new DateTime(candle.CloseTimeTicks, DateTimeKind.Utc);
         }

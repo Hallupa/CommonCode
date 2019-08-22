@@ -33,7 +33,7 @@ namespace TraderTools.Indicators
 
         public override string Name => $"WMA{Length}";
 
-        public override SignalAndValue Process(ICandle candle)
+        public override SignalAndValue Process(Candle candle)
         {
             var newValue = candle.CloseBid;
 

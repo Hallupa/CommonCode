@@ -5,14 +5,14 @@ namespace TraderTools.Core.Extensions
 {
     public static class CandleExtensions
     {
-        public static CandleColour Colour(this BasicCandleAndIndicators candle)
+        public static CandleColour Colour(this CandleAndIndicators candle)
         {
-            if (candle.CloseBid > candle.OpenBid)
+            if (candle.Candle.CloseBid > candle.Candle.OpenBid)
             {
                 return CandleColour.White;
             }
 
-            if (candle.CloseBid < candle.OpenBid)
+            if (candle.Candle.CloseBid < candle.Candle.OpenBid)
             {
                 return CandleColour.Black;
             }

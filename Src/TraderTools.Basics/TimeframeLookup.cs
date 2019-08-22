@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace TraderTools.Basics
 {
-    public class TimeframeLookupBasicCandleAndIndicators : TimeframeLookup<List<BasicCandleAndIndicators>>
+    public class TimeframeLookupBasicCandleAndIndicators : TimeframeLookup<List<CandleAndIndicators>>
     {
 
     }

@@ -30,7 +30,7 @@ namespace TraderTools.Indicators
             TrueRange.Reset();
         }
 
-        public SignalAndValue Process(ICandle candle)
+        public SignalAndValue Process(Candle candle)
         {
             IsFormed = MovingAverage.IsFormed;
 

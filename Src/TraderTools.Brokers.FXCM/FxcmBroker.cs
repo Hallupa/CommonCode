@@ -61,7 +61,7 @@ namespace TraderTools.Brokers.FXCM
             return ret;
         }
 
-        public ICandle GetSingleCandle(string market, Timeframe timeframe, DateTime date)
+        public Candle? GetSingleCandle(string market, Timeframe timeframe, DateTime date)
         {
             throw new NotImplementedException();
         }
@@ -798,7 +798,7 @@ namespace TraderTools.Brokers.FXCM
             return ret;
         }
 
-        public bool UpdateCandles(List<ICandle> candles, string market, Timeframe timeframe, DateTime start)
+        public bool UpdateCandles(List<Candle> candles, string market, Timeframe timeframe, DateTime start)
         {
             var to = DateTime.UtcNow;
             var updated = false;
@@ -838,7 +838,7 @@ namespace TraderTools.Brokers.FXCM
             GetHistoryPrices(market, interval, timeframe, start, to, out var loadedCandles, out var _);
 
 
-            var existingCandleLookup = new Dictionary<long, ICandle>();
+            var existingCandleLookup = new Dictionary<long, Candle>();
             candles.ForEach(x => existingCandleLookup[x.OpenTimeTicks] = x);
 
             if (loadedCandles != null)
