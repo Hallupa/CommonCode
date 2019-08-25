@@ -334,6 +334,8 @@ namespace TraderTools.Simulation
             List<Candle> m1Candles, TimeframeLookupBasicCandleAndIndicators timeframesAllCandles,
             Action<UpdateTradeParameters> updateOpenTradesAction = null)
         {
+            if (market == null) throw new ApplicationException("Market should be set");
+
             var orders = ordersToProcess.Select(t => new TradeWithStopLimitIndex { Trade = t }).OrderBy(x => x.Trade.OrderDateTime).ToList();
             var openTrades = openTradesToProcess.Select(t => new TradeWithStopLimitIndex { Trade = t }).ToList();
             var timeframesExcludingM1M15 = timeframes.Where(t => t != Timeframe.M1 && t != Timeframe.M15).ToList();
