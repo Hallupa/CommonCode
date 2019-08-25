@@ -50,9 +50,12 @@
     <Compile Include="CachedDetails.cs" />
     <Compile Include="IndicatorsHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RequiredTimeframeCandlesAttribute.cs" />
     <Compile Include="StopHelper.cs" />
     <Compile Include="SimulationRunner.cs" />
+    <Compile Include="StopTrailIndicatorAttribute.cs" />
     <Compile Include="TradeDetailsKey.cs" />
+    <Compile Include="UpdateTradeStrategyAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Library\Library.csproj">

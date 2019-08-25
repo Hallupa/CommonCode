@@ -32,10 +32,6 @@ namespace TraderTools.Core.Trading
 
         public abstract string Name { get; }
 
-        public abstract Timeframe[] CandleTimeframesRequired { get; }
-
-        public abstract TimeframeLookup<Indicator[]> CreateTimeframeIndicators();
-
         public abstract List<Trade> CreateNewTrades(
             MarketDetails market, TimeframeLookup<List<CandleAndIndicators>> candlesLookup, List<Trade> existingTrades, ITradeDetailsAutoCalculatorService calculatorService);
 

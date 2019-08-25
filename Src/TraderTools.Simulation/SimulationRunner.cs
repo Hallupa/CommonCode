@@ -20,46 +20,6 @@ namespace TraderTools.Simulation
     }
 
 
-    public abstract class UpdateTradeStrategyAttribute : Attribute
-    {
-        public abstract void UpdateTrade(UpdateTradeParameters p);
-        public override int GetHashCode()
-        {
-            return GetUpdateTradeStrategyHashCode();
-        }
-
-        /// <summary>
-        /// When trades are cached, the update strategy's setup will be saved with the cached details using the hashcode.
-        /// When looking up cached trades, if this hashcode matches then it wil be considered the same.
-        /// </summary>
-        /// <returns></returns>
-        public abstract int GetUpdateTradeStrategyHashCode();
-    }
-
-    public class StopTrailIndicatorAttribute : UpdateTradeStrategyAttribute
-    {
-        private readonly Timeframe _timeframe;
-        private readonly Indicator _indicator;
-        private int _hashcode;
-
-        public StopTrailIndicatorAttribute(Timeframe timeframe, Indicator indicator)
-        {
-            _timeframe = timeframe;
-            _indicator = indicator;
-            _hashcode = $"StopTrail {_timeframe} {_indicator}".GetHashCode();
-        }
-
-        public override void UpdateTrade(UpdateTradeParameters p)
-        {
-            StopHelper.TrailIndicator(p.Trade, _timeframe, _indicator, p.TimeframeCurrentCandles, p.TimeTicks);
-        }
-
-        public override int GetUpdateTradeStrategyHashCode()
-        {
-            return _hashcode;
-        }
-    }
-
     [Flags]
     public enum SimulationRunnerFlags
     {
@@ -123,6 +83,11 @@ namespace TraderTools.Simulation
 
         public static CachedDetails Cache { get; set; } = new CachedDetails();
 
+        private static List<RequiredTimeframeCandlesAttribute> GetRequiredTimeframesAndIndicators(IStrategy strategy)
+        {
+            return strategy.GetType().GetCustomAttributes(typeof(RequiredTimeframeCandlesAttribute), true).Cast<RequiredTimeframeCandlesAttribute>().ToList();
+        }
+
         public List<Trade> Run(IStrategy strategy, MarketDetails market, IBroker broker,
             DateTime? earliest = null, DateTime? latest = null,
             bool simulateTrades = true, bool updatePrices = false, bool cacheCandles = true)
@@ -149,7 +114,8 @@ namespace TraderTools.Simulation
             var orders = new List<Trade>();
             var openTrades = new List<Trade>();
             var closedTrades = new List<Trade>();
-            var strategyRequiredTimeframes = strategy.CandleTimeframesRequired;
+            var requiredTimeframesAndIndicators = GetRequiredTimeframesAndIndicators(strategy);
+            var strategyRequiredTimeframes = requiredTimeframesAndIndicators.Select(x => x.Timeframe).ToList();
 
 
             var timeframesList = new List<Timeframe>();
@@ -176,8 +142,18 @@ namespace TraderTools.Simulation
             }
 
             var timeframes = timeframesList.ToArray();
-            var timeframesAllCandles = PopulateCandles(broker, market.Name, simulateTrades, timeframes, strategy.CreateTimeframeIndicators(), updatePrices,
-                cacheCandles, earliest, latest, _candlesService, out var m1Candles);
+
+            var timeframeIndicators = new TimeframeLookup<Indicator[]>();
+            foreach (var r in requiredTimeframesAndIndicators)
+            {
+                if (r.Indicators.Length > 0)
+                {
+                    timeframeIndicators.Add(r.Timeframe, r.Indicators);
+                }
+            }
+
+            var timeframesAllCandles = PopulateCandles(broker, market.Name, simulateTrades, timeframes, timeframeIndicators, _candlesService,
+                out var m1Candles, updatePrices, cacheCandles, earliest, latest, _options);
             var timeframesExcludingM1M15 = timeframes.Where(t => t != Timeframe.M15 && t != Timeframe.M1).OrderBy(x => x).ToList();
 
             var lowestStrategyTimeframeLookupIndex = TimeframeLookup<int>.GetLookupIndex(lowestStrategyTimeframe);
@@ -292,6 +268,7 @@ namespace TraderTools.Simulation
                         catch (Exception ex)
                         {
                             Log.Error("Unable to create trades", ex);
+                            return null;
                         }
                         finally
                         {
@@ -869,18 +846,36 @@ namespace TraderTools.Simulation
             return timeframeAllCandlesProcessed;
         }
 
-        public TimeframeLookupBasicCandleAndIndicators PopulateCandles(
+        public static TimeframeLookupBasicCandleAndIndicators PopulateCandles(IBroker broker, IStrategy strategy, string market, IBrokersCandlesService candlesService)
+        {
+            var requiredTimeframesAndIndicators = GetRequiredTimeframesAndIndicators(strategy);
+
+            var timeframeIndicators = new TimeframeLookup<Indicator[]>();
+            foreach (var r in requiredTimeframesAndIndicators)
+            {
+                if (r.Indicators.Length > 0)
+                {
+                    timeframeIndicators.Add(r.Timeframe, r.Indicators);
+                }
+            }
+
+            return PopulateCandles(broker, market, false,
+                requiredTimeframesAndIndicators.Select(x => x.Timeframe).ToArray(), timeframeIndicators, candlesService, out _);
+        }
+
+        public static TimeframeLookupBasicCandleAndIndicators PopulateCandles(
             IBroker broker,
             string market,
             bool getM1Candles,
             Timeframe[] timeframesForStrategy,
             TimeframeLookup<Indicator[]> timeframeIndicatorsRequired,
-            bool updatePrices,
-            bool cacheCandles,
-            DateTime? earliest,
-            DateTime? latest,
             IBrokersCandlesService candlesService,
-            out List<Candle> m1Candles)
+            out List<Candle> m1Candles,
+            bool updatePrices = false,
+            bool cacheCandles = false,
+            DateTime? earliest = null,
+            DateTime? latest = null,
+            SimulationRunnerFlags options = SimulationRunnerFlags.Default)
         {
             m1Candles = null;
             var timeframes = timeframesForStrategy.ToList();
@@ -908,7 +903,7 @@ namespace TraderTools.Simulation
                         m1Candles = candlesService.GetCandles(broker, market, Timeframe.M1, updatePrices,
                             cacheData: false, minOpenTimeUtc: earliestCandle, maxCloseTimeUtc: latest);
 
-                        if (!_options.HasFlag(SimulationRunnerFlags.DoNotCacheM1Candles))
+                        if (!options.HasFlag(SimulationRunnerFlags.DoNotCacheM1Candles))
                         {
                             lock (Cache.M1CandlesLookup)
                             {
