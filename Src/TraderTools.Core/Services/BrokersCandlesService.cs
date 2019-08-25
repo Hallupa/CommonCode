@@ -213,8 +213,8 @@ namespace TraderTools.Core.Services
                 File.Delete(candlesTmpPath);
             }
 
-            var candlesArray = candles;
-            var size = Marshal.SizeOf(typeof(Candle)) * candlesArray.Count;
+            var candlesArray = candles.ToArray();
+            var size = Marshal.SizeOf(typeof(Candle)) * candlesArray.Length;
             var bytes = new byte[size];
             var gcHandle = GCHandle.Alloc(candlesArray, GCHandleType.Pinned);
             var ptr = gcHandle.AddrOfPinnedObject();
