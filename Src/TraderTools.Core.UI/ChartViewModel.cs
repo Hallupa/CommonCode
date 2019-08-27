@@ -12,7 +12,7 @@ namespace TraderTools.Core.UI
 
         private IndexRange _xAxisVisibleRange;
 
-        public ObservableCollection<ChartPaneViewModel> ChartPaneViewModels { get; private set; } = new ObservableCollection<ChartPaneViewModel>();
+        public ObservableCollection<ChartPaneViewModel> ChartPaneViewModels { get; } = new ObservableCollection<ChartPaneViewModel>();
 
         public IViewportManager ViewportManager { get; private set; } = new DefaultViewportManager();
 

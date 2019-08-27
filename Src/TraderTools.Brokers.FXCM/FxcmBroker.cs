@@ -211,6 +211,7 @@ namespace TraderTools.Brokers.FXCM
 
                     trade.EntryQuantity = tradeRow.Amount;
                     trade.GrossProfitLoss = (decimal)tradeRow.GrossPL;
+                    // tradeRow.NetPL is profit/loss in pips
                     trade.Rollover = (decimal)tradeRow.RolloverInterest;
                     trade.TradeDirection = tradeRow.BuySell == "S" ? TradeDirection.Short : TradeDirection.Long;
                     trade.PricePerPip = candlesService.GetGBPPerPip(
@@ -235,6 +236,14 @@ namespace TraderTools.Brokers.FXCM
                     if (trade.GrossProfitLoss != (decimal)tradeRow.GrossPL)
                     {
                         trade.GrossProfitLoss = (decimal)tradeRow.GrossPL;
+                        addedOrUpdatedOpenTrade = true;
+                    }
+
+                    // tradeRow.NetPL is profit/loss in pips
+
+                    if (trade.Rollover != (decimal)tradeRow.RolloverInterest)
+                    {
+                        trade.Rollover = (decimal)tradeRow.RolloverInterest;
                         addedOrUpdatedOpenTrade = true;
                     }
 
@@ -265,7 +274,7 @@ namespace TraderTools.Brokers.FXCM
 
             return addedOrUpdatedOpenTrade;
         }
-                
+
         private bool GetOpenTrades(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService,
             O2GTableManager tableManager, out List<Trade> openTradesFound)
         {
@@ -304,6 +313,8 @@ namespace TraderTools.Brokers.FXCM
                     trade.EntryQuantity = tradeRow.Amount;
                     trade.Rollover = (decimal)tradeRow.RolloverInterest;
                     trade.GrossProfitLoss = (decimal)tradeRow.GrossPL;
+                    // tradeRow.PL is pips profit/loss
+                    trade.Rollover = (decimal)tradeRow.RolloverInterest;
                     trade.TradeDirection = tradeRow.BuySell == "S" ? TradeDirection.Short : TradeDirection.Long;
                     trade.PricePerPip = candlesService.GetGBPPerPip(
                         marketsService, this, trade.Market, trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
@@ -323,6 +334,14 @@ namespace TraderTools.Brokers.FXCM
                         trade.GrossProfitLoss = (decimal)tradeRow.GrossPL;
                         addedOrUpdatedOpenTrade = true;
                     }
+
+                    if (trade.Rollover != (decimal)tradeRow.RolloverInterest)
+                    {
+                        trade.Rollover = (decimal)tradeRow.RolloverInterest;
+                        addedOrUpdatedOpenTrade = true;
+                    }
+
+                    // tradeRow.PL is profit/loss in pips
 
                     if (trade.EntryPrice != (decimal)tradeRow.OpenRate)
                     {
@@ -481,7 +500,7 @@ namespace TraderTools.Brokers.FXCM
                     if (trade.OrderAmount != orderOrder.Amount)
                     {
                         trade.OrderAmount = orderOrder.Amount;
-                        trade.PricePerPip = 
+                        trade.PricePerPip =
                             candlesService.GetGBPPerPip(marketsService, this, trade.Market, trade.OrderAmount.Value, trade.OrderDateTime.Value, true);
                         addedOrUpdatedOpenTrade = true;
                     }
@@ -685,7 +704,7 @@ namespace TraderTools.Brokers.FXCM
                 };
 
                 trade.PricePerPip = candlesService.GetGBPPerPip(
-                    marketsService, this, trade.Market,  trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
+                    marketsService, this, trade.Market, trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
 
                 switch (condition2)
                 {

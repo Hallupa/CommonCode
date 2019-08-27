@@ -1,71 +1,56 @@
 ﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using Abt.Controls.SciChart;
+using Hallupa.Library.UI;
 using TraderTools.Basics;
 
 namespace TraderTools.Core.UI.ViewModels
 {
-    public abstract class DoubleChartViewModel : DependencyObject
+    public abstract class DoubleChartViewModel : DependencyObject, INotifyPropertyChanged
     {
-        private string _selectedLargeChartTimeframe;
+        private Timeframe _largeChartTimeframe = Timeframe.H2;
 
         public DoubleChartViewModel()
         {
-            LargeChartTimeframes = new List<string>
-            {
-                "Trade timeframe",
-                "M1",
-                "H2",
-                "H4",
-                "D1"
-            };
-
-            SelectedLargeChartTimeframe = "Trade timeframe";
-
             ChartViewModel.XVisibleRange = new IndexRange();
             ChartViewModelSmaller1.XVisibleRange = new IndexRange();
-        }
 
-        public List<string> LargeChartTimeframes { get; }
+            LargeChartTimeframeOptions.Add(Timeframe.H4);
+            LargeChartTimeframeOptions.Add(Timeframe.H2);
+            LargeChartTimeframeOptions.Add(Timeframe.H1);
 
-        public string SelectedLargeChartTimeframe
-        {
-            get => _selectedLargeChartTimeframe;
-            set
-            {
-                _selectedLargeChartTimeframe = value;
-                SelectedLargeChartTimeChanged();
-            }
-        }
-
-        protected virtual void SelectedLargeChartTimeChanged()
-        {
-        }
-
-        protected Timeframe GetSelectedTimeframe(Trade selectedTrade)
-        {
-            var timeframe = selectedTrade != null && selectedTrade.Timeframe  != null ? selectedTrade.Timeframe.Value : Timeframe.H2;
-
-            switch (SelectedLargeChartTimeframe)
-            {
-                case "M1":
-                    timeframe = Timeframe.M1;
-                    break;
-                case "H2":
-                    timeframe = Timeframe.H2;
-                    break;
-                case "H4":
-                    timeframe = Timeframe.H4;
-                    break;
-                case "D1":
-                    timeframe = Timeframe.D1;
-                    break;
-            }
-
-            return timeframe;
         }
 
         public ChartViewModel ChartViewModel { get; } = new ChartViewModel();
+
         public ChartViewModel ChartViewModelSmaller1 { get; } = new ChartViewModel();
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public Timeframe LargeChartTimeframe
+        {
+            get => _largeChartTimeframe;
+            set
+            {
+                _largeChartTimeframe = value;
+                OnPropertyChanged();
+                LargeChartTimeframeChanged();
+            }
+        }
+
+        protected virtual void LargeChartTimeframeChanged()
+        {
+        }
+
+        public Timeframe SmallChartTimeframe { get; set; } = Timeframe.D1;
+        public ObservableCollection<Timeframe> LargeChartTimeframeOptions { get; } = new ObservableCollection<Timeframe>();
+        
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
 }

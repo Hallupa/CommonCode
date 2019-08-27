@@ -20,6 +20,9 @@
             <Style TargetType="DataGridColumnHeader">
                 <Setter Property="HorizontalContentAlignment" Value="Center"/>
             </Style>
+            <Style TargetType="DataGridRow">
+                <EventSetter Event="MouseDoubleClick" Handler="DataGridRowDoubleClick"/>
+            </Style>
         </Grid.Resources>
 
         <DataGrid ItemsSource="{Binding Path=Trades, IsAsync=True}" EnableRowVirtualization="true" AutoGenerateColumns="False" GridLinesVisibility="Horizontal"

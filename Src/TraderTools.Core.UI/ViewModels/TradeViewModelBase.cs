@@ -151,11 +151,6 @@ namespace TraderTools.Core.UI.ViewModels
 
         public ObservableCollectionEx<Trade> Trades { get; } = new ObservableCollectionEx<Trade>();
 
-        protected override void SelectedLargeChartTimeChanged()
-        {
-            //SelectedTradeUpdated();
-        }
-
         private bool TradesViewFilter(object obj)
         {
             var t = (Trade)obj;
@@ -211,14 +206,19 @@ namespace TraderTools.Core.UI.ViewModels
         {
         }
 
-        public Timeframe LargeChartTimeframe { get; set; } = Timeframe.H2;
-        public Timeframe SmallChartTimeframe { get; set; } = Timeframe.D1;
-
         public void ViewTrade(Trade tradeDetails, bool updatePrices)
         {
             if (tradeDetails == null) return;
 
             ShowTrade(tradeDetails, updatePrices);
+        }
+
+        protected override void LargeChartTimeframeChanged()
+        {
+            if (TradeShowingOnChart != null)
+            {
+                ViewTrade(TradeShowingOnChart, true);
+            }
         }
 
         public void ViewTradeSetup(Trade tradeDetails, bool updatePrices = true)

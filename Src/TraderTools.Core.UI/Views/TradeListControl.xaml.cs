@@ -3,6 +3,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using TraderTools.Basics;
 
 namespace TraderTools.Core.UI.Views
 {
@@ -55,14 +56,14 @@ namespace TraderTools.Core.UI.Views
 
         private static void HideContextMenuDeleteOptionChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            var c = (TradeListControl) d;
-            var hide = (bool) e.NewValue;
+            var c = (TradeListControl)d;
+            var hide = (bool)e.NewValue;
             c.MainContextMenuDeleteMenuItem.Visibility = hide ? Visibility.Collapsed : Visibility.Visible;
         }
-        
+
         public bool HideContextMenuDeleteOption
         {
-            get { return (bool) GetValue(HideContextMenuDeleteOptionProperty); }
+            get { return (bool)GetValue(HideContextMenuDeleteOptionProperty); }
             set { SetValue(HideContextMenuDeleteOptionProperty, value); }
         }
 
@@ -78,7 +79,7 @@ namespace TraderTools.Core.UI.Views
 
         public bool HideContextMenuEditOption
         {
-            get { return (bool) GetValue(HideContextMenuEditOptionProperty); }
+            get { return (bool)GetValue(HideContextMenuEditOptionProperty); }
             set { SetValue(HideContextMenuEditOptionProperty, value); }
         }
 
@@ -91,7 +92,7 @@ namespace TraderTools.Core.UI.Views
 
         public bool HideContextMenu
         {
-            get { return (bool) GetValue(HideContextMenuProperty); }
+            get { return (bool)GetValue(HideContextMenuProperty); }
             set { SetValue(HideContextMenuProperty, value); }
         }
 
@@ -106,7 +107,7 @@ namespace TraderTools.Core.UI.Views
 
         public bool AllColumnsReadOnly
         {
-            get { return (bool) GetValue(AllColumnsReadOnlyProperty); }
+            get { return (bool)GetValue(AllColumnsReadOnlyProperty); }
             set { SetValue(AllColumnsReadOnlyProperty, value); }
         }
 
@@ -121,7 +122,7 @@ namespace TraderTools.Core.UI.Views
 
         public bool ShowBasicDetailsOnly
         {
-            get { return (bool) GetValue(ShowBasicDetailsOnlyProperty); }
+            get { return (bool)GetValue(ShowBasicDetailsOnlyProperty); }
             set { SetValue(ShowBasicDetailsOnlyProperty, value); }
         }
 
@@ -149,7 +150,7 @@ namespace TraderTools.Core.UI.Views
 
         public bool DisableMouseWheelScroll
         {
-            get { return (bool) GetValue(DisableMouseWheelScrollProperty); }
+            get { return (bool)GetValue(DisableMouseWheelScrollProperty); }
             set { SetValue(DisableMouseWheelScrollProperty, value); }
         }
 
@@ -160,11 +161,30 @@ namespace TraderTools.Core.UI.Views
                 e.Handled = true;
                 var eventArg = new MouseWheelEventArgs(e.MouseDevice, e.Timestamp, e.Delta)
                 {
-                    RoutedEvent = UIElement.MouseWheelEvent, Source = sender
+                    RoutedEvent = UIElement.MouseWheelEvent,
+                    Source = sender
                 };
-                var parent = ((Control) sender).Parent as UIElement;
+                var parent = ((Control)sender).Parent as UIElement;
                 parent.RaiseEvent(eventArg);
             }
+        }
+
+        public static readonly DependencyProperty TradeDoubleClickCommandProperty = DependencyProperty.Register(
+            "TradeDoubleClickCommand", typeof(ICommand), typeof(TradeListControl), new PropertyMetadata(default(ICommand)));
+
+        public ICommand TradeDoubleClickCommand
+        {
+            get { return (ICommand) GetValue(TradeDoubleClickCommandProperty); }
+            set { SetValue(TradeDoubleClickCommandProperty, value); }
+        }
+
+        private void DataGridRowDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            var row = (DataGridRow)sender;
+            var trade = (Trade)row.DataContext;
+
+            e.Handled = true;
+            TradeDoubleClickCommand?.Execute(trade);
         }
     }
 }
