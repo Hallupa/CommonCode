@@ -23,11 +23,13 @@ namespace TraderTools.Core.UI.ViewModels
 
         public ObservableCollectionEx<TradesResultViewModel> Results { get; } = new ObservableCollectionEx<TradesResultViewModel>();
 
+        public bool DisableUpdates { get; set; } = false;
+
         public List<string> ResultOptions { get; private set; } = new List<string>
         {
             "All",
             "Market",
-            "Month",
+            "Trade close month",
             "Timeframe",
             "Strategy"
         };
@@ -115,12 +117,14 @@ namespace TraderTools.Core.UI.ViewModels
                 _selectedResultOption = value;
                 Results.Clear();
 
-                Task.Run(() => { UpdateResults(); });
+                UpdateResults();
             }
         }
 
         public void UpdateResults()
         {
+            if (DisableUpdates) return;
+
             var trades = _getTradesFunc().Where(t => 
                 (IncludeOpenTrades && t.CloseDateTime == null && t.EntryDateTime != null)
             || (IncludeClosedTrades && t.CloseDateTime != null && t.EntryDateTime != null)).ToList();
@@ -150,17 +154,24 @@ namespace TraderTools.Core.UI.ViewModels
                 {
                     _dispatcher.Invoke(() =>
                     {
-                        result.StrategyResults = new TradesResultsViewModel(() => group.ToList(), false)
+                        result.StrategyResults = new TradesResultsViewModel(() => group.ToList(), false);
+                        result.StrategyResults.DisableUpdates = true;
+                        try
                         {
-                            ShowOptions = false,
-                            ShowSubOptions = false,
-                            SelectedResultOption = "Strategy",
-                            AdvStrategyNaming = true,
-                            IncludeOpenTrades = true,
-                            IncludeClosedTrades = true,
-                            ShowIncludeOpenClosedTradesOptions = false
-                        };
-                        result.StrategyResults.UpdateResults();
+
+                            result.StrategyResults.ShowOptions = false;
+                            result.StrategyResults.ShowSubOptions = false;
+                            result.StrategyResults.SelectedResultOption = "Strategy";
+                            result.StrategyResults.AdvStrategyNaming = true;
+                            result.StrategyResults.IncludeOpenTrades = true;
+                            result.StrategyResults.IncludeClosedTrades = true;
+                            result.StrategyResults.ShowIncludeOpenClosedTradesOptions = false;
+                        }
+                        finally
+                        {
+                            result.StrategyResults.DisableUpdates = false;
+                            result.StrategyResults.UpdateResults();
+                        }
                     });
                 }
 
@@ -186,7 +197,7 @@ namespace TraderTools.Core.UI.ViewModels
                 case "Market":
                     groupedTrades = trades.GroupBy(x => x.Market).ToList();
                     break;
-                case "Month":
+                case "Trade close month":
                     var now = DateTime.Now;
                     groupedTrades =
                         from t in trades

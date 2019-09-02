@@ -101,9 +101,9 @@ namespace TraderTools.Core.Services
                     }
                 }
 
-                bool returnCandles = !updateCandles;
+                var returnCandles = !updateCandles;
 
-                if (_lastUpdated.TryGetValue(new LastUpdatedMarket
+                if (!returnCandles && _lastUpdated.TryGetValue(new LastUpdatedMarket
                 {
                     BrokerName = broker.Name,
                     Market = market,

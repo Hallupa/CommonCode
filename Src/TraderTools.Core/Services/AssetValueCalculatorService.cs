@@ -293,7 +293,7 @@ namespace TraderTools.Core.Services
 
             if (asset == "EUR")
             {
-                var eurUsd = candleService.GetFirstCandleThatClosesBeforeDateTime("EUR/USD", fxcmBroker,
+                var eurUsd = candleService.GetLastClosedCandle("EUR/USD", fxcmBroker,
                     TimeframeForGettingPrices, date, updateCandles);
                 success = true;
                 return amount * (decimal)eurUsd.Value.CloseBid;
@@ -301,7 +301,7 @@ namespace TraderTools.Core.Services
 
             if (asset == "GBP")
             {
-                var gbpUsd = candleService.GetFirstCandleThatClosesBeforeDateTime("GBP/USD", fxcmBroker,
+                var gbpUsd = candleService.GetLastClosedCandle("GBP/USD", fxcmBroker,
                     TimeframeForGettingPrices, date, updateCandles);
                 success = true;
                 return amount * (decimal)gbpUsd.Value.CloseBid;

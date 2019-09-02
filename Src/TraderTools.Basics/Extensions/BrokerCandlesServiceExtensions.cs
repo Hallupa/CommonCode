@@ -1,22 +1,75 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using TraderTools.Basics.Helpers;
 
 namespace TraderTools.Basics.Extensions
 {
     public static class BrokerCandlesServiceExtensions
     {
-        public static Candle? GetFirstCandleThatClosesBeforeDateTime(
-            this IBrokersCandlesService service, string market, IBroker broker, Timeframe timeframe,
-            DateTime dateTime, bool updateCandles = false)
+        /// <summary>
+        /// Uses a faster mechanism for finding candles.
+        /// </summary>
+        /// <param name="service"></param>
+        /// <param name="market"></param>
+        /// <param name="broker"></param>
+        /// <param name="timeframe"></param>
+        /// <param name="dateTime"></param>
+        /// <param name="updateCandles"></param>
+        /// <returns></returns>
+        public static Candle? GetLastClosedCandle(this IBrokersCandlesService service, string market, IBroker broker, Timeframe timeframe, DateTime dateTime, bool updateCandles = false)
         {
-            var candles = service.GetCandles(broker, market, timeframe, updateCandles, maxCloseTimeUtc: dateTime);
-            if (candles == null)
+            var candles = service.GetCandles(broker, market, timeframe, updateCandles);
+            if (candles == null || candles.Count == 0)
             {
                 return null;
             }
 
-            return CandlesHelper.GetFirstCandleThatClosesBeforeDateTime(candles, dateTime);
+            var maxItemsInRange = 20;
+            if (candles.Count <= maxItemsInRange)
+            {
+                for(var i = candles.Count - 1; i >= 0; i--)
+                {
+                    if (candles[i].CloseTimeTicks <= dateTime.Ticks)
+                    {
+                        return candles[i];
+                    }
+                }
+
+                return null;
+            }
+
+            if (candles[candles.Count - 1].CloseTimeTicks <= dateTime.Ticks) return candles[candles.Count - 1];
+
+            var range1Start = 0;
+            var range2End = candles.Count - 1;
+            var range1End = (range2End - range1Start) / 2;
+
+            while (range2End - range1Start + 1 > maxItemsInRange)
+            {
+                var range2Start = range1End + 1;
+                if (candles[range2Start].CloseTimeTicks > dateTime.Ticks)
+                {
+                    range2End = range1End;
+                    range1End = range1Start + (range2End - range1Start) / 2;
+                }
+                else
+                {
+                    range1Start = range1End + 1;
+                    range1End = range1Start + (range2End - range1Start) / 2;
+                }
+            }
+
+            for (var i = range2End; i >= range1Start; i--)
+            {
+                if (candles[i].CloseTimeTicks <= dateTime.Ticks)
+                {
+
+                    return candles[i];
+                }
+            }
+
+            return null;
         }
 
         public static List<Candle> GetCandlesUptoSpecificTime(this IBrokersCandlesService brokerCandles,
@@ -80,16 +133,6 @@ namespace TraderTools.Basics.Extensions
                     CloseBid = closeBid.Value,
                     HighBid = highBid.Value,
                     LowBid = lowBid.Value,
-                    CloseTimeTicks = closeTimeTicks.Value,
-                    OpenTimeTicks = openTimeTicks.Value,
-                    IsComplete = 0
-                });
-            }
-
-            if (openAsk != null)
-            {
-                largeChartCandles.Add(new Candle
-                {
                     OpenAsk = openAsk.Value,
                     CloseAsk = closeAsk.Value,
                     HighAsk = highAsk.Value,
@@ -135,7 +178,7 @@ namespace TraderTools.Basics.Extensions
             // If market contains GBP, then use the market for the price
             if (market.Contains("GBP"))
             {
-                price = (decimal)candleService.GetFirstCandleThatClosesBeforeDateTime(market, broker, Timeframe.D1, date, updateCandles).Value.OpenBid;
+                price = (decimal)candleService.GetLastClosedCandle(market, broker, Timeframe.D1, date, updateCandles).Value.OpenBid;
 
                 if (market.StartsWith("GBP"))
                 {
@@ -161,14 +204,14 @@ namespace TraderTools.Basics.Extensions
                     // Get candle price, if it exists
                     if (marketsService.HasMarketDetails(broker.Name, marketForPrice))
                     {
-                        price = (decimal)candleService.GetFirstCandleThatClosesBeforeDateTime(marketForPrice, broker, Timeframe.D1, date, updateCandles).Value.OpenBid;
+                        price = (decimal)candleService.GetLastClosedCandle(marketForPrice, broker, Timeframe.D1, date, updateCandles).Value.OpenBid;
                     }
                     else
                     {
                         // Otherwise, try to get the USD candle and convert back to GBP
                         // Try to get $ candle and convert to £
-                        var usdCandle = candleService.GetFirstCandleThatClosesBeforeDateTime($"USD/{market.Split('/')[1]}", broker, Timeframe.D1, date, updateCandles);
-                        var gbpUSDCandle = candleService.GetFirstCandleThatClosesBeforeDateTime("GBP/USD", broker, Timeframe.D1, date, updateCandles);
+                        var usdCandle = candleService.GetLastClosedCandle($"USD/{market.Split('/')[1]}", broker, Timeframe.D1, date, updateCandles);
+                        var gbpUSDCandle = candleService.GetLastClosedCandle("GBP/USD", broker, Timeframe.D1, date, updateCandles);
                         price = (decimal)gbpUSDCandle.Value.OpenBid / (decimal)usdCandle.Value.OpenBid;
                     }
                 }

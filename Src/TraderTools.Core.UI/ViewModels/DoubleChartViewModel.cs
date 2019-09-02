@@ -18,6 +18,7 @@ namespace TraderTools.Core.UI.ViewModels
             ChartViewModel.XVisibleRange = new IndexRange();
             ChartViewModelSmaller1.XVisibleRange = new IndexRange();
 
+            LargeChartTimeframeOptions.Add(Timeframe.D1);
             LargeChartTimeframeOptions.Add(Timeframe.H4);
             LargeChartTimeframeOptions.Add(Timeframe.H2);
             LargeChartTimeframeOptions.Add(Timeframe.H1);

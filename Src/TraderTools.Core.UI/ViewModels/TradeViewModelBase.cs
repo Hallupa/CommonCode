@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
-using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
@@ -44,6 +41,7 @@ namespace TraderTools.Core.UI.ViewModels
     {
         [Import] public IBrokersCandlesService BrokerCandles { get; private set; }
         [Import] private BrokersService _brokers;
+        private bool _showingTradeSetup;
 
         protected IBroker Broker { get; set; }
 
@@ -57,11 +55,9 @@ namespace TraderTools.Core.UI.ViewModels
             TimeFrameItems = new List<Timeframe>
             {
                 Timeframe.D1,
-                Timeframe.H8,
                 Timeframe.H4,
                 Timeframe.H2,
                 Timeframe.H1,
-                Timeframe.M1,
             };
 
             EditCommand = new DelegateCommand(o => EditTrade());
@@ -217,7 +213,14 @@ namespace TraderTools.Core.UI.ViewModels
         {
             if (TradeShowingOnChart != null)
             {
-                ViewTrade(TradeShowingOnChart, true);
+                if (!_showingTradeSetup)
+                {
+                    ViewTrade(TradeShowingOnChart, true);
+                }
+                else
+                {
+                    ViewTradeSetup(TradeShowingOnChart, true);
+                }
             }
         }
 
@@ -271,7 +274,7 @@ namespace TraderTools.Core.UI.ViewModels
                 }
 
                 ViewCandles(trade.Market, smallChartTimeframe, smallChartCandles, largeChartTimeframe, largeChartCandles);
-                
+
                 ChartHelper.SetChartViewModelVisibleRange(trade, ChartViewModel, largeChartCandles,
                     largeChartTimeframe);
 
@@ -280,7 +283,7 @@ namespace TraderTools.Core.UI.ViewModels
 
                 ChartHelper.CreateTradeAnnotations(ChartViewModel.ChartPaneViewModels[0].TradeAnnotations,
                     ChartViewModel, TradeAnnotationsToShow.All, largeChartTimeframe, largeChartCandles, trade);
-                
+
                 ChartHelper.CreateTradeAnnotations(ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations,
                     ChartViewModelSmaller1, TradeAnnotationsToShow.All, smallChartTimeframe, smallChartCandles,
                     trade);
@@ -296,7 +299,7 @@ namespace TraderTools.Core.UI.ViewModels
         {
             ChartHelper.SetChartViewModelPriceData(largeChartCandles, ChartViewModel, largeChartTimeframe);
 
-            if (SelectedMainIndicatorsIndex == (int) MainIndicators.EMA8_EMA25_EMA50)
+            if (SelectedMainIndicatorsIndex == (int)MainIndicators.EMA8_EMA25_EMA50)
             {
                 ChartHelper.AddIndicator(ChartViewModel.ChartPaneViewModels[0], market,
                     new ExponentialMovingAverage(8), Colors.DarkBlue, largeChartTimeframe, largeChartCandles);
@@ -305,7 +308,7 @@ namespace TraderTools.Core.UI.ViewModels
                 ChartHelper.AddIndicator(ChartViewModel.ChartPaneViewModels[0], market,
                     new ExponentialMovingAverage(50), Colors.LightBlue, largeChartTimeframe, largeChartCandles);
             }
-            else if (SelectedMainIndicatorsIndex == (int) MainIndicators.EMA20_MA50_MA200)
+            else if (SelectedMainIndicatorsIndex == (int)MainIndicators.EMA20_MA50_MA200)
             {
                 ChartHelper.AddIndicator(ChartViewModel.ChartPaneViewModels[0], market,
                     new ExponentialMovingAverage(8), Colors.DarkBlue, largeChartTimeframe, largeChartCandles);
@@ -320,7 +323,7 @@ namespace TraderTools.Core.UI.ViewModels
             ChartHelper.SetChartViewModelPriceData(smallChartCandles, ChartViewModelSmaller1,
                 smallChartTimeframe);
 
-            if (SelectedMainIndicatorsIndex == (int) MainIndicators.EMA8_EMA25_EMA50)
+            if (SelectedMainIndicatorsIndex == (int)MainIndicators.EMA8_EMA25_EMA50)
             {
                 ChartHelper.AddIndicator(ChartViewModelSmaller1.ChartPaneViewModels[0], market,
                     new ExponentialMovingAverage(8), Colors.DarkBlue, smallChartTimeframe, smallChartCandles);
@@ -329,7 +332,7 @@ namespace TraderTools.Core.UI.ViewModels
                 ChartHelper.AddIndicator(ChartViewModelSmaller1.ChartPaneViewModels[0], market,
                     new ExponentialMovingAverage(50), Colors.LightBlue, smallChartTimeframe, smallChartCandles);
             }
-            else if (SelectedMainIndicatorsIndex == (int) MainIndicators.EMA20_MA50_MA200)
+            else if (SelectedMainIndicatorsIndex == (int)MainIndicators.EMA20_MA50_MA200)
             {
                 ChartHelper.AddIndicator(ChartViewModelSmaller1.ChartPaneViewModels[0], market,
                     new ExponentialMovingAverage(20), Colors.DarkBlue, smallChartTimeframe, smallChartCandles);
@@ -365,32 +368,20 @@ namespace TraderTools.Core.UI.ViewModels
                 var id = 1;
                 foreach (var line in t.ChartLines)
                 {
-                    var addedLine = new LineAnnotation
-                    {
-                        Tag = "Added_" + id,
-                        StrokeThickness = AddLinesModifier.StrokeThickness,
-                        Opacity = AddLinesModifier.Opacity,
-                        Stroke = AddLinesModifier.Stroke,
-                        X1 = line.DateTimeUTC1,
-                        Y1 = line.Price1,
-                        X2 = line.DateTimeUTC2,
-                        Y2 = line.Price2,
-                        IsEditable = true
-                    };
+                    var addedLine = ChartHelper.CreateChartLineAnnotation(ChartViewModel.ChartPaneViewModels[0].ChartSeriesViewModels[0].DataSeries, line.DateTimeUTC1.ToLocalTime(), line.Price1, line.DateTimeUTC2, line.Price2);
+                    addedLine.Tag = "Added_" + id;
+                    addedLine.StrokeThickness = AddLinesModifier.StrokeThickness;
+                    addedLine.Opacity = AddLinesModifier.Opacity;
+                    addedLine.Stroke = AddLinesModifier.Stroke;
+                    addedLine.IsEditable = true;
                     ChartViewModel.ChartPaneViewModels[0].TradeAnnotations.Add(addedLine);
 
-                    addedLine = new LineAnnotation
-                    {
-                        Tag = "Added_" + id,
-                        StrokeThickness = AddLinesModifier.StrokeThickness,
-                        Opacity = AddLinesModifier.Opacity,
-                        Stroke = AddLinesModifier.Stroke,
-                        X1 = line.DateTimeUTC1,
-                        Y1 = line.Price1,
-                        X2 = line.DateTimeUTC2,
-                        Y2 = line.Price2,
-                        IsEditable = true
-                    };
+                    addedLine = ChartHelper.CreateChartLineAnnotation(ChartViewModelSmaller1.ChartPaneViewModels[0].ChartSeriesViewModels[0].DataSeries, line.DateTimeUTC1.ToLocalTime(), line.Price1, line.DateTimeUTC2, line.Price2);
+                    addedLine.Tag = "Added_" + id;
+                    addedLine.StrokeThickness = AddLinesModifier.StrokeThickness;
+                    addedLine.Opacity = AddLinesModifier.Opacity;
+                    addedLine.Stroke = AddLinesModifier.Stroke;
+                    addedLine.IsEditable = true;
                     ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations.Add(addedLine);
 
                     id++;
@@ -402,6 +393,7 @@ namespace TraderTools.Core.UI.ViewModels
 
         protected void ShowTrade(Trade trade, bool updateCandles = false)
         {
+            _showingTradeSetup = false;
             DateTime? start = null, end = null;
 
             if (LargeChartTimeframe == Timeframe.M1)
@@ -423,6 +415,7 @@ namespace TraderTools.Core.UI.ViewModels
             if (trade.StartDateTime == null) return;
 
             // Setup main chart
+            _showingTradeSetup = true;
             var smallChartTimeframe = Timeframe.D1;
 
             DateTime? start = null;

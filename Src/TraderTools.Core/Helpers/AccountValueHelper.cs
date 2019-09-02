@@ -67,14 +67,14 @@ namespace TraderTools.Core.Helpers
 
                 if (depositWithdrawal.Asset == "USD")
                 {
-                    var gbpUsd = candleService.GetFirstCandleThatClosesBeforeDateTime("GBPUSD", fxcm, Timeframe.D1, depositWithdrawal.Time, false);
+                    var gbpUsd = candleService.GetLastClosedCandle("GBPUSD", fxcm, Timeframe.D1, depositWithdrawal.Time, false);
                     var amount = depositWithdrawal.Amount / (decimal)gbpUsd.Value.CloseBid;
                     totalCurrencyInAtEndDate += amount;
                 }
 
                 if (depositWithdrawal.Asset == "EUR")
                 {
-                    var gbpUsd = candleService.GetFirstCandleThatClosesBeforeDateTime("EURUSD", fxcm, Timeframe.D1, depositWithdrawal.Time, false);
+                    var gbpUsd = candleService.GetLastClosedCandle("EURUSD", fxcm, Timeframe.D1, depositWithdrawal.Time, false);
                     var amount = depositWithdrawal.Amount / (decimal)gbpUsd.Value.CloseBid;
                     totalCurrencyInAtEndDate += amount;
                 }

@@ -7,6 +7,7 @@ using System.Windows.Shapes;
 using Abt.Controls.SciChart;
 using Abt.Controls.SciChart.Common.Extensions;
 using Abt.Controls.SciChart.Model.DataSeries;
+using Abt.Controls.SciChart.Numerics.CoordinateCalculators;
 using Abt.Controls.SciChart.Visuals.Annotations;
 using Abt.Controls.SciChart.Visuals.RenderableSeries;
 using TraderTools.Basics;
@@ -264,7 +265,7 @@ namespace TraderTools.Core.UI
         }
 
         public static void AddHorizontalLine(decimal price, DateTime start, DateTime end, IDataSeries dataSeries,
-            AnnotationCollection annotations, Trade trade, Color colour, bool extendLeftAndRight = false, 
+            AnnotationCollection annotations, Trade trade, Color colour, bool extendLeftAndRight = false,
             bool extendRightIfZeroLength = false, DoubleCollection strokeDashArray = null)
         {
             var dateStartIndex = dataSeries.FindIndex(start, SearchMode.RoundDown);
@@ -295,10 +296,26 @@ namespace TraderTools.Core.UI
             annotations.Add(lineAnnotation);
         }
 
+        public static LineAnnotation CreateChartLineAnnotation(IDataSeries series, DateTime date1, IComparable value1, DateTime date2, IComparable value2)
+        {
+            var startIndex = series.FindIndex(date1, SearchMode.Nearest);
+            var endIndex = series.FindIndex(date2, SearchMode.Nearest);
+
+            // Would be good to use ((ICategoryCoordinateCalculator)surface.XAxis.GetCurrentCoordinateCalculator()).TransformDataToIndex(date1) but how to get the surface?
+            return new LineAnnotation
+            {
+                X1 = date1 < (DateTime)series.XMin || date1 > (DateTime)series.XMax ? (IComparable)date1 : startIndex,
+                X2 = date2 < (DateTime)series.XMin || date2 > (DateTime)series.XMax ? (IComparable)date2 : endIndex,
+                Y1 = value1,
+                Y2 = value2
+            };
+        }
+
         private static void AddLineAnnotations(
             List<DatePrice> prices, IDataSeries series, AnnotationCollection annotations, Color colour)
         {
             int? startIndex = null;
+            DateTime? startDate = null;
             decimal? currentPrice = null;
             foreach (var p in prices)
             {
@@ -317,8 +334,8 @@ namespace TraderTools.Core.UI
                         var brush = new SolidColorBrush(colour) { Opacity = 0.5 };
                         var annotation = new LineAnnotation
                         {
-                            X1 = startIndex.Value,
-                            X2 = endIndex,
+                            X1 = startDate, //startIndex.Value,
+                            X2 = p.Date.ToLocalTime(), //endIndex,
                             Y1 = currentPrice.Value,
                             Y2 = currentPrice.Value,
                             Stroke = brush
@@ -328,6 +345,7 @@ namespace TraderTools.Core.UI
                     }
 
                     startIndex = series.FindIndex(p.Date.ToLocalTime(), SearchMode.Nearest);
+                    startDate = p.Date.ToLocalTime();
                     currentPrice = p.Price;
                 }
             }

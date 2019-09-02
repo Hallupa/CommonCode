@@ -125,6 +125,12 @@ namespace TraderTools.Brokers.FXCM
         private O2GTableManager GetTableManager()
         {
             var tableManager = Session.getTableManager();
+            if (tableManager == null)
+            {
+                Disconnect();
+                return null;
+            }
+
             var managerStatus = tableManager.getStatus();
             while (managerStatus == O2GTableManagerStatus.TablesLoading)
             {
@@ -143,6 +149,11 @@ namespace TraderTools.Brokers.FXCM
         public bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService, Action<string> updateProgressAction)
         {
             var tableManager = GetTableManager();
+
+            if (tableManager == null)
+            {
+                return false;
+            }
 
             // Get open trades
             updateProgressAction?.Invoke("Getting open trades");
@@ -1182,9 +1193,6 @@ namespace TraderTools.Brokers.FXCM
                     {
                         Disconnect();
                     }
-
-                    Session.Dispose();
-                    Session = null;
                 }
 
                 disposedValue = true;
@@ -1200,6 +1208,8 @@ namespace TraderTools.Brokers.FXCM
                 _sessionStatusListener.Reset();
                 Session.logout();
                 _sessionStatusListener.WaitEvents();
+                Session.Dispose();
+                Session = null;
             }
 
             Log.Info("FXCM disconnected");
