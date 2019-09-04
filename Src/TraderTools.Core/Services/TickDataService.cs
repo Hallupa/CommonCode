@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -17,10 +16,10 @@ namespace TraderTools.Core.Services
     public class TickDataService
     {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        private DataDirectoryService _dataDirectoryService;
+        private IDataDirectoryService _dataDirectoryService;
 
         [ImportingConstructor]
-        public TickDataService(DataDirectoryService dataDirectoryService)
+        public TickDataService(IDataDirectoryService dataDirectoryService)
         {
             _dataDirectoryService = dataDirectoryService;
         }

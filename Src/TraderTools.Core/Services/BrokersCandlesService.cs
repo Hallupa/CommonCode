@@ -27,7 +27,7 @@ namespace TraderTools.Core.Services
     {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private static DateTime _earliestDateTime = new DateTime(2010, 1, 1);
-        private DataDirectoryService _dataDirectoryService;
+        private IDataDirectoryService _dataDirectoryService;
 
         private Dictionary<(IBroker broker, string Market, Timeframe TimeFrame), List<Candle>> _candlesLookup
             = new Dictionary<(IBroker broker, string Market, Timeframe TimeFrame), List<Candle>>();
@@ -35,7 +35,7 @@ namespace TraderTools.Core.Services
         private Dictionary<LastUpdatedMarket, DateTime> _lastUpdated = new Dictionary<LastUpdatedMarket, DateTime>();
 
         [ImportingConstructor]
-        public BrokersCandlesService(DataDirectoryService dataDirectoryService)
+        public BrokersCandlesService(IDataDirectoryService dataDirectoryService)
         {
             _dataDirectoryService = dataDirectoryService;
             _savePath = Path.Combine(_dataDirectoryService.MainDirectory, "LastBrokerMarketUpdates.json");
@@ -49,7 +49,7 @@ namespace TraderTools.Core.Services
 
         public void UpdateCandles(IBroker broker, string market, Timeframe timeframe)
         {
-            GetCandles(broker, market, timeframe, true);
+            GetCandles(broker, market, timeframe, true, forceUpdate: true);
         }
 
         private Dictionary<(IBroker Broker, string Market, Timeframe Timeframe), object> _lockLookups = new Dictionary<(IBroker Broker, string Market, Timeframe Timeframe), object>();

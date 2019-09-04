@@ -17,7 +17,7 @@ namespace TraderTools.Core.Services
     [PartCreationPolicy(CreationPolicy.Shared)]
     public class AssetValueCalculatorService
     {
-        [Import] private DataDirectoryService _dataDirectoryService;
+        [Import] private IDataDirectoryService _dataDirectoryService;
 
         private class CachedPrice
         {

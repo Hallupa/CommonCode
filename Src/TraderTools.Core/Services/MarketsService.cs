@@ -16,10 +16,10 @@ namespace TraderTools.Core.Services
         private string _path;
         private List<Market> _marketData;
         private List<IDisposable> _marketSubscriptions = new List<IDisposable>();
-        private DataDirectoryService _dataDirectoryService;
+        private IDataDirectoryService _dataDirectoryService;
 
         [ImportingConstructor]
-        public MarketsService(DataDirectoryService dataDirectoryService)
+        public MarketsService(IDataDirectoryService dataDirectoryService)
         {
             _dataDirectoryService = dataDirectoryService;
 

@@ -40,7 +40,7 @@ namespace TraderTools.Core.UI.ViewModels
     public abstract class TradeViewModelBase : DoubleChartViewModel, INotifyPropertyChanged
     {
         [Import] public IBrokersCandlesService BrokerCandles { get; private set; }
-        [Import] private BrokersService _brokers;
+        [Import] private IBrokersService _brokers;
         private bool _showingTradeSetup;
 
         protected IBroker Broker { get; set; }

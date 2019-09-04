@@ -9,12 +9,12 @@ using TraderTools.Core.Broker;
 
 namespace TraderTools.Core.Services
 {
-    [Export(typeof(BrokersService))]
+    [Export(typeof(IBrokersService))]
     [PartCreationPolicy(CreationPolicy.Shared)]
-    public class BrokersService :  IDisposable
+    public class BrokersService : IBrokersService, IDisposable
     {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        public Dictionary<IBroker, BrokerAccount> AccountsLookup { get; private set; } = new Dictionary<IBroker, BrokerAccount>();
+        public Dictionary<IBroker, IBrokerAccount> AccountsLookup { get; private set; } = new Dictionary<IBroker, IBrokerAccount>();
         private bool _disposedValue = false;
         public List<IBroker> Brokers { get; } = new List<IBroker>();
 
@@ -34,7 +34,9 @@ namespace TraderTools.Core.Services
             }
         }
 
-        public void LoadBrokerAccounts(ITradeDetailsAutoCalculatorService tradeCalculatorService, DataDirectoryService dataDirectoryService)
+        public void LoadBrokerAccounts(
+            ITradeDetailsAutoCalculatorService tradeCalculatorService,
+            IDataDirectoryService dataDirectoryService)
         {
             foreach (var broker in Brokers)
             {

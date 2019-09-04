@@ -16,10 +16,10 @@ namespace TraderTools.Core.Services
     {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private Dictionary<string, MarketDetails> _marketDetailsList = new Dictionary<string, MarketDetails>();
-        private DataDirectoryService _dataDirectoryService;
+        private IDataDirectoryService _dataDirectoryService;
 
         [ImportingConstructor]
-        public MarketDetailsService(DataDirectoryService dataDirectoryService)
+        public MarketDetailsService(IDataDirectoryService dataDirectoryService)
         {
             _dataDirectoryService = dataDirectoryService;
 

@@ -156,18 +156,23 @@ namespace TraderTools.Brokers.FXCM
             }
 
             // Get open trades
+            Log.Info("Getting open trades");
             updateProgressAction?.Invoke("Getting open trades");
             var updated = GetOpenTrades(account, candlesService, marketsService, tableManager, out var openTrades);
 
+            Log.Info("Getting recently closed trades");
             updateProgressAction?.Invoke("Getting recently closed trades");
             updated = GetClosedTrades(account, candlesService, marketsService, tableManager, out var closedTrades) || updated;
 
+            Log.Info("Getting orders");
             updateProgressAction?.Invoke("Getting orders");
             updated = GetOrders(account, candlesService, marketsService, tableManager, out var orders) || updated;
 
             // Update trades from reports API
+            var reportLines = GetReport();
+            Log.Info("Getting historic trades");
             updateProgressAction?.Invoke("Getting historic trades");
-            updated = GetReportTrades(account, candlesService, marketsService) || updated;
+            updated = GetReportTrades(account, candlesService, marketsService, reportLines) || updated;
 
             // Set any open trades to closed that aren't in the open list
             foreach (var trade in account.Trades.Where(t =>
@@ -188,8 +193,9 @@ namespace TraderTools.Brokers.FXCM
                 }
             }
 
+            Log.Info("Getting deposits/withdrawals");
             updateProgressAction?.Invoke("Updating deposits/withdrawals");
-            UpdateDepositsWithdrawals(account);
+            UpdateDepositsWithdrawals(account, reportLines);
 
             return updated;
         }
@@ -607,9 +613,8 @@ namespace TraderTools.Brokers.FXCM
             return ret;
         }
 
-        private bool GetReportTrades(IBrokerAccount brokerAccount, IBrokersCandlesService candlesService, IMarketDetailsService marketsService)
+        private string[] GetReport()
         {
-            var updated = false;
             var url = "https://fxpa2.fxcorporate.com/fxpa/getreport.app/";
             var connection = "GBREAL";
             var account = _user;
@@ -649,6 +654,13 @@ namespace TraderTools.Brokers.FXCM
             {
                 reader.Close();
             }
+
+            return lines;
+        }
+
+        private bool GetReportTrades(IBrokerAccount brokerAccount, IBrokersCandlesService candlesService, IMarketDetailsService marketsService, string[] lines)
+        {
+            var updated = false;
 
             var startLineIndex = GetLineStart(lines, "\"CLOSED TRADE LIST\"");
             var endLineIndex = GetLineStart(lines, "\"Total:");
@@ -909,54 +921,14 @@ namespace TraderTools.Brokers.FXCM
             return updated;
         }
 
-        private bool UpdateDepositsWithdrawals(IBrokerAccount brokerAccount)
+        private bool UpdateDepositsWithdrawals(IBrokerAccount brokerAccount, string[] lines)
         {
+            var updated = false;
             foreach (var d in brokerAccount.DepositsWithdrawals)
             {
                 d.Broker = "FXCM";
             }
-
-            var updated = false;
-            var url = "https://fxpa2.fxcorporate.com/fxpa/getreport.app/";
-            var connection = "GBREAL";
-            var account = _user;
-            var report = "REPORT_NAME_CUSTOMER_ACCOUNT_STATEMENT";
-            var startDate = "2/30/2017";
-            var endDate = DateTime.UtcNow.ToString("m/d/yyyy");
-            var outputFormat = "csv-web";// "pdf-web";
-            var locale = "enu";
-            var extra = "";
-
-            ReportServer server = new ReportServer();
-            string[] lines;
-
-            var reader = server.GetReport(url, connection, report, _user, _password, account, locale, startDate, endDate, outputFormat, extra);
-            try
-            {
-                using (var output = new MemoryStream())
-                {
-                    byte[] buff = new byte[1024];
-                    int r;
-
-                    while (true)
-                    {
-                        r = reader.Read(buff, 0, 1024);
-                        if (r <= 0)
-                        {
-                            break;
-                        }
-
-                        output.Write(buff, 0, r);
-                    }
-
-                    lines = Encoding.ASCII.GetString(output.ToArray()).Split(new string[] { "\n" }, StringSplitOptions.None);
-                }
-            }
-            finally
-            {
-                reader.Close();
-            }
-
+            
             var startLineIndex = GetLineStart(lines, "\"ACCOUNT ACTIVITY\"");
             var endLineIndex = GetLineStart(lines, "\"Total:", startLineIndex);
 
@@ -977,7 +949,7 @@ namespace TraderTools.Brokers.FXCM
                 var amount = values1[5];
                 var balance = values1[6];
 
-                if (code == "Depos")
+                if (code == "Depos" || code == "Withd")
                 {
                     if (brokerAccount.DepositsWithdrawals.All(x => x.Description != description))
                     {

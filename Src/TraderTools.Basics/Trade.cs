@@ -4,6 +4,8 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Hallupa.Library;
+using TraderTools.Basics.Extensions;
 
 namespace TraderTools.Basics
 {
@@ -14,14 +16,6 @@ namespace TraderTools.Basics
         HitExpiry,
         ManualClose,
         OrderClosed
-    }
-
-    public class ChartLine
-    {
-        public DateTime DateTimeUTC1 { get; set; }
-        public DateTime DateTimeUTC2 { get; set; }
-        public decimal Price1 { get; set; }
-        public decimal Price2 { get; set; }
     }
 
     public enum OrderKind
@@ -41,27 +35,6 @@ namespace TraderTools.Basics
         /// Buy above current price or sell below current market price.
         /// </summary>
         StopEntry
-    }
-
-    public class DatePrice
-    {
-        public DatePrice(DateTime date, decimal? price)
-        {
-            Date = date;
-            Price = price;
-        }
-
-        public DatePrice()
-        {
-        }
-
-        public DateTime Date { get; set; }
-        public decimal? Price { get; set; }
-
-        public override string ToString()
-        {
-            return $"{Date} {Price}";
-        }
     }
 
     public class Trade : INotifyPropertyChanged
@@ -137,7 +110,7 @@ namespace TraderTools.Basics
 
         public string Strategies
         {
-            get => _strategies;
+            get => _strategies ?? (_strategies = string.Empty);
             set
             {
                 _strategies = value;
@@ -432,6 +405,27 @@ namespace TraderTools.Basics
             {
                 _initialStop = value; 
                 OnPropertyChanged();
+            }
+        }
+
+        public decimal ProfitLatestDay
+        {
+            get
+            {
+                var candlesService = DependencyContainer.Container.GetExportedValue<IBrokersCandlesService>();
+                var brokersService = DependencyContainer.Container.GetExportedValue<IBrokersService>();
+                var marketDetailsService = DependencyContainer.Container.GetExportedValue<IMarketDetailsService>();
+                var broker = brokersService.Brokers.First(x => x.Name == Broker);
+
+                var marketDetails = marketDetailsService.GetMarketDetails(broker.Name, Market);
+
+                var now = DateTime.UtcNow;
+                var endDate = CloseDateTime != null
+                    ? new DateTime(CloseDateTime.Value.Year, CloseDateTime.Value.Month, CloseDateTime.Value.Day, 23, 59, 59, DateTimeKind.Utc)
+                    : new DateTime(now.Year, now.Month, now.Day, 23, 59, 59, DateTimeKind.Utc);
+                var startDate = new DateTime(endDate.Year, endDate.Month, endDate.Day, 0, 0, 0, DateTimeKind.Utc);
+                return this.GetTradeProfit(endDate, Basics.Timeframe.D1, candlesService, marketDetails, broker, false)
+                       - this.GetTradeProfit(startDate, Basics.Timeframe.D1, candlesService, marketDetails, broker, false);
             }
         }
 

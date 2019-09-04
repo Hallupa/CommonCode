@@ -36,7 +36,7 @@ namespace TraderTools.Core.Broker
         public List<Trade> Trades { get; set; } = new List<Trade>();
 
         [JsonIgnore]
-        [Import] private DataDirectoryService _dataDirectoryService;
+        [Import] private IDataDirectoryService _dataDirectoryService;
 
         private Subject<BrokerAccountUpdated> _brokerAccountUpdatedSubject = new Subject<BrokerAccountUpdated>();
 
@@ -53,7 +53,7 @@ namespace TraderTools.Core.Broker
         public static BrokerAccount LoadAccount(
             IBroker broker,
             ITradeDetailsAutoCalculatorService tradeCalculatorService,
-            DataDirectoryService dataDirectoryService)
+            IDataDirectoryService dataDirectoryService)
         {
             var accountPath = Path.Combine(dataDirectoryService.MainDirectoryWithApplicationName, "BrokerAccounts", $"{broker.Name}_Account.json");
 
@@ -141,12 +141,6 @@ namespace TraderTools.Core.Broker
             File.Delete(accountTmpPath);
         }
 
-        public enum UpdateOption
-        {
-            OnlyIfNotRecentlyUpdated,
-            ForceUpdate
-        }
-
         public void UpdateBrokerAccount(
             IBroker broker,
             IBrokersCandlesService candleService,
@@ -158,14 +152,14 @@ namespace TraderTools.Core.Broker
             {
             }
 
-            UpdateBrokerAccount(broker, candleService, tradeCalculateService, marketsService, UpdateProgressAction, option);
+            UpdateBrokerAccount(broker, candleService, marketsService, tradeCalculateService, UpdateProgressAction, option);
         }
 
         public void UpdateBrokerAccount(
             IBroker broker,
             IBrokersCandlesService candleService,
-            ITradeDetailsAutoCalculatorService tradeCalculateService,
             IMarketDetailsService marketsService,
+            ITradeDetailsAutoCalculatorService tradeCalculateService,
             Action<string> updateProgressAction,
             UpdateOption option = UpdateOption.OnlyIfNotRecentlyUpdated)
         {

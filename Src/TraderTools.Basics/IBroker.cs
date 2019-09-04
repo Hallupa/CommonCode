@@ -18,15 +18,6 @@ namespace TraderTools.Basics
         Trade
     }
 
-    public interface IBrokerAccount
-    {
-        List<Trade> Trades { get; set; }
-
-        decimal GetBalance(DateTime? dateTimeUtc = null);
-
-        List<DepositWithdrawal> DepositsWithdrawals { get; set; }
-    }
-
     public interface IBroker
     {
         string Name { get; }

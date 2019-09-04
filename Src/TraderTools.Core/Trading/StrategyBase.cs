@@ -13,12 +13,12 @@ namespace TraderTools.Core.Trading
     public abstract class StrategyBase : IStrategy
     {
         [Import] protected ITradeDetailsAutoCalculatorService _calculator;
-        [Import] protected BrokersService _brokersService;
+        [Import] protected IBrokersService _brokersService;
         [Import] protected IBrokersCandlesService _candlesService;
         [Import] protected IMarketDetailsService _marketDetailsService;
         [Import] protected MarketsService _marketsService;
         private IBroker _broker;
-        private BrokerAccount _account;
+        private IBrokerAccount _account;
 
         protected StrategyBase()
         {

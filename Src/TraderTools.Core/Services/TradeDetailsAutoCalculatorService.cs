@@ -16,7 +16,7 @@ namespace TraderTools.Core.Services
         private List<Trade> _calculatingTrades = new List<Trade>();
 
         [Import] private IBrokersCandlesService _candlesService;
-        [Import] private BrokersService _brokersService;
+        [Import] private IBrokersService _brokersService;
         [Import] private IMarketDetailsService _marketsService;
 
         public void AddTrade(Trade trade)
@@ -64,7 +64,7 @@ namespace TraderTools.Core.Services
             var startTime = trade.OrderDateTime ?? trade.EntryDateTime;
             var broker = _brokersService.Brokers.FirstOrDefault(x => x.Name == trade.Broker);
 
-            BrokerAccount brokerAccount = null;
+            IBrokerAccount brokerAccount = null;
             if (broker != null)
             {
                 _brokersService.AccountsLookup.TryGetValue(broker, out brokerAccount);

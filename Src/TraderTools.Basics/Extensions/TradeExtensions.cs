@@ -1,9 +1,51 @@
 ﻿using System;
+using TraderTools.Basics.Helpers;
 
 namespace TraderTools.Basics.Extensions
 {
-    public static class TradeDetailsExtensions
+    public static class TradeExtensions
     {
+        public static decimal GetTradeProfit(this Trade trade, DateTime dateTimeUTC, Timeframe candlesTimeframe,
+            IBrokersCandlesService candlesService, MarketDetails marketDetails, IBroker broker, bool updateCandles)
+        {
+            if (trade.EntryPrice == null || trade.EntryDateTime == null)
+            {
+                return 0M;
+            }
+
+            if (trade.CloseDateTime != null && trade.CloseDateTime.Value <= dateTimeUTC)
+            {
+                return trade.Profit ?? 0M;
+            }
+
+            if (trade.EntryDateTime >= dateTimeUTC)
+            {
+                return 0M;
+            }
+
+            var latestCandle = candlesService.GetLastClosedCandle(
+                trade.Market, broker, candlesTimeframe, dateTimeUTC, updateCandles);
+
+            if (latestCandle != null && trade.PricePerPip != null)
+            {
+                var closePriceToUse = trade.TradeDirection == TradeDirection.Long
+                    ? (decimal)latestCandle.Value.CloseBid
+                    : (decimal)latestCandle.Value.CloseAsk;
+                var profitPips = PipsHelper.GetPriceInPips(trade.TradeDirection == TradeDirection.Long ? closePriceToUse - trade.EntryPrice.Value : trade.EntryPrice.Value - closePriceToUse, marketDetails);
+                var totalRunningTime = (DateTime.UtcNow - trade.EntryDateTime.Value).TotalDays;
+                var runningTime = (trade.EntryDateTime.Value - dateTimeUTC).TotalDays;
+
+                var tradeProfit = trade.PricePerPip.Value * profitPips +
+                                  (!totalRunningTime.Equals(0.0) && trade.Rollover != null
+                                      ? trade.Rollover.Value * (decimal)(runningTime / totalRunningTime)
+                                      : 0M);
+
+                return tradeProfit;
+            }
+
+            return 0M;
+        }
+
         public static void SimulateTrade(this Trade trade, Candle candle, out bool updated)
         {
             SimulateTrade(trade, candle.LowBid, candle.HighBid, candle.CloseBid,

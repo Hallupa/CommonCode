@@ -17,11 +17,11 @@ namespace TraderTools.Core.UI.ViewModels
         #region Fields
         private readonly Action _closeWindow;
         private Trade _trade;
-        [Import] private BrokersService _brokersService;
+        [Import] private IBrokersService _brokersService;
         [Import] private IBrokersCandlesService _candlesService;
         [Import] private IMarketDetailsService _marketDetailsService;
         private IBroker _broker;
-        private BrokerAccount _brokerAccount;
+        private IBrokerAccount _brokerAccount;
 
         #endregion
 
