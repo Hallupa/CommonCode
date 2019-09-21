@@ -5,7 +5,6 @@ using System.Linq;
 using Hallupa.Library;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
-using TraderTools.Core.Broker;
 using TraderTools.Core.Services;
 
 namespace TraderTools.Core.Trading
@@ -35,6 +34,25 @@ namespace TraderTools.Core.Trading
         public abstract List<Trade> CreateNewTrades(
             MarketDetails market, TimeframeLookup<List<CandleAndIndicators>> candlesLookup, List<Trade> existingTrades, ITradeDetailsAutoCalculatorService calculatorService);
 
+        protected Trade CreateMarketOrder(string market, TradeDirection direction, Candle currentCandle, decimal stop, decimal riskPercent, decimal? limit = null)
+        {
+            int? lotSize = 1000;
+            var entryPrice = direction == TradeDirection.Long ? currentCandle.CloseAsk : currentCandle.CloseBid;
+
+            if (UseRiskSize)
+            {
+                if (!GetLotSize(market, (decimal)entryPrice, stop, riskPercent, out lotSize)) return null;
+            }
+
+            if (lotSize == null) return null;
+
+            var trade = Trade.CreateMarketEntry(
+                "FXCM", (decimal)entryPrice, currentCandle.CloseTime(), direction, lotSize.Value, market, stop, limit,
+                _calculator);
+
+            return trade;
+        }
+
         protected Trade CreateOrder(
             string market, DateTime? expiryDateTime, decimal entryPrice, TradeDirection direction, decimal currentPrice, DateTime currentDateTime,
             decimal? limit, decimal stop, decimal riskPercent)
@@ -43,24 +61,10 @@ namespace TraderTools.Core.Trading
 
             if (UseRiskSize)
             {
-                var balance = _account.GetBalance();
-                var maxRiskAmount = riskPercent * balance;
-                var stopInPips = Math.Abs(_marketDetailsService.GetPriceInPips(_broker.Name, stop, market) -
-                                          _marketDetailsService.GetPriceInPips(_broker.Name, entryPrice, market));
-                var marketDetails = _marketDetailsService.GetMarketDetails(_broker.Name, market);
-                if (marketDetails == null || marketDetails.MinLotSize == null)
-                {
-                    return null;
-                }
-
-                var minLotSize = marketDetails.MinLotSize.Value;
-                lotSize = GetLotSize(market, maxRiskAmount, stopInPips, minLotSize);
+                if (!GetLotSize(market, entryPrice, stop, riskPercent, out lotSize)) return null;
             }
 
-            if (lotSize == null)
-            {
-                return null;
-            }
+            if (lotSize == null) return null;
 
             var trade = Trade.CreateOrder(
                 "FXCM",
@@ -85,6 +89,24 @@ namespace TraderTools.Core.Trading
                 _calculator);
 
             return trade;
+        }
+
+        private bool GetLotSize(string market, decimal entryPrice, decimal stop, decimal riskPercent, out int? lotSize)
+        {
+            lotSize = null;
+            var balance = _account.GetBalance();
+            var maxRiskAmount = riskPercent * balance;
+            var stopInPips = Math.Abs(_marketDetailsService.GetPriceInPips(_broker.Name, stop, market) -
+                                      _marketDetailsService.GetPriceInPips(_broker.Name, entryPrice, market));
+            var marketDetails = _marketDetailsService.GetMarketDetails(_broker.Name, market);
+            if (marketDetails == null || marketDetails.MinLotSize == null)
+            {
+                return false;
+            }
+
+            var minLotSize = marketDetails.MinLotSize.Value;
+            lotSize = GetLotSize(market, maxRiskAmount, stopInPips, minLotSize);
+            return true;
         }
 
         private  int? GetLotSize(string market, decimal targetRiskGBP, decimal stopPips, int baseUnitSize)

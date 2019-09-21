@@ -263,7 +263,7 @@ namespace TraderTools.Simulation
                         var tickStart = Environment.TickCount;
                         try
                         {
-                            AddNewTrades(orders, strategy, market, timeframesCurrentCandles, timeframesExcludingM1M15, updateTradesStrategies.FirstOrDefault());
+                            AddNewTrades(orders, openTrades, strategy, market, timeframesCurrentCandles, timeframesExcludingM1M15, updateTradesStrategies.FirstOrDefault());
                         }
                         catch (Exception ex)
                         {
@@ -301,6 +301,7 @@ namespace TraderTools.Simulation
             }
 
             orders = orders.OrderBy(x => x.OrderDateTime.Value).ToList();
+            openTrades = openTrades.OrderBy(x => x.EntryDateTime.Value).ToList();
 
             if (simulateTrades)
             {
@@ -459,11 +460,17 @@ namespace TraderTools.Simulation
         {
             for (var ii = openTrades.Count - 1; ii >= 0; ii--)
             {
-                openTrades[ii].Trade.SimulateTrade(m1Candle, out _);
+                var trade = openTrades[ii];
 
-                if (openTrades[ii].Trade.CloseDateTime != null)
+                if (trade.Trade.EntryDateTime != null && m1Candle.OpenTimeTicks >= trade.Trade.EntryDateTime.Value.Ticks)
                 {
-                    closedTrades.Add(openTrades[ii].Trade);
+                    trade.Trade.SimulateTrade(m1Candle, out _);
+                }
+
+
+                if (trade.Trade.CloseDateTime != null)
+                {
+                    closedTrades.Add(trade.Trade);
                     openTrades.RemoveAt(ii);
                 }
             }
@@ -562,7 +569,7 @@ namespace TraderTools.Simulation
             }
         }
 
-        private void AddNewTrades(List<Trade> ordersList, IStrategy strategy, MarketDetails market,
+        private void AddNewTrades(List<Trade> ordersList, List<Trade> openTrades, IStrategy strategy, MarketDetails market,
             TimeframeLookup<List<CandleAndIndicators>> timeframeCurrentCandles,
             List<Timeframe> timeframesExcludingM1M15, UpdateTradeStrategyAttribute updateTradeStrategy)
         {
@@ -582,7 +589,8 @@ namespace TraderTools.Simulation
                 var latestAskPrice = (decimal)timeframeCurrentCandles[timeframe][timeframeCurrentCandles[timeframe].Count - 1].Candle.CloseAsk;
                 RemoveInvalidTrades(newTrades, latestBidPrice, latestAskPrice, _marketDetailsService);
 
-                ordersList.AddRange(newTrades);
+                ordersList.AddRange(newTrades.Where(t => t.EntryDateTime == null && t.OrderDateTime != null));
+                openTrades.AddRange(newTrades.Where(t => t.EntryDateTime != null));
             }
         }
 
