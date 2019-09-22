@@ -7,6 +7,5 @@ namespace TraderTools.Simulation
     {
         public virtual Dictionary<string, List<Candle>> M1CandlesLookup { get; set; } = new Dictionary<string, List<Candle>>();
         public virtual Dictionary<string, TimeframeLookupBasicCandleAndIndicators> CandlesLookup { get; set; } = new Dictionary<string, TimeframeLookupBasicCandleAndIndicators>();
-        public virtual Dictionary<TradeDetailsKey, Trade> TradesLookup { get; set; } = new Dictionary<TradeDetailsKey, Trade>();
     }
 }
