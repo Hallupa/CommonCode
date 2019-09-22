@@ -23,9 +23,15 @@ namespace Hallupa.Library.UI.Views
             set { SetValue(InputTextProperty, value); }
         }
 
-        public static (bool OKClicked, string Text) Show()
+        public static (bool OKClicked, string Text) Show(string title = null)
         {
             var view = new InputView { Owner = Application.Current.MainWindow };
+
+            if (title != null)
+            {
+                view.Title = title;
+            }
+
             view.ShowDialog();
 
             return (view._okClicked, view.InputText);
