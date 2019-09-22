@@ -97,6 +97,32 @@ namespace TraderTools.Basics
             return trade;
         }
 
+        public static Trade CreateMarketEntry(string broker, decimal entryPrice, DateTime entryTime,
+            TradeDirection direction, decimal amount, string market,
+            decimal? stop, decimal? limit, ITradeDetailsAutoCalculatorService tradeCalculatorService,
+            Timeframe? timeframe = null, string strategies = null, string comments = null, int custom1 = 0,
+            int custom2 = 0, int custom3 = 0, int custom4 = 0, bool alert = false)
+        {
+            var trade = new Trade();
+            if (stop != null) trade.AddStopPrice(entryTime, stop.Value);
+            if (limit != null) trade.AddLimitPrice(entryTime, limit.Value);
+            trade.Market = market;
+            trade.TradeDirection = direction;
+            trade.EntryPrice = entryPrice;
+            trade.EntryDateTime = entryTime;
+            trade.EntryQuantity = amount;
+            trade.Timeframe = timeframe;
+            trade.Broker = broker;
+            trade.Alert = alert;
+            trade.Comments = comments;
+            trade.Strategies = strategies;
+            trade.Custom1 = custom1;
+            trade.Custom2 = custom2;
+            trade.Custom3 = custom3;
+            trade.Custom4 = custom4;
+            tradeCalculatorService.AddTrade(trade);
+            return trade;
+        }
 
         public string Comments
         {

@@ -5,11 +5,11 @@ namespace TraderTools.Simulation
 {
     public struct TradeDetailsKey
     {
-        public TradeDetailsKey(DateTime orderTime, string market, Timeframe timeframe, decimal orderPrice,
+        public TradeDetailsKey(DateTime orderOrEntryTime, string market, Timeframe timeframe, decimal orderPrice,
             decimal? initialStop, decimal? initialLimit, int custom1, int custom2, int custom3, int custom4,
             int custom5, TradeDirection direction, DateTime expiryDate)
         {
-            OrderTime = orderTime;
+            OrderOrEntryTime = orderOrEntryTime;
             Market = market;
             Timeframe = timeframe;
             OrderPrice = orderPrice;
@@ -24,7 +24,7 @@ namespace TraderTools.Simulation
             ExpiryDate = expiryDate;
         }
 
-        public DateTime OrderTime { get; set; }
+        public DateTime OrderOrEntryTime { get; set; }
         public string Market { get; set; }
         public Timeframe? Timeframe { get; set; }
         public decimal OrderPrice { get; set; }
@@ -40,7 +40,7 @@ namespace TraderTools.Simulation
 
         public override int GetHashCode()
         {
-            var ret = OrderTime.GetHashCode() 
+            var ret = OrderOrEntryTime.GetHashCode() 
                       ^ Market.GetHashCode() 
                       ^ Timeframe.GetHashCode()
                       ^ OrderPrice.GetHashCode()
@@ -65,7 +65,7 @@ namespace TraderTools.Simulation
         {
             if (ob is TradeDetailsKey t)
             {
-                return t.OrderTime == OrderTime &&
+                return t.OrderOrEntryTime == OrderOrEntryTime &&
                        t.Timeframe == Timeframe &&
                        t.Market == Market &&
                        t.OrderPrice == OrderPrice &&
@@ -89,7 +89,7 @@ namespace TraderTools.Simulation
         {
             return new TradeDetailsKey
             {
-                OrderTime = trade.OrderDateTime.Value,
+                OrderOrEntryTime = trade.OrderDateTime ?? trade.EntryDateTime.Value,
                 Market = trade.Market,
                 Timeframe = trade.Timeframe,
                 InitialStop = trade.InitialStop,
