@@ -162,7 +162,7 @@ namespace TraderTools.Brokers.FXCM
 
             Log.Info("Getting recently closed trades");
             updateProgressAction?.Invoke("Getting recently closed trades");
-            updated = GetClosedTrades(account, candlesService, marketsService, tableManager, out var closedTrades) || updated;
+            updated = GetClosedTrades(account, candlesService, marketsService, tableManager) || updated;
 
             Log.Info("Getting orders");
             updateProgressAction?.Invoke("Getting orders");
@@ -200,11 +200,9 @@ namespace TraderTools.Brokers.FXCM
             return updated;
         }
 
-        private bool GetClosedTrades(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService,
-            O2GTableManager tableManager, out List<Trade> openTradesFound)
+        private bool GetClosedTrades(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService, O2GTableManager tableManager)
         {
             O2GTableIterator iterator;
-            openTradesFound = new List<Trade>();
             var openTrades = tableManager.getTable(O2GTableType.ClosedTrades);
 
             iterator = new O2GTableIterator();
@@ -285,8 +283,6 @@ namespace TraderTools.Brokers.FXCM
                         addedOrUpdatedOpenTrade = true;
                     }
                 }
-
-                openTradesFound.Add(trade);
             }
 
             return addedOrUpdatedOpenTrade;
