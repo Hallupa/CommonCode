@@ -73,15 +73,15 @@ namespace TraderTools.Basics
         {
         }
 
-        public static Trade CreateOrder(string broker, decimal entryOrder, DateTime entryOrderTime, OrderKind orderKind,
+        public static Trade CreateOrder(string broker, decimal entryOrder, DateTime orderDateTime, OrderKind orderKind,
             TradeDirection direction, decimal amount, string market, DateTime? orderExpireTime,
             decimal? stop, decimal? limit, Timeframe timeframe, string strategies, string comments, int custom1,
             int custom2, int custom3, int custom4, bool alert, OrderType orderType, ITradeDetailsAutoCalculatorService tradeCalculatorService)
         {
             var trade = new Trade();
-            trade.SetOrder(entryOrderTime, entryOrder, market, timeframe, direction, amount, orderExpireTime);
-            if (stop != null) trade.AddStopPrice(entryOrderTime, stop.Value);
-            if (limit != null) trade.AddLimitPrice(entryOrderTime, limit.Value);
+            trade.SetOrder(orderDateTime, entryOrder, market, timeframe, direction, amount, orderExpireTime);
+            if (stop != null) trade.AddStopPrice(orderDateTime, stop.Value);
+            if (limit != null) trade.AddLimitPrice(orderDateTime, limit.Value);
             trade.Timeframe = timeframe;
             trade.Broker = broker;
             trade.Alert = alert;

@@ -49,10 +49,20 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Keras">
+      <HintPath>..\..\..\..\SrcHallupaKeras.NET\Keras\bin\Release\netstandard2.0\Keras.dll</HintPath>
+    </Reference>
     <Reference Include="log4net, Version=2.0.8.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
       <HintPath>..\..\..\Src\packages\log4net.2.0.8\lib\net45-full\log4net.dll</HintPath>
     </Reference>
+    <Reference Include="Numpy.Bare, Version=3.7.1.4, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\Src\packages\Numpy.Bare.3.6.1.9\lib\netstandard2.0\Numpy.Bare.dll</HintPath>
+    </Reference>
+    <Reference Include="Python.Runtime, Version=3.6.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\Src\packages\Python.Runtime.NETStandard.3.6.1\lib\netstandard2.0\Python.Runtime.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -67,11 +77,13 @@
     </Compile>
     <Compile Include="CachedDetails.cs" />
     <Compile Include="IndicatorsHelper.cs" />
+    <Compile Include="ModelPredictorService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RequiredTimeframeCandlesAttribute.cs" />
     <Compile Include="StopHelper.cs" />
     <Compile Include="SimulationRunner.cs" />
     <Compile Include="StopTrailIndicatorAttribute.cs" />
+    <Compile Include="StrategyBase.cs" />
     <Compile Include="TradeDetailsKey.cs" />
     <Compile Include="UpdateTradeStrategyAttribute.cs" />
   </ItemGroup>

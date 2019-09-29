@@ -2,20 +2,25 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
+using System.Reflection;
 using Hallupa.Library;
+using log4net;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
 using TraderTools.Core.Services;
+using TraderTools.Simulation;
 
 namespace TraderTools.Core.Trading
 {
     public abstract class StrategyBase : IStrategy
     {
+        private static readonly ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         [Import] protected ITradeDetailsAutoCalculatorService _calculator;
         [Import] protected IBrokersService _brokersService;
         [Import] protected IBrokersCandlesService _candlesService;
         [Import] protected IMarketDetailsService _marketDetailsService;
         [Import] protected MarketsService _marketsService;
+        [Import] protected ModelPredictorService _predictorService;
         private IBroker _broker;
         private IBrokerAccount _account;
 
@@ -30,6 +35,21 @@ namespace TraderTools.Core.Trading
         public bool UseRiskSize { get; set; } = true;
 
         public abstract string Name { get; }
+
+        protected int Predict(IModelDetails modelDetails, params float[] xValues)
+        {
+            return _predictorService.Predict(modelDetails, xValues);
+        }
+
+        protected IModelDetails LoadModel(string path)
+        {
+            return _predictorService.LoadModel(path);
+        }
+
+        protected void Log(string txt)
+        {
+            _log.Info(txt);
+        }
 
         public abstract List<Trade> CreateNewTrades(
             MarketDetails market, TimeframeLookup<List<CandleAndIndicators>> candlesLookup, List<Trade> existingTrades, ITradeDetailsAutoCalculatorService calculatorService);
@@ -53,8 +73,10 @@ namespace TraderTools.Core.Trading
             return trade;
         }
 
+        public Candle CurrentCandle { get; set; }
+
         protected Trade CreateOrder(
-            string market, DateTime? expiryDateTime, decimal entryPrice, TradeDirection direction, decimal currentPrice, DateTime currentDateTime,
+            string market, DateTime? expiryDateTime, decimal entryPrice, TradeDirection direction,
             decimal? limit, decimal stop, decimal riskPercent)
         {
             int? lotSize = 1000;
@@ -69,7 +91,7 @@ namespace TraderTools.Core.Trading
             var trade = Trade.CreateOrder(
                 "FXCM",
                 entryPrice,
-                currentDateTime,
+                CurrentCandle.CloseTime(),
                 OrderKind.EntryPrice,
                 direction,
                 (decimal)lotSize.Value,
@@ -85,7 +107,7 @@ namespace TraderTools.Core.Trading
                 0,
                 0,
                 false,
-                (direction == TradeDirection.Long && entryPrice < currentPrice) || (direction == TradeDirection.Short && entryPrice > currentPrice) ? OrderType.LimitEntry : OrderType.StopEntry,
+                (direction == TradeDirection.Long && (float)entryPrice < CurrentCandle.CloseAsk) || (direction == TradeDirection.Short && (float)entryPrice > CurrentCandle.CloseBid) ? OrderType.LimitEntry : OrderType.StopEntry,
                 _calculator);
 
             return trade;
