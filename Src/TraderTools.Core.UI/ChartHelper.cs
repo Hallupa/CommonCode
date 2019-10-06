@@ -115,6 +115,8 @@ namespace TraderTools.Core.UI
             }
         }
 
+        private static Dictionary<long, DateTime> _utcTicksToLocalTimeLookup = new Dictionary<long, DateTime>();
+
         public static IDataSeries CreateIndicatorSeries(string market, IIndicator indicator, Color color, Timeframe timeframe, IList<Candle> candles)
         {
             var series = new XyDataSeries<DateTime, double>();
@@ -124,14 +126,28 @@ namespace TraderTools.Core.UI
             foreach (var candle in candles)
             {
                 var signalAndValue = indicator.Process(candle);
+
+                DateTime time;
+                lock (_utcTicksToLocalTimeLookup)
+                {
+                    if (!_utcTicksToLocalTimeLookup.TryGetValue(candle.OpenTimeTicks, out time))
+                    {
+                        time = new DateTime(candle.OpenTimeTicks, DateTimeKind.Utc).ToLocalTime();
+                        _utcTicksToLocalTimeLookup[candle.OpenTimeTicks] = time;
+                    }
+                }
+
                 if (indicator.IsFormed)
                 {
-                    xvalues.Add(new DateTime(candle.OpenTimeTicks, DateTimeKind.Utc).ToLocalTime());
-                    yvalues.Add((double)signalAndValue.Value);
+                    lock (_utcTicksToLocalTimeLookup)
+                    {
+                        xvalues.Add(time);
+                        yvalues.Add((double)signalAndValue.Value);
+                    }
                 }
                 else
                 {
-                    xvalues.Add(new DateTime(candle.OpenTimeTicks, DateTimeKind.Utc).ToLocalTime());
+                    xvalues.Add(time);
                     yvalues.Add(double.NaN);
                 }
             }
@@ -153,10 +169,10 @@ namespace TraderTools.Core.UI
             }));
         }
 
-        public static AnnotationCollection CreateTradeAnnotations(AnnotationCollection annotations, ChartViewModel cvm, TradeAnnotationsToShow annotationsToShow, Timeframe timeframe, IList<Candle> candles, Trade trade)
+        public static void CreateTradeAnnotations(AnnotationCollection annotations, ChartViewModel cvm, TradeAnnotationsToShow annotationsToShow, IList<Candle> candles, Trade trade)
         {
             // Setup annotations
-            if (candles.Count == 0) return annotations;
+            if (candles.Count == 0) return;
 
             var dataSeries = cvm.ChartPaneViewModels[0].ChartSeriesViewModels[0].DataSeries;
             var startTime = trade.StartDateTimeLocal;
@@ -189,6 +205,23 @@ namespace TraderTools.Core.UI
                 }
             }
 
+            // Add order price line
+            if (trade.OrderPrice != null && trade.CloseDateTime == null && trade.EntryPrice == null)
+            {
+                var brush = new SolidColorBrush(Colors.Gray) { Opacity = 0.3 };
+                var annotation = new LineAnnotation
+                {
+                    X1 = 0,
+                    X2 = cvm.ChartPaneViewModels[0].ChartSeriesViewModels[0].DataSeries.Count - 1,
+                    Y1 = trade.OrderPrice,
+                    Y2 = trade.OrderPrice,
+                    Stroke = brush,
+                    StrokeDashArray = new DoubleCollection(new[] { 5.0, 3.0 })
+                };
+
+                annotations.Add(annotation);
+            }
+
             // Add close price line
             if (trade.ClosePrice != null)
             {
@@ -218,6 +251,23 @@ namespace TraderTools.Core.UI
                 }
             }
 
+            // Add current stop price line
+            if (trade.StopPrice != null && trade.CloseDateTime == null)
+            {
+                var brush = new SolidColorBrush(Colors.Red) { Opacity = 0.3 };
+                var annotation = new LineAnnotation
+                {
+                    X1 = 0,
+                    X2 = cvm.ChartPaneViewModels[0].ChartSeriesViewModels[0].DataSeries.Count - 1,
+                    Y1 = trade.StopPrice.Value,
+                    Y2 = trade.StopPrice.Value,
+                    Stroke = brush,
+                    StrokeDashArray = new DoubleCollection(new[] { 5.0, 3.0 })
+                };
+
+                annotations.Add(annotation);
+            }
+
             // Add limit prices
             if (annotationsToShow.HasFlag(TradeAnnotationsToShow.All) || annotationsToShow.HasFlag(TradeAnnotationsToShow.LimitsLines))
             {
@@ -230,7 +280,22 @@ namespace TraderTools.Core.UI
                 }
             }
 
-            return annotations;
+            // Add current limit price line
+            if (trade.LimitPrice != null && trade.CloseDateTime == null)
+            {
+                var brush = new SolidColorBrush(Colors.DarkGreen) { Opacity = 0.3 };
+                var annotation = new LineAnnotation
+                {
+                    X1 = 0,
+                    X2 = cvm.ChartPaneViewModels[0].ChartSeriesViewModels[0].DataSeries.Count - 1,
+                    Y1 = trade.LimitPrice.Value,
+                    Y2 = trade.LimitPrice.Value,
+                    Stroke = brush,
+                    StrokeDashArray = new DoubleCollection(new[] { 5.0, 3.0 })
+                };
+
+                annotations.Add(annotation);
+            }
         }
 
         private static void AddBuySellMarker(

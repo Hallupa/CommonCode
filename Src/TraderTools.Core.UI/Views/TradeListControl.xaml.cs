@@ -7,7 +7,7 @@ using TraderTools.Basics;
 namespace TraderTools.Core.UI.Views
 {
     [Flags]
-    public enum TradeListDisplayOptionsFlag
+    public enum TradeListDisplayOptionsFlag : int
     {
         None = 0,
         PoundsPerPip = 1,
@@ -25,7 +25,9 @@ namespace TraderTools.Core.UI.Views
         Strategies = 4096,
         Risk = 8192,
         Status = 16384,
-        Rollover = 32768
+        Rollover = 32768,
+        Dates = 65536,
+        Profit = 131072
     }
 
     /// <summary>

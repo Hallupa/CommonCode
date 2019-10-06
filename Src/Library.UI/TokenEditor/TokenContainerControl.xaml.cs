@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -80,7 +79,6 @@ namespace Hallupa.Library.UI.TokenEditor
         {
             if (e.Key == Key.Enter)
             {
-                Debug.WriteLine("Enter pressed");
                 AddItem(this);
                 TextBoxText = string.Empty;
                 StopEdit(this);
@@ -91,7 +89,6 @@ namespace Hallupa.Library.UI.TokenEditor
         {
             var tb = VisualHelper.FindChild<TextBox>(userControl, "MainTextBox");
             var item = tb.Text;
-            Debug.WriteLine($"Add item {item}");
             if (string.IsNullOrEmpty(item))
             {
                 return;
@@ -112,7 +109,6 @@ namespace Hallupa.Library.UI.TokenEditor
 
         private void TextBoxLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
-            Debug.WriteLine("Lost keyboard focus");
             AddItem(this);
             TextBoxText = string.Empty;
             StopEdit(this);
@@ -120,7 +116,6 @@ namespace Hallupa.Library.UI.TokenEditor
 
         private static void StartEdit(TokenContainerControl control)
         {
-            Debug.WriteLine("Start edit");
             var tb = control.MainTextBox;
             var grid = (Grid)tb.Parent;
 
@@ -132,7 +127,6 @@ namespace Hallupa.Library.UI.TokenEditor
 
         private static void StopEdit(TokenContainerControl control)
         {
-            Debug.WriteLine("Stop edit");
             var tb = VisualHelper.FindChild<TextBox>(control, "MainTextBox");
             var grid = (Grid)tb.Parent;
             grid.ColumnDefinitions[0].Width = new GridLength(0);
@@ -141,7 +135,6 @@ namespace Hallupa.Library.UI.TokenEditor
 
         private void TokenContainerControl_OnMouseDown(object sender, MouseButtonEventArgs e)
         {
-            Debug.WriteLine("Mouse down");
             var control = (TokenContainerControl)sender;
             StartEdit(control);
         }

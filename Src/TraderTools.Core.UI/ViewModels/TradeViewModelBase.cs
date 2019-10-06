@@ -5,6 +5,7 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -126,7 +127,9 @@ namespace TraderTools.Core.UI.ViewModels
                                                      | TradeListDisplayOptionsFlag.Strategies
                                                      | TradeListDisplayOptionsFlag.Risk
                                                      | TradeListDisplayOptionsFlag.Status
-                                                     | TradeListDisplayOptionsFlag.ClosePrice;
+                                                     | TradeListDisplayOptionsFlag.ClosePrice
+                                                     | TradeListDisplayOptionsFlag.Dates
+                                                     | TradeListDisplayOptionsFlag.Profit;
 
         protected Trade TradeShowingOnChart { get; private set; }
         public DelegateCommand ViewTradeCommand { get; protected set; }
@@ -148,6 +151,14 @@ namespace TraderTools.Core.UI.ViewModels
                    || (ShowClosedTrades && t.CloseDateTime != null));// && t.Id == "34728772";
         }
 
+        public static readonly DependencyProperty TradeSelectionModeProperty = DependencyProperty.Register(
+            "TradeSelectionMode", typeof(DataGridSelectionMode), typeof(TradeViewModelBase), new PropertyMetadata(DataGridSelectionMode.Extended));
+
+        public DataGridSelectionMode TradeSelectionMode
+        {
+            get { return (DataGridSelectionMode) GetValue(TradeSelectionModeProperty); }
+            set { SetValue(TradeSelectionModeProperty, value); }
+        }
         public Trade SelectedTrade
         {
             get => _selectedTrade;
@@ -273,10 +284,10 @@ namespace TraderTools.Core.UI.ViewModels
                     smallChartTimeframe);
 
                 ChartHelper.CreateTradeAnnotations(ChartViewModel.ChartPaneViewModels[0].TradeAnnotations,
-                    ChartViewModel, TradeAnnotationsToShow.All, largeChartTimeframe, largeChartCandles, trade);
+                    ChartViewModel, TradeAnnotationsToShow.All, largeChartCandles, trade);
 
                 ChartHelper.CreateTradeAnnotations(ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations,
-                    ChartViewModelSmaller1, TradeAnnotationsToShow.All, smallChartTimeframe, smallChartCandles,
+                    ChartViewModelSmaller1, TradeAnnotationsToShow.All, smallChartCandles,
                     trade);
 
                 AddTradeLines(trade);

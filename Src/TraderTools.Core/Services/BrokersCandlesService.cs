@@ -169,11 +169,27 @@ namespace TraderTools.Core.Services
             }
         }
 
+        public string GetBrokerCandlesPath(IBroker broker, string market, Timeframe timeframe)
+        {
+            return Path.Combine(_dataDirectoryService.MainDirectory, "Candles", $"{broker.Name}_{market.Replace("/", "")}_{timeframe}.bin");
+        }
+
+        public static Candle[] BytesToCandles(byte[] data)
+        {
+            int structSize = Marshal.SizeOf(typeof(Candle));
+            var ret = new Candle[data.Length / structSize]; // Array of structs we want to push the bytes into
+            var handle2 = GCHandle.Alloc(ret, GCHandleType.Pinned);// get handle to that array
+            Marshal.Copy(data, 0, handle2.AddrOfPinnedObject(), data.Length);// do the copy
+            handle2.Free();// cleanup the handle
+
+            return ret;
+        }
+
         private List<Candle> LoadBrokerCandles(IBroker broker, string market, Timeframe timeframe)
         {
             using (new LogRunTime($"Load and process {broker.Name} {market} {timeframe} candles"))
             {
-                var candlesPath = Path.Combine(_dataDirectoryService.MainDirectory, "Candles", $"{broker.Name}_{market.Replace("/", "")}_{timeframe}.bin");
+                var candlesPath = GetBrokerCandlesPath(broker, market, timeframe);
 
                 if (File.Exists(candlesPath))
                 {
@@ -183,18 +199,25 @@ namespace TraderTools.Core.Services
                     {
                         data = File.ReadAllBytes(candlesPath);
                     }
-
-                    int structSize = Marshal.SizeOf(typeof(Candle));
-                    var ret = new Candle[data.Length / structSize]; // Array of structs we want to push the bytes into
-                    var handle2 = GCHandle.Alloc(ret, GCHandleType.Pinned);// get handle to that array
-                    Marshal.Copy(data, 0, handle2.AddrOfPinnedObject(), data.Length);// do the copy
-                    handle2.Free();// cleanup the handle
-
-                    return new List<Candle>(ret);
+                    
+                    return new List<Candle>(BytesToCandles(data));
                 }
             }
 
             return new List<Candle>();
+        }
+
+        public static byte[] CandlesToBytes(List<Candle> candles)
+        {
+            var candlesArray = candles.ToArray();
+            var size = Marshal.SizeOf(typeof(Candle)) * candlesArray.Length;
+            var bytes = new byte[size];
+            var gcHandle = GCHandle.Alloc(candlesArray, GCHandleType.Pinned);
+            var ptr = gcHandle.AddrOfPinnedObject();
+            Marshal.Copy(ptr, bytes, 0, size);
+            gcHandle.Free();
+
+            return bytes;
         }
 
         public void SaveCandles(List<Candle> candles, IBroker broker, string market, Timeframe timeframe)
@@ -213,16 +236,7 @@ namespace TraderTools.Core.Services
                 File.Delete(candlesTmpPath);
             }
 
-            var candlesArray = candles.ToArray();
-            var size = Marshal.SizeOf(typeof(Candle)) * candlesArray.Length;
-            var bytes = new byte[size];
-            var gcHandle = GCHandle.Alloc(candlesArray, GCHandleType.Pinned);
-            var ptr = gcHandle.AddrOfPinnedObject();
-            Marshal.Copy(ptr, bytes, 0, size);
-            gcHandle.Free();
-
-
-            File.WriteAllBytes(candlesTmpPath, bytes);
+            File.WriteAllBytes(candlesTmpPath, CandlesToBytes(candles));
 
             if (File.Exists(candlesFinalPath))
             {

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using Hallupa.Library.UI;
@@ -15,7 +14,7 @@ namespace TraderTools.Core.UI.ViewModels
     {
         private readonly Func<List<Trade>> _getTradesFunc;
         private readonly bool _createStrategiesSubResults;
-        private string _selectedResultOption = "All";
+        private string _selectedResultOption = "No grouping";
         private Dispatcher _dispatcher;
         private bool _includeOpenTrades = false;
         private bool _includeClosedTrades = true;
@@ -27,7 +26,7 @@ namespace TraderTools.Core.UI.ViewModels
 
         public List<string> ResultOptions { get; private set; } = new List<string>
         {
-            "All",
+            "No grouping",
             "Market",
             "Trade close month",
             "Timeframe",
@@ -118,6 +117,7 @@ namespace TraderTools.Core.UI.ViewModels
                 Results.Clear();
 
                 UpdateResults();
+                OnPropertyChanged();
             }
         }
 
@@ -191,7 +191,7 @@ namespace TraderTools.Core.UI.ViewModels
 
             switch (SelectedResultOption)
             {
-                case "All":
+                case "No grouping":
                     groupedTrades = trades.GroupBy(x => "All trades").ToList();
                     break;
                 case "Market":

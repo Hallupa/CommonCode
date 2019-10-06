@@ -441,17 +441,25 @@ namespace TraderTools.Basics
                 var candlesService = DependencyContainer.Container.GetExportedValue<IBrokersCandlesService>();
                 var brokersService = DependencyContainer.Container.GetExportedValue<IBrokersService>();
                 var marketDetailsService = DependencyContainer.Container.GetExportedValue<IMarketDetailsService>();
-                var broker = brokersService.Brokers.First(x => x.Name == Broker);
+                var broker = brokersService.Brokers.FirstOrDefault(x => x.Name == Broker);
 
-                var marketDetails = marketDetailsService.GetMarketDetails(broker.Name, Market);
+                if (broker != null)
+                {
+                    var marketDetails = marketDetailsService.GetMarketDetails(broker.Name, Market);
 
-                var now = DateTime.UtcNow;
-                var endDate = CloseDateTime != null
-                    ? new DateTime(CloseDateTime.Value.Year, CloseDateTime.Value.Month, CloseDateTime.Value.Day, 23, 59, 59, DateTimeKind.Utc)
-                    : new DateTime(now.Year, now.Month, now.Day, 23, 59, 59, DateTimeKind.Utc);
-                var startDate = new DateTime(endDate.Year, endDate.Month, endDate.Day, 0, 0, 0, DateTimeKind.Utc);
-                return this.GetTradeProfit(endDate, Basics.Timeframe.D1, candlesService, marketDetails, broker, false)
-                       - this.GetTradeProfit(startDate, Basics.Timeframe.D1, candlesService, marketDetails, broker, false);
+                    var now = DateTime.UtcNow;
+                    var endDate = CloseDateTime != null
+                        ? new DateTime(CloseDateTime.Value.Year, CloseDateTime.Value.Month, CloseDateTime.Value.Day, 23,
+                            59, 59, DateTimeKind.Utc)
+                        : new DateTime(now.Year, now.Month, now.Day, 23, 59, 59, DateTimeKind.Utc);
+                    var startDate = new DateTime(endDate.Year, endDate.Month, endDate.Day, 0, 0, 0, DateTimeKind.Utc);
+                    return this.GetTradeProfit(endDate, Basics.Timeframe.D1, candlesService, marketDetails, broker,
+                               false)
+                           - this.GetTradeProfit(startDate, Basics.Timeframe.D1, candlesService, marketDetails, broker,
+                               false);
+                }
+
+                return decimal.MinValue;
             }
         }
 
@@ -568,6 +576,11 @@ namespace TraderTools.Basics
                 return;
             }
 
+            if (StopPrices.Count > 0 && StopPrices.Last().Date == date)
+            {
+                StopPrices.RemoveAt(StopPrices.Count - 1);
+            }
+
             StopPrices.Add(new DatePrice(date, price));
             StopPrices = StopPrices.OrderBy(x => x.Date).ToList();
         }
@@ -582,6 +595,11 @@ namespace TraderTools.Basics
             if (OrderPrices.Count > 0 && OrderPrices.Last().Price == price)
             {
                 return;
+            }
+
+            if (OrderPrices.Count > 0 && OrderPrices.Last().Date == date)
+            {
+                OrderPrices.RemoveAt(OrderPrices.Count - 1);
             }
 
             OrderPrices.Add(new DatePrice(date, price));
@@ -610,6 +628,11 @@ namespace TraderTools.Basics
             if (LimitPrices.Count > 0 && LimitPrices.Last().Price == price)
             {
                 return;
+            }
+
+            if (LimitPrices.Count > 0 && LimitPrices.Last().Date == date)
+            {
+                LimitPrices.RemoveAt(OrderPrices.Count - 1);
             }
 
             LimitPrices.Add(new DatePrice(date, price));

@@ -10,5 +10,7 @@ namespace TraderTools.Basics
         void UpdateCandles(IBroker broker, string market, Timeframe timeframe);
 
         void UnloadCandles(string market, Timeframe timeframe, IBroker broker);
+
+        string GetBrokerCandlesPath(IBroker broker, string market, Timeframe timeframe);
     }
 }

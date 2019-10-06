@@ -8,7 +8,7 @@
              xmlns:ui="clr-namespace:Hallupa.Library.UI;assembly=Hallupa.Library.UI"
              xmlns:system="clr-namespace:System;assembly=mscorlib"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="450" d:DesignWidth="400">
     <Grid>
         <Grid.Resources>
             <system:Int32 x:Key="Zero">0</system:Int32>
@@ -63,6 +63,7 @@
                 <DataGridTextColumn Binding="{Binding AvRLosingTrades, StringFormat={}{0:0.000}}" Header="Average lose R" Width="140" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding RExpectancy, StringFormat={}{0:0.000}}" Header="Expectancy R" Width="140" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding TotalR, StringFormat={}{0:0.000}}" Header="Total R" Width="140" IsReadOnly="True"/>
+                <DataGridTextColumn Binding="{Binding AverageTradeDuration, StringFormat={}{0:0.000}}" Header="Average completed trade duration" Width="200" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding RSum, StringFormat={}{0:0.000}}" Header="R sum" Width="80" IsReadOnly="True" Visibility="Collapsed"/>
             </DataGrid.Columns>
             <DataGrid.RowDetailsTemplate>

@@ -1,8 +1,10 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using Hallupa.Library.UI;
+using TinyMessenger;
 using TraderTools.Basics;
 
 namespace TraderTools.Core.UI.ViewModels
@@ -19,6 +21,7 @@ namespace TraderTools.Core.UI.ViewModels
         private decimal _avPositiveRFor20Candles;
         private decimal _expectancyR;
         private decimal _totalR;
+        private string _averageTradeDuration;
 
         public ObservableCollectionEx<Trade> Trades { get; } = new ObservableCollectionEx<Trade>();
 
@@ -101,7 +104,16 @@ namespace TraderTools.Core.UI.ViewModels
                 _expectancyR = value;
                 OnPropertyChanged();
             }
+        }
 
+        public string AverageTradeDuration
+        {
+            get => _averageTradeDuration;
+            set
+            {
+                _averageTradeDuration = value; 
+                OnPropertyChanged();
+            }
         }
 
         public decimal AvPositiveRFor20Candles
@@ -147,6 +159,26 @@ namespace TraderTools.Core.UI.ViewModels
             AvRLosingTrades = negativeRMultipleTrades.Count != 0 ? negativeRMultipleTrades.Where(t => t.RMultiple != null).Sum(t => t.RMultiple.Value) / (decimal)negativeRMultipleTrades.Count : 0;
             TotalR = Trades.Sum(x => x.RMultiple != null ? x.RMultiple.Value : 0M);
             RExpectancy = Trades.Count(x => x.RMultiple != null) > 0 ? Trades.Where(t => t.RMultiple != null).Sum(t => t.RMultiple.Value) / Trades.Count(x => x.RMultiple != null) : 0;
+
+            var completedTrades = Trades.Where(t => t.CloseDateTime != null && t.EntryDateTime != null).ToList();
+            var avDurationMins = completedTrades.Count > 0 ? TimeSpan.FromMinutes(completedTrades.Average(t => (t.CloseDateTime.Value - t.EntryDateTime.Value).TotalMinutes)) : new TimeSpan(0);
+
+            if (completedTrades.Count == 0)
+            {
+                AverageTradeDuration = string.Empty;
+            }
+            else if (avDurationMins.TotalMinutes > 60 * 24)
+            {
+                AverageTradeDuration = $"{avDurationMins.TotalDays:0.00} days";
+            }
+            else if (avDurationMins.TotalMinutes > 60)
+            {
+                AverageTradeDuration = $"{avDurationMins.TotalHours:0.00} hours";
+            }
+            else
+            {
+                AverageTradeDuration = $"{avDurationMins.TotalMinutes:0.00} mins";
+            }
         }
     }
 }
