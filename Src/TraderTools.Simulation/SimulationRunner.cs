@@ -297,19 +297,36 @@ namespace TraderTools.Simulation
             TimeframeLookup<List<CandleAndIndicators>> timeframeCurrentCandles,
             Candle latestCandle, UpdateTradeStrategyAttribute updateTradeStrategy)
         {
+            if (strategy is StrategyBase b) b.CurrentCandle = latestCandle;
             var newTrades = strategy.CreateNewTrades(market, timeframeCurrentCandles, null, _calculatorService);
 
             if (newTrades != null && newTrades.Count > 0)
             {
                 newTrades.ForEach(t => t.Strategies = strategy.Name);
+                var latestBidPrice = (decimal)latestCandle.CloseBid;
+                var latestAskPrice = (decimal)latestCandle.CloseAsk;
+
+                foreach (var trade in newTrades.Where(t => t.OrderPrice != null && t.EntryPrice == null))
+                {
+                    if (trade.TradeDirection == TradeDirection.Long)
+                    {
+                        trade.OrderType = (float)trade.OrderPrice.Value <= latestCandle.CloseAsk
+                            ? OrderType.LimitEntry
+                            : OrderType.StopEntry;
+                    }
+                    else
+                    {
+                        trade.OrderType = (float)trade.OrderPrice.Value <= latestCandle.CloseBid
+                            ? OrderType.StopEntry
+                            : OrderType.LimitEntry;
+                    }
+                }
 
                 if (updateTradeStrategy != null)
                 {
                     newTrades.ForEach(t => t.Custom1 = updateTradeStrategy.GetHashCode());
                 }
 
-                var latestBidPrice = (decimal)latestCandle.CloseBid;
-                var latestAskPrice = (decimal)latestCandle.CloseAsk;
                 RemoveInvalidTrades(newTrades, latestBidPrice, latestAskPrice, _marketDetailsService);
 
                 ordersList.AddRange(newTrades.Where(t => t.EntryDateTime == null && t.OrderDateTime != null).Select(t => new TradeWithStopLimitIndex { Trade = t }));
@@ -328,13 +345,13 @@ namespace TraderTools.Simulation
                 {
                     if (t.LimitPrice != null)
                     {
-                        if (t.TradeDirection == TradeDirection.Long && t.LimitPrice <= t.OrderPrice.Value)
+                        if (t.TradeDirection == TradeDirection.Long && t.LimitPrice < t.OrderPrice.Value)
                         {
                             Log.Error($"Long trade for {t.Market} has limit price below order price. Ignoring trade");
                             newTrades.RemoveAt(i);
                             removed = true;
                         }
-                        else if (t.TradeDirection == TradeDirection.Short && t.LimitPrice >= t.OrderPrice.Value)
+                        else if (t.TradeDirection == TradeDirection.Short && t.LimitPrice > t.OrderPrice.Value)
                         {
                             Log.Error($"Short trade for {t.Market} has limit price above order price. Ignoring trade");
                             newTrades.RemoveAt(i);
@@ -344,13 +361,13 @@ namespace TraderTools.Simulation
 
                     if (t.StopPrices != null && !removed)
                     {
-                        if (t.TradeDirection == TradeDirection.Long && t.StopPrice >= t.OrderPrice.Value)
+                        if (t.TradeDirection == TradeDirection.Long && t.StopPrice > t.OrderPrice.Value)
                         {
                             Log.Error($"Long trade for {t.Market} has stop price above order price. Ignoring trade");
                             newTrades.RemoveAt(i);
                             removed = true;
                         }
-                        else if (t.TradeDirection == TradeDirection.Short && t.StopPrice <= t.OrderPrice.Value)
+                        else if (t.TradeDirection == TradeDirection.Short && t.StopPrice < t.OrderPrice.Value)
                         {
                             Log.Error($"Short trade for {t.Market} has stop price below order price. Ignoring trade");
                             newTrades.RemoveAt(i);
@@ -360,25 +377,25 @@ namespace TraderTools.Simulation
 
                     if (!removed)
                     {
-                        if (t.TradeDirection == TradeDirection.Long && t.OrderType == OrderType.LimitEntry && t.OrderPrice.Value >= latestAskPrice)
+                        if (t.TradeDirection == TradeDirection.Long && t.OrderType == OrderType.LimitEntry && t.OrderPrice.Value > latestAskPrice)
                         {
                             Log.Error($"Long trade for {t.Market} has limit entry but order price is above latest price. Ignoring trade");
                             newTrades.RemoveAt(i);
                             removed = true;
                         }
-                        else if (t.TradeDirection == TradeDirection.Long && t.OrderType == OrderType.StopEntry && t.OrderPrice.Value <= latestAskPrice)
+                        else if (t.TradeDirection == TradeDirection.Long && t.OrderType == OrderType.StopEntry && t.OrderPrice.Value < latestAskPrice)
                         {
                             Log.Error($"Long trade for {t.Market} has stop entry but order price is below latest price. Ignoring trade");
                             newTrades.RemoveAt(i);
                             removed = true;
                         }
-                        else if (t.TradeDirection == TradeDirection.Short && t.OrderType == OrderType.LimitEntry && t.OrderPrice.Value <= latestBidPrice)
+                        else if (t.TradeDirection == TradeDirection.Short && t.OrderType == OrderType.LimitEntry && t.OrderPrice.Value < latestBidPrice)
                         {
                             Log.Error($"Short trade for {t.Market} has limit entry but order price is below latest price. Ignoring trade");
                             newTrades.RemoveAt(i);
                             removed = true;
                         }
-                        else if (t.TradeDirection == TradeDirection.Short && t.OrderType == OrderType.StopEntry && t.OrderPrice.Value >= latestBidPrice)
+                        else if (t.TradeDirection == TradeDirection.Short && t.OrderType == OrderType.StopEntry && t.OrderPrice.Value > latestBidPrice)
                         {
                             Log.Error($"Short trade for {t.Market} has stop entry but order price is above latest price. Ignoring trade");
                             newTrades.RemoveAt(i);
