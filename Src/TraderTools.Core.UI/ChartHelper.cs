@@ -183,7 +183,7 @@ namespace TraderTools.Core.UI
                 if (trade.EntryPrice != null && (annotationsToShow.HasFlag(TradeAnnotationsToShow.All) || annotationsToShow.HasFlag(TradeAnnotationsToShow.EntryMarker)))
                 {
                     var profit = trade.NetProfitLoss ?? trade.GrossProfitLoss;
-                    var colour = profit != null && profit < 0 ? Colors.DarkRed : Colors.Green;
+                    var colour = (profit != null && profit < 0) || (trade.RMultiple != null && trade.RMultiple.Value < 0) ? Colors.DarkRed : Colors.Green;
                     AddBuySellMarker(trade.TradeDirection.Value, annotations, trade, trade.EntryDateTimeLocal.Value, trade.EntryPrice.Value,
                         entryCloseMarketSmaller, colour: colour);
                 }
@@ -232,8 +232,22 @@ namespace TraderTools.Core.UI
                 if (annotationsToShow.HasFlag(TradeAnnotationsToShow.All) || annotationsToShow.HasFlag(TradeAnnotationsToShow.CloseMarker))
                 {
                     var profit = trade.NetProfitLoss ?? trade.GrossProfitLoss;
-                    var colour = profit != null && profit < 0 ? Colors.DarkRed : Colors.Green;
+                    var colour = (profit != null && profit < 0) || (trade.RMultiple != null && trade.RMultiple.Value < 0) ? Colors.DarkRed : Colors.Green;
                     AddBuySellMarker(oppositeTradeDirection, annotations, trade, trade.CloseDateTimeLocal.Value, trade.ClosePrice.Value, entryCloseMarketSmaller, colour: colour);
+
+                    // Add line between buy/sell marker
+                    var brush = new SolidColorBrush(colour) { Opacity = 0.6 };
+                    var annotation = new LineAnnotation {
+                        X1 = dataSeries.FindIndex(trade.EntryDateTimeLocal, SearchMode.Nearest),
+                        X2 = dataSeries.FindIndex(trade.CloseDateTimeLocal, SearchMode.Nearest),
+                        Y1 = trade.EntryPrice.Value,
+                        Y2 = trade.ClosePrice.Value,
+                        Stroke = brush,
+                        StrokeThickness = 3,
+                        StrokeDashArray = new DoubleCollection(new[] { 2.0, 2.0 })
+                    };
+
+                    annotations.Add(annotation);
                 }
             }
 
