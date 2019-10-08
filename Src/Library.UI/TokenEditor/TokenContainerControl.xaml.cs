@@ -81,7 +81,10 @@ namespace Hallupa.Library.UI.TokenEditor
             {
                 AddItem(this);
                 TextBoxText = string.Empty;
+                var tb = VisualHelper.FindChild<TextBox>(this, "MainTextBox");
+                tb.Text = string.Empty;
                 StopEdit(this);
+                e.Handled = true;
             }
         }
 
