@@ -12,6 +12,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Host;
 using TraderTools.Core.Trading;
+using TraderTools.Simulation;
 
 namespace TraderTools.Strategy
 {

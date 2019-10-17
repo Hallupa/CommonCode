@@ -73,27 +73,28 @@ namespace TraderTools.Basics
         {
         }
 
-        public static Trade CreateOrder(string broker, decimal entryOrder, DateTime orderDateTime, OrderKind orderKind,
+        public static Trade CreateOrder(string broker, decimal entryOrder, Candle latestCandle,
             TradeDirection direction, decimal amount, string market, DateTime? orderExpireTime,
-            decimal? stop, decimal? limit, Timeframe timeframe, string strategies, string comments, int custom1,
-            int custom2, int custom3, int custom4, bool alert, OrderType orderType, ITradeDetailsAutoCalculatorService tradeCalculatorService)
+            decimal? stop, decimal? limit, ITradeDetailsAutoCalculatorService tradeCalculatorService)
         {
+            var orderDateTime = latestCandle.CloseTime();
+
             var trade = new Trade();
-            trade.SetOrder(orderDateTime, entryOrder, market, timeframe, direction, amount, orderExpireTime);
+            trade.SetOrder(orderDateTime, entryOrder, market, direction, amount, orderExpireTime);
             if (stop != null) trade.AddStopPrice(orderDateTime, stop.Value);
             if (limit != null) trade.AddLimitPrice(orderDateTime, limit.Value);
-            trade.Timeframe = timeframe;
             trade.Broker = broker;
-            trade.Alert = alert;
-            trade.Comments = comments;
-            trade.Strategies = strategies;
-            trade.Custom1 = custom1;
-            trade.Custom2 = custom2;
-            trade.Custom3 = custom3;
-            trade.Custom4 = custom4;
-            trade.OrderKind = orderKind;
-            trade.OrderType = orderType;
             tradeCalculatorService.AddTrade(trade);
+            trade.OrderKind = OrderKind.EntryPrice;
+
+            if (direction == Basics.TradeDirection.Long)
+            {
+                trade.OrderType = (float)entryOrder <= latestCandle.CloseAsk ? Basics.OrderType.LimitEntry : Basics.OrderType.StopEntry;
+            }
+            else
+            {
+                trade.OrderType = (float)entryOrder <= latestCandle.CloseBid ? Basics.OrderType.StopEntry : Basics.OrderType.LimitEntry;
+            }
             return trade;
         }
 
@@ -537,11 +538,10 @@ namespace TraderTools.Basics
         #endregion
 
         public void SetOrder(DateTime dateTime, decimal? price, string market,
-            Timeframe timeframe, TradeDirection tradeDirection, decimal orderAmount, DateTime? expires)
+            TradeDirection tradeDirection, decimal orderAmount, DateTime? expires)
         {
             OrderDateTime = dateTime;
             AddOrderPrice(dateTime, price);
-            Timeframe = timeframe;
             Market = market;
             TradeDirection = tradeDirection;
             OrderExpireTime = expires;

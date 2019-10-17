@@ -8,9 +8,9 @@ using log4net;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
 using TraderTools.Core.Services;
-using TraderTools.Simulation;
+using TraderTools.Core.Trading;
 
-namespace TraderTools.Core.Trading
+namespace TraderTools.Simulation
 {
     public abstract class StrategyBase : IStrategy
     {
@@ -41,9 +41,9 @@ namespace TraderTools.Core.Trading
             return _predictorService.Predict(modelDetails, xValues);
         }
 
-        protected IModelDetails LoadModel(string path)
+        protected IModelDetails LoadModel(string name)
         {
-            return _predictorService.LoadModel(path);
+            return _predictorService.LoadModel(name);
         }
 
         protected void Log(string txt)
@@ -73,10 +73,8 @@ namespace TraderTools.Core.Trading
             return trade;
         }
 
-        public Candle CurrentCandle { get; set; }
-
         protected Trade CreateOrder(
-            string market, DateTime? expiryDateTime, decimal entryPrice, TradeDirection direction,
+            string market, Candle currentCandle, DateTime? expiryDateTime, decimal entryPrice, TradeDirection direction,
             decimal? limit, decimal stop, decimal riskPercent)
         {
             int? lotSize = 1000;
@@ -91,7 +89,7 @@ namespace TraderTools.Core.Trading
             var trade = Trade.CreateOrder(
                 "FXCM",
                 entryPrice,
-                CurrentCandle.CloseTime(),
+                currentCandle.CloseTime(),
                 OrderKind.EntryPrice,
                 direction,
                 (decimal)lotSize.Value,
@@ -107,7 +105,7 @@ namespace TraderTools.Core.Trading
                 0,
                 0,
                 false,
-                (direction == TradeDirection.Long && (float)entryPrice < CurrentCandle.CloseAsk) || (direction == TradeDirection.Short && (float)entryPrice > CurrentCandle.CloseBid) ? OrderType.LimitEntry : OrderType.StopEntry,
+                (direction == TradeDirection.Long && (float)entryPrice < currentCandle.CloseAsk) || (direction == TradeDirection.Short && (float)entryPrice > currentCandle.CloseBid) ? OrderType.LimitEntry : OrderType.StopEntry,
                 _calculator);
 
             return trade;
