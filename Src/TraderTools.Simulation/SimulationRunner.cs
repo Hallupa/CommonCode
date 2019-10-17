@@ -156,7 +156,7 @@ namespace TraderTools.Simulation
                 // Validate and update stops/limts/orders 
                 if (!_options.HasFlag(SimulationRunnerFlags.DoNotValidateStopsLimitsOrders))
                 {
-                    ValidateAndUpdateStopsLimitsOrders(orders.Union(openTrades).ToList(), m1Candle);
+                    ValidateAndUpdateStopsLimitsOrders(orders.Concat(openTrades).ToList(), m1Candle);
                 }
 
                 // Process orders
@@ -168,7 +168,7 @@ namespace TraderTools.Simulation
                 if (DateTime.UtcNow > nextLogTime)
                 {
                     var percent = (i * 100.0) / m1Candles.Count;
-                    Log.Info($"StrategyRunner: {market} {percent:0.00}% complete - created {orders.Count + closedTrades.Count + openTrades.Count} trades");
+                    Log.Info($"StrategyRunner: {market.Name} {percent:0.00}% complete - created {orders.Count + closedTrades.Count + openTrades.Count} trades");
                     nextLogTime = DateTime.UtcNow.AddSeconds(LogIntervalSeconds);
                 }
             }
@@ -297,7 +297,6 @@ namespace TraderTools.Simulation
             TimeframeLookup<List<CandleAndIndicators>> timeframeCurrentCandles,
             Candle latestCandle, UpdateTradeStrategyAttribute updateTradeStrategy)
         {
-            if (strategy is StrategyBase b) b.CurrentCandle = latestCandle;
             var newTrades = strategy.CreateNewTrades(market, timeframeCurrentCandles, null, _calculatorService);
 
             if (newTrades != null && newTrades.Count > 0)
@@ -613,7 +612,7 @@ namespace TraderTools.Simulation
             m1Candles = null;
             var timeframes = timeframesForStrategy.ToList();
 
-            var timeframesExcludingM1 = timeframes.Union(new[] { Timeframe.M15 }).Distinct().ToArray();
+            var timeframesExcludingM1 = timeframes.Union(new[] { Timeframe.M15 }).ToArray();
             var timeframesExcludingM1M15 = timeframes.Where(t => t != Timeframe.M15).ToArray();
             var earliestCandle = earliest != null ? (DateTime?)earliest.Value.AddDays(-100) : null;
 

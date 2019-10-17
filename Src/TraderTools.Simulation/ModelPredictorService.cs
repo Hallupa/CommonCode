@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using Hallupa.Library;
@@ -10,29 +11,26 @@ using log4net;
 using Numpy;
 using Numpy.Models;
 using Python.Runtime;
+using TraderTools.Basics;
 
 namespace TraderTools.Simulation
 {
-    public interface IModelDetails
-    {
-    }
-
-    public class ModelDetails : IModelDetails
-    {
-        public BaseModel BaseModel { get; set; }
-    }
-
     [Export(typeof(ModelPredictorService))]
     [PartCreationPolicy(CreationPolicy.Shared)]
     public class ModelPredictorService
     {
+        private readonly ModelsService _modelsService;
+        private readonly IDataDirectoryService _dataDirectoryService;
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private Py.GILState _y;
-        private Dictionary<string, ModelDetails> _modelsLookup = new Dictionary<string, ModelDetails>();
         private ProducerConsumer<Action> _producerConsumer;
+        private object _lock = new object();
 
-        public ModelPredictorService()
+        [ImportingConstructor]
+        public ModelPredictorService(ModelsService modelsService, IDataDirectoryService dataDirectoryService)
         {
+            _modelsService = modelsService;
+            _dataDirectoryService = dataDirectoryService;
             _producerConsumer = new ProducerConsumer<Action>(1, ConsumeAction);
             _producerConsumer.Add(() => _y = Py.GIL());
             _producerConsumer.Start();
@@ -75,32 +73,28 @@ namespace TraderTools.Simulation
             return yValue;
         }
 
-        public IModelDetails LoadModel(string path)
+        public IModelDetails LoadModel(string name)
         {
-            lock (_modelsLookup)
-            {
-                if (_modelsLookup.ContainsKey(path))
-                {
-                    return _modelsLookup[path];
-                }
+            var model = _modelsService.Models.First(x => x.Name == name);
+            if (model.BaseModel != null) return model;
 
+            lock (_lock)
+            {
                 BaseModel baseModel = null;
                 var waitEvent = new ManualResetEvent(false);
                 _producerConsumer.Add(() =>
                 {
-                    Log.Info($"Loading model: {Path.GetFileName(path)}");
+                    var path = Path.Combine(_dataDirectoryService.MainDirectoryWithApplicationName, "Models", model.Name, "model.h5");
+                    Log.Info($"Loading model: {model.Name}");
                     baseModel = BaseModel.LoadModel(path);
-                    Log.Info($"Model loaded");
+                    Log.Info("Model loaded");
                     waitEvent.Set();
                 });
 
                 waitEvent.WaitOne();
-                var ret = new ModelDetails
-                {
-                    BaseModel = baseModel
-                };
-                _modelsLookup[path] = ret;
-                return ret;
+
+                model.BaseModel = baseModel;
+                return model;
             }
         }
     }

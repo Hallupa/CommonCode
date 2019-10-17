@@ -55,6 +55,9 @@
     <Reference Include="log4net, Version=2.0.8.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
       <HintPath>..\..\..\Src\packages\log4net.2.0.8\lib\net45-full\log4net.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\..\..\Src\packages\Newtonsoft.Json.12.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="Numpy.Bare, Version=3.7.1.4, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\..\Src\packages\Numpy.Bare.3.6.1.9\lib\netstandard2.0\Numpy.Bare.dll</HintPath>
     </Reference>
@@ -78,6 +81,7 @@
     <Compile Include="CachedDetails.cs" />
     <Compile Include="IndicatorsHelper.cs" />
     <Compile Include="ModelPredictorService.cs" />
+    <Compile Include="ModelsService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RequiredTimeframeCandlesAttribute.cs" />
     <Compile Include="StopHelper.cs" />
@@ -88,6 +92,10 @@
     <Compile Include="UpdateTradeStrategyAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Library.UI\Library.UI.csproj">
+      <Project>{38ECC387-7BB9-4152-B60E-54B697D2B708}</Project>
+      <Name>Library.UI</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Library\Library.csproj">
       <Project>{827454B9-CA87-493D-ACD0-676EB423772F}</Project>
       <Name>Library</Name>
