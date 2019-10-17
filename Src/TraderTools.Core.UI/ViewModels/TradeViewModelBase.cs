@@ -169,6 +169,12 @@ namespace TraderTools.Core.UI.ViewModels
             }
         }
 
+        public ICommand CancelEditCommand
+        {
+            get => _cancelEditCommand;
+            set => _cancelEditCommand = value;
+        }
+
         public static readonly DependencyProperty ShowOpenTradesProperty = DependencyProperty.Register("ShowOpenTrades", typeof(bool), typeof(TradeViewModelBase), new PropertyMetadata(true, ShowTradesChanged));
         public static readonly DependencyProperty ShowClosedTradesProperty = DependencyProperty.Register("ShowClosedTrades", typeof(bool), typeof(TradeViewModelBase), new PropertyMetadata(false, ShowTradesChanged));
         public static readonly DependencyProperty ShowOrdersProperty = DependencyProperty.Register("ShowOrders", typeof(bool), typeof(TradeViewModelBase), new PropertyMetadata(true, ShowTradesChanged));
@@ -176,6 +182,7 @@ namespace TraderTools.Core.UI.ViewModels
         private static void ShowTradesChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var tvm = (TradeViewModelBase)d;
+            tvm.CancelEditCommand?.Execute(null);
             tvm.TradesView.Refresh();
         }
 
@@ -199,6 +206,7 @@ namespace TraderTools.Core.UI.ViewModels
 
         private Window _parent;
         private Trade _selectedTrade;
+        private ICommand _cancelEditCommand;
 
         protected virtual void DeleteTrade()
         {

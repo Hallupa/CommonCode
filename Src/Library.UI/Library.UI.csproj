@@ -99,6 +99,7 @@
     </Compile>
     <Compile Include="AttachedProperties\ListBoxExtensions.cs" />
     <Compile Include="Behaviours\AvalonEditBehaviour.cs" />
+    <Compile Include="Behaviours\DataGridCancelEditBehaviour.cs" />
     <Compile Include="Behaviours\ListBoxSelectionBehavior.cs" />
     <Compile Include="Behaviours\WindowBehaviour.cs" />
     <Compile Include="BindingProxy.cs" />
