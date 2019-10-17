@@ -82,22 +82,35 @@ namespace TraderTools.Basics
                         {
                             var candle = currentCandles[currentCandles.Count - 1];
                             candle.CloseBid = lowestCandle.CloseBid;
+                            candle.CloseAsk = lowestCandle.CloseAsk;
                             candle.CloseTimeTicks = lowestCandle.CloseTimeTicks;
                             if (lowestCandle.HighBid > candle.HighBid) candle.HighBid = lowestCandle.HighBid;
                             if (lowestCandle.LowBid < candle.LowBid) candle.LowBid = lowestCandle.LowBid;
+                            if (lowestCandle.HighAsk > candle.HighAsk) candle.HighAsk = lowestCandle.HighAsk;
+                            if (lowestCandle.LowAsk < candle.LowAsk) candle.LowAsk = lowestCandle.LowAsk;
                         }
                         else
                         {
-                            currentCandles.Add(new Candle
+                            var c = new Candle
                             {
                                 OpenBid = lowestCandle.OpenBid,
+                                OpenAsk = lowestCandle.OpenAsk,
                                 CloseBid = lowestCandle.CloseBid,
+                                CloseAsk = lowestCandle.CloseAsk,
                                 CloseTimeTicks = lowestCandle.CloseTimeTicks,
                                 OpenTimeTicks = lowestCandle.OpenTimeTicks,
                                 HighBid = lowestCandle.HighBid,
                                 LowBid = lowestCandle.LowBid,
-                                IsComplete =  0
-                            });
+                                HighAsk = lowestCandle.HighAsk,
+                                LowAsk = lowestCandle.LowAsk,
+                                IsComplete = 0
+                            };
+                            currentCandles.Add(c);
+
+                            if (c.CloseAsk == 0 || c.CloseBid == 0 || c.HighAsk == 0 || c.HighBid == 0)
+                            {
+
+                            }
                         }
                     }
                 }
