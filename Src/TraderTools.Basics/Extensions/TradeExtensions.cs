@@ -165,8 +165,17 @@ namespace TraderTools.Basics.Extensions
                         //                ---
                         if (direction == TradeDirection.Long && candleAskLow <= orderPrice && candleAskHigh >= orderPrice)
                         {
-                            order.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal) orderPrice,
-                                trade.OrderAmount.Value);
+                            order.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal) orderPrice, trade.OrderAmount.Value);
+                            updated = true;
+                        }
+                        // - - - - - - - -
+                        //                ___
+                        //                | |
+                        //                | |
+                        //                ---
+                        else if (direction == TradeDirection.Long && candleAskHigh <= orderPrice)
+                        {
+                            order.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal)candleAskHigh, trade.OrderAmount.Value);
                             updated = true;
                         }
                         //                ___
@@ -176,20 +185,7 @@ namespace TraderTools.Basics.Extensions
                         //                ---
                         else if (direction == TradeDirection.Short && candleBidLow <= orderPrice && candleBidHigh >= orderPrice)
                         {
-                            order.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal) orderPrice,
-                                trade.OrderAmount.Value);
-                            updated = true;
-                        }
-
-                        // - - - - - - - -
-                        //                ___
-                        //                | |
-                        //                | |
-                        //                ---
-                        else if (direction == TradeDirection.Long && candleAskHigh <= orderPrice)
-                        {
-                            order.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal) candleAskHigh,
-                                trade.OrderAmount.Value);
+                            order.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal) orderPrice, trade.OrderAmount.Value);
                             updated = true;
                         }
                         //                ___
@@ -199,8 +195,7 @@ namespace TraderTools.Basics.Extensions
                         // - - - - - - - -
                         else if (direction == TradeDirection.Short && candleBidLow >= orderPrice)
                         {
-                            order.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal) candleBidLow,
-                                trade.OrderAmount.Value);
+                            order.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal) candleBidLow, trade.OrderAmount.Value);
                             updated = true;
                         }
 
@@ -214,23 +209,9 @@ namespace TraderTools.Basics.Extensions
                         //  - - - - - - - | |
                         //                | |
                         //                ---
-                        if (order.TradeDirection == TradeDirection.Long && candleAskLow <= orderPrice &&
-                            candleAskHigh >= orderPrice)
+                        if (order.TradeDirection == TradeDirection.Long && candleAskLow <= orderPrice && candleAskHigh >= orderPrice)
                         {
-                            order.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal) orderPrice,
-                                trade.OrderAmount.Value);
-                            updated = true;
-                        }
-                        //                ___
-                        //                | |
-                        //  - - - - - - - | |
-                        //                | |
-                        //                ---
-                        else if (order.TradeDirection == TradeDirection.Short && candleBidLow <= orderPrice &&
-                                 candleBidHigh >= orderPrice)
-                        {
-                            order.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal) orderPrice,
-                                trade.OrderAmount.Value);
+                            order.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal) orderPrice, trade.OrderAmount.Value);
                             updated = true;
                         }
                         //                ___
@@ -240,8 +221,17 @@ namespace TraderTools.Basics.Extensions
                         // - - - - - - - -
                         else if (direction == TradeDirection.Long && candleAskLow >= orderPrice)
                         {
-                            order.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal) candleAskLow,
-                                trade.OrderAmount.Value);
+                            order.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal)candleAskLow, trade.OrderAmount.Value);
+                            updated = true;
+                        }
+                        //                ___
+                        //                | |
+                        //  - - - - - - - | |
+                        //                | |
+                        //                ---
+                        else if (order.TradeDirection == TradeDirection.Short && candleBidLow <= orderPrice && candleBidHigh >= orderPrice)
+                        {
+                            order.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal) orderPrice, trade.OrderAmount.Value);
                             updated = true;
                         }
                         // - - - - - - - -
@@ -251,8 +241,7 @@ namespace TraderTools.Basics.Extensions
                         //                ---
                         else if (direction == TradeDirection.Short && candleBidHigh <= orderPrice)
                         {
-                            order.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal) candleBidHigh,
-                                trade.OrderAmount.Value);
+                            order.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal) candleBidHigh, trade.OrderAmount.Value);
                             updated = true;
                         }
 
