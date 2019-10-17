@@ -336,7 +336,9 @@ namespace TraderTools.Core.UI
             }
 
             buyMarker.StrokeBrush = brush;
+            buyMarker.Opacity = makeSmaller ? 0.6 : 0.8;
             sellMarker.StrokeBrush = brush;
+            sellMarker.Opacity = makeSmaller ? 0.6 : 0.8;
             annotation.X1 = timeLocal;
             annotation.BorderThickness = new Thickness(20);
             annotation.Y1 = (double)price;

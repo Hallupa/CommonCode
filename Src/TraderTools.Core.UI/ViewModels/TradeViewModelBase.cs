@@ -8,18 +8,14 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Threading;
 using Abt.Controls.SciChart.Visuals.Annotations;
 using Hallupa.Library;
 using Hallupa.Library.UI;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
-using TraderTools.Core.Services;
 using TraderTools.Core.UI.ChartModifiers;
-using TraderTools.Core.UI.Services;
 using TraderTools.Core.UI.Views;
-using TraderTools.Indicators;
 using TraderTools.UI.Views;
 
 namespace TraderTools.Core.UI.ViewModels
@@ -63,7 +59,6 @@ namespace TraderTools.Core.UI.ViewModels
             EditCommand = new DelegateCommand(o => EditTrade());
             DeleteCommand = new DelegateCommand(o => DeleteTrade());
             ViewTradeCommand = new DelegateCommand(t => ViewTrade((Trade)t, true));
-            RemoveSelectedLineCommand = new DelegateCommand(t => RemoveSelectedLine());
             ViewTradeSetupCommand = new DelegateCommand(t => ViewTradeSetup((Trade)t));
 
             TradesView = (CollectionView)CollectionViewSource.GetDefaultView(Trades);
@@ -72,43 +67,6 @@ namespace TraderTools.Core.UI.ViewModels
             _dispatcher = Dispatcher.CurrentDispatcher;
 
             LargeChartTimeframe = Timeframe.H2;
-        }
-
-        private void RemoveSelectedLine()
-        {
-            if (ChartViewModel != null && ChartViewModel.ChartPaneViewModels.Count > 0 && ChartViewModel.ChartPaneViewModels[0].TradeAnnotations != null)
-            {
-                var toRemoveList = ChartViewModel.ChartPaneViewModels[0].TradeAnnotations.OfType<LineAnnotation>().Where(x => x.Tag is string s && s.StartsWith("Added") && x.IsSelected).ToList();
-                foreach (var toRemove in toRemoveList)
-                {
-                    ChartViewModel.ChartPaneViewModels[0].TradeAnnotations.Remove(toRemove);
-
-                    var linked = ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations.OfType<LineAnnotation>().FirstOrDefault(x => x.Tag is string s && s.Equals((string)toRemove.Tag));
-                    if (linked != null)
-                    {
-                        ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations.Remove(linked);
-                    }
-                }
-            }
-
-            if (ChartViewModelSmaller1 != null && ChartViewModelSmaller1.ChartPaneViewModels.Count > 0 && ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations != null)
-            {
-                var toRemoveList = ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations.OfType<LineAnnotation>().Where(x => x.Tag is string s && s.StartsWith("Added") && x.IsSelected).ToList();
-                foreach (var toRemove in toRemoveList)
-                {
-                    ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations.Remove(toRemove);
-
-                    if (ChartViewModel != null)
-                    {
-                        var linked = ChartViewModel.ChartPaneViewModels[0].TradeAnnotations.OfType<LineAnnotation>()
-                            .FirstOrDefault(x => x.Tag is string s && s.Equals((string)toRemove.Tag));
-                        if (linked != null)
-                        {
-                            ChartViewModel.ChartPaneViewModels[0].TradeAnnotations.Remove(linked);
-                        }
-                    }
-                }
-            }
         }
 
         public CollectionView TradesView { get; private set; }
@@ -134,8 +92,6 @@ namespace TraderTools.Core.UI.ViewModels
         protected Trade TradeShowingOnChart { get; private set; }
         public DelegateCommand ViewTradeCommand { get; protected set; }
         public DelegateCommand ViewTradeSetupCommand { get; protected set; }
-
-        public DelegateCommand RemoveSelectedLineCommand { get; private set; }
 
         public ICommand EditCommand { get; }
 

@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Media;
@@ -30,6 +31,8 @@ namespace TraderTools.Core.UI.ViewModels
             LargeChartTimeframeOptions.Add(Timeframe.H4);
             LargeChartTimeframeOptions.Add(Timeframe.H2);
             LargeChartTimeframeOptions.Add(Timeframe.H1);
+
+            RemoveSelectedLineCommand = new DelegateCommand(t => RemoveSelectedLine());
         }
 
         public ChartViewModel ChartViewModel { get; } = new ChartViewModel();
@@ -43,6 +46,7 @@ namespace TraderTools.Core.UI.ViewModels
         public Timeframe SmallChartTimeframe { get; set; } = Timeframe.D1;
         public ObservableCollection<Timeframe> LargeChartTimeframeOptions { get; } = new ObservableCollection<Timeframe>();
 
+        public DelegateCommand RemoveSelectedLineCommand { get; private set; }
         public Timeframe LargeChartTimeframe
         {
             get => _largeChartTimeframe;
@@ -69,6 +73,44 @@ namespace TraderTools.Core.UI.ViewModels
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
+        private void RemoveSelectedLine()
+        {
+            if (ChartViewModel != null && ChartViewModel.ChartPaneViewModels.Count > 0 && ChartViewModel.ChartPaneViewModels[0].TradeAnnotations != null)
+            {
+                var toRemoveList = ChartViewModel.ChartPaneViewModels[0].TradeAnnotations.OfType<LineAnnotation>().Where(x => x.Tag is string s && s.StartsWith("Added") && x.IsSelected).ToList();
+                foreach (var toRemove in toRemoveList)
+                {
+                    ChartViewModel.ChartPaneViewModels[0].TradeAnnotations.Remove(toRemove);
+
+                    var linked = ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations.OfType<LineAnnotation>().FirstOrDefault(x => x.Tag is string s && s.Equals((string)toRemove.Tag));
+                    if (linked != null)
+                    {
+                        ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations.Remove(linked);
+                    }
+                }
+            }
+
+            if (ChartViewModelSmaller1 != null && ChartViewModelSmaller1.ChartPaneViewModels.Count > 0 && ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations != null)
+            {
+                var toRemoveList = ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations.OfType<LineAnnotation>().Where(x => x.Tag is string s && s.StartsWith("Added") && x.IsSelected).ToList();
+                foreach (var toRemove in toRemoveList)
+                {
+                    ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations.Remove(toRemove);
+
+                    if (ChartViewModel != null)
+                    {
+                        var linked = ChartViewModel.ChartPaneViewModels[0].TradeAnnotations.OfType<LineAnnotation>()
+                            .FirstOrDefault(x => x.Tag is string s && s.Equals((string)toRemove.Tag));
+                        if (linked != null)
+                        {
+                            ChartViewModel.ChartPaneViewModels[0].TradeAnnotations.Remove(linked);
+                        }
+                    }
+                }
+            }
+        }
+
+
         protected void ViewCandles(string market, Timeframe smallChartTimeframe, List<Candle> smallChartCandles,
             Timeframe largeChartTimeframe, List<Candle> largeChartCandles)
         {
@@ -92,8 +134,6 @@ namespace TraderTools.Core.UI.ViewModels
                 ChartHelper.AddIndicator(ChartViewModel.ChartPaneViewModels[0], market,
                     new SimpleMovingAverage(200), Colors.LightBlue, largeChartTimeframe, largeChartCandles);
             }
-
-
 
             ChartHelper.SetChartViewModelPriceData(smallChartCandles, ChartViewModelSmaller1,
                 smallChartTimeframe);
