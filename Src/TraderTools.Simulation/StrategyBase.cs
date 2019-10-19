@@ -52,7 +52,7 @@ namespace TraderTools.Simulation
         }
 
         public abstract List<Trade> CreateNewTrades(
-            MarketDetails market, TimeframeLookup<List<CandleAndIndicators>> candlesLookup, List<Trade> existingTrades, ITradeDetailsAutoCalculatorService calculatorService);
+            MarketDetails market, TimeframeLookup<List<CandleAndIndicators>> candlesLookup, List<Trade> existingTrades, ITradeDetailsAutoCalculatorService calculatorService, DateTime currentTime);
 
         protected Trade CreateMarketOrder(string market, TradeDirection direction, Candle currentCandle, decimal stop, decimal riskPercent, decimal? limit = null)
         {
@@ -82,31 +82,20 @@ namespace TraderTools.Simulation
             if (UseRiskSize)
             {
                 if (!GetLotSize(market, entryPrice, stop, riskPercent, out lotSize)) return null;
+                if (lotSize == null) return null;
             }
 
-            if (lotSize == null) return null;
-
             var trade = Trade.CreateOrder(
-                "FXCM",
-                entryPrice,
-                currentCandle.CloseTime(),
-                OrderKind.EntryPrice,
-                direction,
-                (decimal)lotSize.Value,
-                market,
-                expiryDateTime,
-                stop,
-                limit,
-                Timeframe.D1,
-                string.Empty, 
-                null, 
-                0,
-                0,
-                0,
-                0,
-                false,
-                (direction == TradeDirection.Long && (float)entryPrice < currentCandle.CloseAsk) || (direction == TradeDirection.Short && (float)entryPrice > currentCandle.CloseBid) ? OrderType.LimitEntry : OrderType.StopEntry,
-                _calculator);
+                    "FXCM",
+                    entryPrice,
+                    currentCandle,
+                    direction,
+                    (decimal)lotSize.Value,
+                    market,
+                    expiryDateTime,
+                    stop,
+                    limit,
+                    _calculator);
 
             return trade;
         }
@@ -129,7 +118,7 @@ namespace TraderTools.Simulation
             return true;
         }
 
-        private  int? GetLotSize(string market, decimal targetRiskGBP, decimal stopPips, int baseUnitSize)
+        private int? GetLotSize(string market, decimal targetRiskGBP, decimal stopPips, int baseUnitSize)
         {
             for (var lotSize = baseUnitSize; true; lotSize += baseUnitSize)
             {

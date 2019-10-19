@@ -144,7 +144,7 @@ namespace TraderTools.Simulation
 
                 if (strategyTimeframeCompleteCandleUpdated)
                 {
-                    AddNewTrades(orders, openTrades, strategy, market, timeframesCurrentCandles, m1Candle, updateTradesStrategy);
+                    AddNewTrades(orders, openTrades, strategy, market, timeframesCurrentCandles, m1Candle, updateTradesStrategy, m1Candle.CloseTime());
                 }
 
                 if (strategyTimeframeCandleUpdated)
@@ -295,9 +295,9 @@ namespace TraderTools.Simulation
 
         private void AddNewTrades(List<TradeWithStopLimitIndex> ordersList, List<TradeWithStopLimitIndex> openTrades, IStrategy strategy, MarketDetails market,
             TimeframeLookup<List<CandleAndIndicators>> timeframeCurrentCandles,
-            Candle latestCandle, UpdateTradeStrategyAttribute updateTradeStrategy)
+            Candle latestCandle, UpdateTradeStrategyAttribute updateTradeStrategy, DateTime currentTime)
         {
-            var newTrades = strategy.CreateNewTrades(market, timeframeCurrentCandles, null, _calculatorService);
+            var newTrades = strategy.CreateNewTrades(market, timeframeCurrentCandles, ordersList.Concat(openTrades).Select(t => t.Trade).ToList(), _calculatorService, currentTime);
 
             if (newTrades != null && newTrades.Count > 0)
             {

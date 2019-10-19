@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using TraderTools.Basics;
 
 namespace TraderTools.Core.Trading
@@ -11,6 +12,7 @@ namespace TraderTools.Core.Trading
             MarketDetails market,
             TimeframeLookup<List<CandleAndIndicators>> candlesLookup,
             List<Trade> existingTrades,
-            ITradeDetailsAutoCalculatorService calculatorService);
+            ITradeDetailsAutoCalculatorService calculatorService,
+            DateTime currentTime);
     }
 }
