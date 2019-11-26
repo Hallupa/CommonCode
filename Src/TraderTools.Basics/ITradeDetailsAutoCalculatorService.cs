@@ -6,14 +6,14 @@ namespace TraderTools.Basics
     public enum CalculateOptions
     {
         Default = 0,
-        ExcludePricePerPip = 1,
-        IncludeOpenTradesInRMultipleCalculation
+        ExcludePipsCalculations = 1,
+        IncludeOpenTradesInRMultipleCalculation = 2
     }
 
     public interface ITradeDetailsAutoCalculatorService
     {
         void AddTrade(Trade trade);
         void RemoveTrade(Trade trade);
-        void RecalculateTrade(Trade trade, CalculateOptions options = CalculateOptions.Default);
+        void RecalculateTrade(Trade trade);
     }
 }

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Hallupa.Library;
+using Newtonsoft.Json;
 using TraderTools.Basics.Extensions;
 
 namespace TraderTools.Basics
@@ -332,6 +333,8 @@ namespace TraderTools.Basics
             }
         }
 
+        [JsonIgnore]
+        public CalculateOptions CalculateOptions { get; set; } = CalculateOptions.Default;
 
         public TradeCloseReason? CloseReason
         {
