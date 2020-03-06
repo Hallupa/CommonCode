@@ -35,9 +35,13 @@ namespace TraderTools.Brokers.FXCM
 
         public List<MarketDetails> GetMarketDetailsList()
         {
+            if (Status != ConnectStatus.Connected) return null;
+
             var loginRules = Session.getLoginRules();
             var offersResponse = loginRules.getTableRefreshResponse(O2GTableType.Offers);
             var factory = Session.getResponseReaderFactory();
+            if (factory == null) return null;
+
             var accountsResponse = loginRules.getTableRefreshResponse(O2GTableType.Accounts);
             var accountsReader = factory.createAccountsTableReader(accountsResponse);
             var tradingSettingsProvider = loginRules.getTradingSettingsProvider();
@@ -169,10 +173,15 @@ namespace TraderTools.Brokers.FXCM
             updated = GetOrders(account, candlesService, marketsService, tableManager, out var orders) || updated;
 
             // Update trades from reports API
+            updateProgressAction?.Invoke("Getting report");
             var reportLines = GetReport();
             Log.Info("Getting historic trades");
             updateProgressAction?.Invoke("Getting historic trades");
             updated = GetReportTrades(account, candlesService, marketsService, reportLines) || updated;
+
+            Log.Info("Getting deposits/withdrawals");
+            updateProgressAction?.Invoke("Updating deposits/withdrawals");
+            UpdateDepositsWithdrawals(account, reportLines);
 
             // Set any open trades to closed that aren't in the open list
             foreach (var trade in account.Trades.Where(t =>
@@ -192,10 +201,6 @@ namespace TraderTools.Brokers.FXCM
                     }
                 }
             }
-
-            Log.Info("Getting deposits/withdrawals");
-            updateProgressAction?.Invoke("Updating deposits/withdrawals");
-            UpdateDepositsWithdrawals(account, reportLines);
 
             return updated;
         }
@@ -223,6 +228,7 @@ namespace TraderTools.Brokers.FXCM
                     trade.EntryDateTime = DateTime.SpecifyKind(tradeRow.OpenTime, DateTimeKind.Utc); // Checked with Trading Station - these are returned in UTC
                     trade.CloseDateTime = DateTime.SpecifyKind(tradeRow.CloseTime, DateTimeKind.Utc);
                     trade.EntryPrice = (decimal)tradeRow.OpenRate;
+                    trade.ClosePrice = (decimal)tradeRow.CloseRate;
 
                     trade.EntryQuantity = tradeRow.Amount;
                     trade.GrossProfitLoss = (decimal)tradeRow.GrossPL;
@@ -265,6 +271,12 @@ namespace TraderTools.Brokers.FXCM
                     if (trade.EntryPrice != (decimal)tradeRow.OpenRate)
                     {
                         trade.EntryPrice = (decimal)tradeRow.OpenRate;
+                        addedOrUpdatedOpenTrade = true;
+                    }
+
+                    if (trade.ClosePrice != (decimal)tradeRow.CloseRate)
+                    {
+                        trade.ClosePrice = (decimal) tradeRow.CloseRate;
                         addedOrUpdatedOpenTrade = true;
                     }
 
@@ -625,6 +637,7 @@ namespace TraderTools.Brokers.FXCM
             string[] lines;
 
             var reader = server.GetReport(url, connection, report, _user, _password, account, locale, startDate, endDate, outputFormat, extra);
+
             try
             {
                 using (var output = new MemoryStream())

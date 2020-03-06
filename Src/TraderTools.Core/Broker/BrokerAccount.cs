@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Reflection;
+using System.Windows.Forms;
 using Hallupa.Library;
 using log4net;
 using TraderTools.Basics;
@@ -175,7 +176,17 @@ namespace TraderTools.Core.Broker
                 tradeCalculateService.RemoveTrade(t);
             }
 
-            broker.UpdateAccount(this, candleService, marketsService, updateProgressAction);
+            try
+            {
+                broker.UpdateAccount(this, candleService, marketsService, updateProgressAction);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Unable to update account", ex);
+                MessageBox.Show($"Unable to update account - {ex.Message}", "Unable to update account", MessageBoxButtons.OK);
+            }
+
+            updateProgressAction("Account updated");
 
             AccountLastUpdated = DateTime.UtcNow;
 
