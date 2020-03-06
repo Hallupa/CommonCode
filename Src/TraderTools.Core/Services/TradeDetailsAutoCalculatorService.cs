@@ -59,10 +59,11 @@ namespace TraderTools.Core.Services
             }
         }
 
-        public void RecalculateTrade(Trade trade, CalculateOptions options = CalculateOptions.Default)
+        public void RecalculateTrade(Trade trade)
         {
             var startTime = trade.OrderDateTime ?? trade.EntryDateTime;
             var broker = _brokersService.Brokers.FirstOrDefault(x => x.Name == trade.Broker);
+            var options = trade.CalculateOptions;
 
             IBrokerAccount brokerAccount = null;
             if (broker != null)
@@ -91,7 +92,7 @@ namespace TraderTools.Core.Services
             UpdateLimit(trade);
 
             // Update price per pip
-            if (!options.HasFlag(CalculateOptions.ExcludePricePerPip))
+            if (!options.HasFlag(CalculateOptions.ExcludePipsCalculations))
             {
                 UpdateTradePricePerPip(trade, broker);
             }
@@ -202,10 +203,14 @@ namespace TraderTools.Core.Services
 
                     if (stop.Price != null)
                     {
-                        var stopInPips = Math.Abs(
-                            _marketsService.GetPriceInPips(trade.Broker, stop.Price.Value, trade.Market) -
-                            _marketsService.GetPriceInPips(trade.Broker, price, trade.Market));
-                        trade.InitialStopInPips = stopInPips;
+                        if (!trade.CalculateOptions.HasFlag(CalculateOptions.ExcludePipsCalculations))
+                        {
+                            var stopInPips = Math.Abs(
+                                _marketsService.GetPriceInPips(trade.Broker, stop.Price.Value, trade.Market) -
+                                _marketsService.GetPriceInPips(trade.Broker, price, trade.Market));
+                            trade.InitialStopInPips = stopInPips;
+                        }
+
                         trade.InitialStop = entryOrOrderStop.Price;
                     }
                     else
@@ -216,7 +221,7 @@ namespace TraderTools.Core.Services
 
                     // Update current stop
                     stop = trade.StopPrices.Last();
-                    if (stop.Price != null)
+                    if (stop.Price != null && !trade.CalculateOptions.HasFlag(CalculateOptions.ExcludePipsCalculations))
                     {
                         var stopInPips = Math.Abs(
                             _marketsService.GetPriceInPips(trade.Broker, stop.Price.Value, trade.Market) -
@@ -270,7 +275,7 @@ namespace TraderTools.Core.Services
 
                 // Update initial limit
                 var price = trade.EntryPrice ?? trade.OrderPrice;
-                if (price != null)
+                if (price != null && !trade.CalculateOptions.HasFlag(CalculateOptions.ExcludePipsCalculations))
                 {
                     var limit = entryOrOrderLimit;
                     var limitInPips = Math.Abs(
@@ -289,7 +294,7 @@ namespace TraderTools.Core.Services
                 var lastlimit = trade.LimitPrices.Last();
                 trade.LimitPrice = lastlimit.Price;
 
-                if (lastlimit.Price != null && price != null)
+                if (lastlimit.Price != null && price != null && !trade.CalculateOptions.HasFlag(CalculateOptions.ExcludePipsCalculations))
                 {
                     var limitInPips = Math.Abs(
                         _marketsService.GetPriceInPips(trade.Broker, lastlimit.Price.Value, trade.Market) -
