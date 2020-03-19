@@ -43,6 +43,8 @@ namespace TraderTools.Core.UI.ViewModels
             RemoveSelectedLineCommand = new DelegateCommand(t => RemoveSelectedLine());
         }
 
+        public GridLength SmallerChartWidth { get; set; } = new GridLength(1, GridUnitType.Star);
+
         public ChartViewModel ChartViewModel { get; } = new ChartViewModel();
 
         [Import] public ChartingService ChartingService { get; private set; }

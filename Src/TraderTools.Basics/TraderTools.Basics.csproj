@@ -120,6 +120,7 @@
     <Compile Include="Timeframe.cs" />
     <Compile Include="TimeframeLookup.cs" />
     <Compile Include="Trade.cs" />
+    <Compile Include="TradeCalculator.cs" />
     <Compile Include="TradeDirection.cs" />
   </ItemGroup>
   <ItemGroup>

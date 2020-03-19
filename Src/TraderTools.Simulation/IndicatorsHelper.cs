@@ -52,6 +52,9 @@ namespace TraderTools.Simulation
                 case Indicator.ATR:
                     indicatorInstance = new AverageTrueRange();
                     break;
+                case Indicator.T3CCI:
+                    indicatorInstance = new T3CommodityChannelIndex();
+                    break;
                 default:
                     throw new ApplicationException("Indicator not found");
             }

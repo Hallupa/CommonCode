@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.Composition;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -103,9 +104,9 @@ namespace TraderTools.Basics
             TradeDirection direction, decimal amount, string market,
             decimal? stop, decimal? limit, ITradeDetailsAutoCalculatorService tradeCalculatorService,
             Timeframe? timeframe = null, string strategies = null, string comments = null, int custom1 = 0,
-            int custom2 = 0, int custom3 = 0, int custom4 = 0, bool alert = false)
+            int custom2 = 0, int custom3 = 0, int custom4 = 0, bool alert = false, CalculateOptions calculateOptions = CalculateOptions.Default)
         {
-            var trade = new Trade();
+            var trade = new Trade { Broker = broker };
             if (stop != null) trade.AddStopPrice(entryTime, stop.Value);
             if (limit != null) trade.AddLimitPrice(entryTime, limit.Value);
             trade.Market = market;
@@ -114,7 +115,6 @@ namespace TraderTools.Basics
             trade.EntryDateTime = entryTime;
             trade.EntryQuantity = amount;
             trade.Timeframe = timeframe;
-            trade.Broker = broker;
             trade.Alert = alert;
             trade.Comments = comments;
             trade.Strategies = strategies;
@@ -122,6 +122,7 @@ namespace TraderTools.Basics
             trade.Custom2 = custom2;
             trade.Custom3 = custom3;
             trade.Custom4 = custom4;
+            trade.CalculateOptions = calculateOptions;
             tradeCalculatorService.AddTrade(trade);
             return trade;
         }
@@ -185,6 +186,11 @@ namespace TraderTools.Basics
             set
             {
                 _entryPrice = value;
+                TradeCalculator.UpdateStopPips(this);
+                TradeCalculator.UpdateInitialStopPips(this);
+                TradeCalculator.UpdateLimitPips(this);
+                TradeCalculator.UpdateInitialLimitPips(this);
+                TradeCalculator.UpdateRMultiple(this);
                 OnPropertyChanged();
                 OnPropertyChanged("Status");
             }
@@ -196,6 +202,7 @@ namespace TraderTools.Basics
             set
             {
                 _closePrice = value;
+                TradeCalculator.UpdateRMultiple(this);
                 OnPropertyChanged();
                 OnPropertyChanged("Status");
             }
@@ -209,6 +216,7 @@ namespace TraderTools.Basics
             set
             {
                 _grossProfitLoss = value;
+                TradeCalculator.UpdateRMultiple(this);
                 OnPropertyChanged();
                 OnPropertyChanged("Profit");
             }
@@ -260,6 +268,7 @@ namespace TraderTools.Basics
             set
             {
                 _netProfitLoss = value;
+                TradeCalculator.UpdateRMultiple(this);
                 OnPropertyChanged();
                 OnPropertyChanged("Profit");
             }
@@ -421,8 +430,16 @@ namespace TraderTools.Basics
             }
         }
 
-        public decimal? RiskAmount { get; set; }
-        
+        public decimal? RiskAmount
+        {
+            get => _riskAmount;
+            set
+            {
+                _riskAmount = value;
+                TradeCalculator.UpdateRMultiple(this);
+            }
+        }
+
         public decimal? RiskPercentOfBalance { get; set; }
         public DateTime? EntryDateTimeLocal => EntryDateTime != null ? (DateTime?)EntryDateTime.Value.ToLocalTime() : null;
         public DateTime? StartDateTimeLocal => OrderDateTime != null ? (DateTime?)OrderDateTime.Value.ToLocalTime() : EntryDateTimeLocal;
@@ -433,7 +450,8 @@ namespace TraderTools.Basics
             get => _initialStop;
             set
             {
-                _initialStop = value; 
+                _initialStop = value;
+                TradeCalculator.UpdateRMultiple(this);
                 OnPropertyChanged();
             }
         }
@@ -571,6 +589,7 @@ namespace TraderTools.Basics
         private decimal? _commissionValue;
         private decimal? _entryValue;
         private string _entryValueCurrency;
+        private decimal? _riskAmount;
 
         public void AddStopPrice(DateTime date, decimal? price)
         {
@@ -586,6 +605,14 @@ namespace TraderTools.Basics
 
             StopPrices.Add(new DatePrice(date, price));
             StopPrices = StopPrices.OrderBy(x => x.Date).ToList();
+
+            TradeCalculator.UpdateStop(this);
+            TradeCalculator.UpdateStopPips(this);
+
+            if (StopPrices.Count == 1)
+            {
+                TradeCalculator.UpdateInitialStopPips(this);
+            }
         }
 
         public void AddOrderPrice(DateTime date, decimal? price)
@@ -640,11 +667,14 @@ namespace TraderTools.Basics
 
             LimitPrices.Add(new DatePrice(date, price));
             LimitPrices = LimitPrices.OrderBy(x => x.Date).ToList();
-        }
 
-        public void ClearLimitPrices()
-        {
-            LimitPrices.Clear();
+            TradeCalculator.UpdateLimit(this);
+            TradeCalculator.UpdateLimitPips(this);
+
+            if (LimitPrices.Count == 1)
+            {
+                TradeCalculator.UpdateInitialLimitPips(this);
+            }
         }
 
         public void RemoveLimitPrice(int index)
