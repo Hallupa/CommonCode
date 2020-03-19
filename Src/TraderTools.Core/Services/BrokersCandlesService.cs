@@ -41,15 +41,18 @@ namespace TraderTools.Core.Services
             _savePath = Path.Combine(_dataDirectoryService.MainDirectory, "LastBrokerMarketUpdates.json");
             if (File.Exists(_savePath))
             {
-                var data = JsonConvert.DeserializeObject<List<(LastUpdatedMarket, DateTime)>>(File.ReadAllText(_savePath));
-                _lastUpdated = data.ToDictionary(x => x.Item1, x => x.Item2);
+                var txt = File.ReadAllText(_savePath);
+                if (!string.IsNullOrEmpty(txt))
+                {
+                    var data = JsonConvert.DeserializeObject<List<(LastUpdatedMarket, DateTime)>>(txt);
+                    _lastUpdated = data.ToDictionary(x => x.Item1, x => x.Item2);
+                }
             }
-
         }
 
-        public void UpdateCandles(IBroker broker, string market, Timeframe timeframe)
+        public void UpdateCandles(IBroker broker, string market, Timeframe timeframe, bool forceUpdate = true)
         {
-            GetCandles(broker, market, timeframe, true, forceUpdate: true);
+            GetCandles(broker, market, timeframe, true, forceUpdate: forceUpdate);
         }
 
         private Dictionary<(IBroker Broker, string Market, Timeframe Timeframe), object> _lockLookups = new Dictionary<(IBroker Broker, string Market, Timeframe Timeframe), object>();
@@ -71,7 +74,7 @@ namespace TraderTools.Core.Services
         }
 
         public List<Candle> GetCandles(IBroker broker, string market, Timeframe timeframe,
-            bool updateCandles, DateTime? minOpenTimeUtc = null, DateTime? maxCloseTimeUtc = null, bool cacheData = true, bool forceUpdate = false)
+            bool updateCandles, DateTime? minOpenTimeUtc = null, DateTime? maxCloseTimeUtc = null, bool cacheData = true, bool forceUpdate = false, Action<string> progressUpdate = null)
         {
             var lck = GetLock(broker, market, timeframe);
             var start = _earliestDateTime;
@@ -125,7 +128,7 @@ namespace TraderTools.Core.Services
                         start = new DateTime(candles[candles.Count - 1].OpenTimeTicks).AddMinutes(change);
                     }
                     
-                    if (broker.UpdateCandles(candles, market, timeframe, start))
+                    if (broker.UpdateCandles(candles, market, timeframe, start, progressUpdate))
                     {
                         SaveCandles(candles, broker, market, timeframe);
                         Log.Debug($"Updated {broker.Name} {market} {timeframe} candles");

@@ -153,7 +153,7 @@ namespace TraderTools.Strategy
             //var sourceLanguage = new CSharpLanguage();
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
 
-            Compilation compilation = CreateLibraryCompilation(assemblyName: "InMemoryAssembly", enableOptimisations: false, metadataReferences.ToArray())
+            Compilation compilation = CreateLibraryCompilation(assemblyName: "InMemoryAssembly", enableOptimisations: false, references: metadataReferences.ToArray())
                 .AddSyntaxTrees(syntaxTree);
 
             var stream = new MemoryStream();

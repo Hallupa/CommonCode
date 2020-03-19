@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
@@ -6,6 +7,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Threading;
 using Abt.Controls.SciChart;
 using Abt.Controls.SciChart.Visuals.Annotations;
 using Hallupa.Library;
@@ -15,13 +17,15 @@ using TraderTools.Indicators;
 
 namespace TraderTools.Core.UI.ViewModels
 {
-    public abstract class DoubleChartViewModel : DependencyObject, INotifyPropertyChanged
+    public abstract class DoubleChartViewModel : DependencyObject
     {
         private Timeframe _largeChartTimeframe = Timeframe.H2;
         private int _selectedMainIndicatorsIndex;
+        private Dispatcher _dispatcher;
 
         public DoubleChartViewModel()
         {
+            _dispatcher = Dispatcher.CurrentDispatcher;
             DependencyContainer.ComposeParts(this);
 
             ChartViewModel.XVisibleRange = new IndexRange();
@@ -31,6 +35,10 @@ namespace TraderTools.Core.UI.ViewModels
             LargeChartTimeframeOptions.Add(Timeframe.H4);
             LargeChartTimeframeOptions.Add(Timeframe.H2);
             LargeChartTimeframeOptions.Add(Timeframe.H1);
+            LargeChartTimeframeOptions.Add(Timeframe.M30);
+            LargeChartTimeframeOptions.Add(Timeframe.M15);
+            LargeChartTimeframeOptions.Add(Timeframe.M5);
+            LargeChartTimeframeOptions.Add(Timeframe.M1);
 
             RemoveSelectedLineCommand = new DelegateCommand(t => RemoveSelectedLine());
         }
@@ -52,9 +60,31 @@ namespace TraderTools.Core.UI.ViewModels
             get => _largeChartTimeframe;
             set
             {
+                if (_largeChartTimeframe == value) return;
+
                 _largeChartTimeframe = value;
-                OnPropertyChanged();
+                SelectedLargeChartTimeframeIndex = LargeChartTimeframeOptions.IndexOf(value);
+
                 LargeChartTimeframeChanged();
+            }
+        }
+
+        public static readonly DependencyProperty SelectedLargeChartTimeframeIndexProperty = DependencyProperty.Register(
+            "SelectedLargeChartTimeframeIndex", typeof(int), typeof(DoubleChartViewModel), new PropertyMetadata(default(int)));
+
+        public int SelectedLargeChartTimeframeIndex
+        {
+            get => (int) GetValue(SelectedLargeChartTimeframeIndexProperty);
+            set
+            {
+                _dispatcher.Invoke(() =>
+                {
+                    SetValue(SelectedLargeChartTimeframeIndexProperty, value);
+                    if (LargeChartTimeframe != LargeChartTimeframeOptions[value])
+                    {
+                        LargeChartTimeframe = LargeChartTimeframeOptions[value];
+                    }
+                });
             }
         }
 
@@ -66,11 +96,6 @@ namespace TraderTools.Core.UI.ViewModels
 
         protected virtual void LargeChartTimeframeChanged()
         {
-        }
-        
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
         private void RemoveSelectedLine()
@@ -114,6 +139,7 @@ namespace TraderTools.Core.UI.ViewModels
         protected void ViewCandles(string market, Timeframe smallChartTimeframe, List<Candle> smallChartCandles,
             Timeframe largeChartTimeframe, List<Candle> largeChartCandles)
         {
+            LargeChartTimeframe = largeChartTimeframe;
             ChartHelper.SetChartViewModelPriceData(largeChartCandles, ChartViewModel, largeChartTimeframe);
 
             if (SelectedMainIndicatorsIndex == (int)MainIndicators.EMA8_EMA25_EMA50)

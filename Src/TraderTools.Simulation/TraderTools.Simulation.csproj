@@ -52,19 +52,6 @@
     <Reference Include="Keras">
       <HintPath>..\..\..\..\SrcHallupaKeras.NET\Keras\bin\Release\netstandard2.0\Keras.dll</HintPath>
     </Reference>
-    <Reference Include="log4net, Version=2.0.8.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
-      <HintPath>..\..\..\Src\DataGenerator\packages\log4net.2.0.8\lib\net45-full\log4net.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\..\..\Src\DataGenerator\packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="Numpy.Bare, Version=3.7.1.4, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\..\Src\DataGenerator\packages\Numpy.Bare.3.6.1.10\lib\netstandard2.0\Numpy.Bare.dll</HintPath>
-    </Reference>
-    <Reference Include="Python.Runtime, Version=3.6.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\..\Src\DataGenerator\packages\Python.Runtime.NETStandard.3.6.1\lib\netstandard2.0\Python.Runtime.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
@@ -115,7 +102,18 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <None Include="app.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="log4net">
+      <Version>2.0.8</Version>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>12.0.3</Version>
+    </PackageReference>
+    <PackageReference Include="Numpy.Bare">
+      <Version>3.6.1.10</Version>
+    </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

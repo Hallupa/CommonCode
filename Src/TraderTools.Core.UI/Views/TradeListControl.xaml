@@ -171,8 +171,8 @@
                         </Style>
                     </DataGridTextColumn.CellStyle>
                 </DataGridTextColumn>
-                
-                <DataGridTemplateColumn Header="Strategies" Width="350" IsReadOnly="False"
+
+                <DataGridTemplateColumn Header="Strategies" Width="350" IsReadOnly="False" CanUserSort="True" SortMemberPath="Strategies"
                                         Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.Strategies}, Mode=OneWay}">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>

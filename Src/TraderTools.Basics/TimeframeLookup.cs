@@ -40,16 +40,18 @@ namespace TraderTools.Basics
                     return 1;
                 case Timeframe.M15:
                     return 2;
-                case Timeframe.H1:
+                case Timeframe.M30:
                     return 3;
-                case Timeframe.H2:
+                case Timeframe.H1:
                     return 4;
-                case Timeframe.H4:
+                case Timeframe.H2:
                     return 5;
-                case Timeframe.H8:
+                case Timeframe.H4:
                     return 6;
-                case Timeframe.D1:
+                case Timeframe.H8:
                     return 7;
+                case Timeframe.D1:
+                    return 8;
             }
 
             throw new ApplicationException($"TimeframeLookup - {timeframe} not supported");

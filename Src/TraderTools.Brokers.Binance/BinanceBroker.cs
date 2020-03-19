@@ -155,7 +155,7 @@ namespace TraderTools.Brokers.Binance
                     }
                 }
 
-                var existingCandleLookup = new Dictionary<long, ICandle>();
+                var existingCandleLookup = new Dictionary<long, Candle>();
                 candles.ForEach(x => existingCandleLookup[x.OpenTimeTicks] = x);
 
                 foreach (var candle in newCandles.OrderBy(x => x.OpenTimeTicks))
@@ -223,7 +223,7 @@ namespace TraderTools.Brokers.Binance
             }
 
             var symbols = info.Data.Symbols.ToList();
-            var trades = new List<TradeDetails>();
+            var trades = new List<Trade>();
 
             var producerConsumer = new ProducerConsumer<BinanceSymbol>(1, symbol =>
             {

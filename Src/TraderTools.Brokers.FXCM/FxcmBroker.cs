@@ -25,6 +25,7 @@ namespace TraderTools.Brokers.FXCM
         private Random _rnd;
         private string _user;
         private string _password;
+        private string _connection;
 
         public FxcmBroker()
         {
@@ -70,10 +71,11 @@ namespace TraderTools.Brokers.FXCM
             throw new NotImplementedException();
         }
 
-        public void SetUsernamePassword(string user, string password)
+        public void SetUsernamePassword(string user, string password, string connection)
         {
             _user = user;
             _password = password;
+            _connection = connection;
         }
 
         public void Connect()
@@ -383,6 +385,18 @@ namespace TraderTools.Brokers.FXCM
                         addedOrUpdatedOpenTrade = true;
                     }
 
+                    if (trade.CloseReason != null)
+                    {
+                        trade.CloseReason = null;
+                        addedOrUpdatedOpenTrade = true;
+                    }
+
+                    if (trade.CloseDateTime != null)
+                    {
+                        trade.CloseDateTime = null;
+                        addedOrUpdatedOpenTrade = true;
+                    }
+
                     if (trade.TradeDirection != (tradeRow.BuySell == "S" ? TradeDirection.Short : TradeDirection.Long))
                     {
                         trade.TradeDirection = tradeRow.BuySell == "S" ? TradeDirection.Short : TradeDirection.Long;
@@ -624,11 +638,10 @@ namespace TraderTools.Brokers.FXCM
         private string[] GetReport()
         {
             var url = "https://fxpa2.fxcorporate.com/fxpa/getreport.app/";
-            var connection = "GBREAL";
             var account = _user;
             var report = "REPORT_NAME_CUSTOMER_ACCOUNT_STATEMENT";
             var startDate = "1/1/2013";
-            var endDate = DateTime.UtcNow.ToString("m/d/yyyy");
+            var endDate = DateTime.UtcNow.ToString("M/d/yyyy");
             var outputFormat = "csv-web";
             var locale = "enu";
             var extra = "&timeformat=UTC";
@@ -636,7 +649,7 @@ namespace TraderTools.Brokers.FXCM
             ReportServer server = new ReportServer();
             string[] lines;
 
-            var reader = server.GetReport(url, connection, report, _user, _password, account, locale, startDate, endDate, outputFormat, extra);
+            var reader = server.GetReport(url, _connection, report, _user, _password, account, locale, startDate, endDate, outputFormat, extra);
 
             try
             {
@@ -844,12 +857,12 @@ namespace TraderTools.Brokers.FXCM
 
         public List<TickData> GetTickData(IBroker broker, string market, DateTime utcStart, DateTime utcEnd)
         {
-            GetHistoryPrices(market, "t1", Timeframe.T1, utcStart, utcEnd, out _, out var ret);
+            GetHistoryPrices(market, "t1", Timeframe.T1, utcStart, utcEnd, null, out _, out var ret);
 
             return ret;
         }
 
-        public bool UpdateCandles(List<Candle> candles, string market, Timeframe timeframe, DateTime start)
+        public bool UpdateCandles(List<Candle> candles, string market, Timeframe timeframe, DateTime start, Action<string> progressUpdate)
         {
             var to = DateTime.UtcNow;
             var updated = false;
@@ -882,11 +895,14 @@ namespace TraderTools.Brokers.FXCM
                 case Timeframe.M15:
                     interval = "m15";
                     break;
+                case Timeframe.M30:
+                    interval = "m30";
+                    break;
                 default:
                     throw new ApplicationException($"FXCM unable to update candles for interval {timeframe}");
             }
 
-            GetHistoryPrices(market, interval, timeframe, start, to, out var loadedCandles, out var _);
+            GetHistoryPrices(market, interval, timeframe, start, to, progressUpdate, out var loadedCandles, out var _);
 
 
             var existingCandleLookup = new Dictionary<long, Candle>();
@@ -991,7 +1007,7 @@ namespace TraderTools.Brokers.FXCM
         /// <param name="dtFrom"></param>
         /// <param name="dtTo"></param>
         /// <param name="responseListener"></param>
-        public void GetHistoryPrices(string instrument, string interval, Timeframe timeframe, DateTime dtFrom, DateTime dtTo, out List<Candle> candles, out List<TickData> ticks)
+        public void GetHistoryPrices(string instrument, string interval, Timeframe timeframe, DateTime dtFrom, DateTime dtTo, Action<string> progressUpdate, out List<Candle> candles, out List<TickData> ticks)
         {
             if (Session == null)
             {
@@ -1030,6 +1046,8 @@ namespace TraderTools.Brokers.FXCM
             List<(DateTime, DateTime)> fromToList = new List<(DateTime, DateTime)>();
             Log.Debug($"Getting FCXM prices for {dtFrom}-{dtTo} for {instrument} {timeframe}");
             var reversed = false;
+            var downloadedCandles = 0;
+            var progressUpdateTime = DateTime.Now;
 
             do // cause there is limit for returned candles amount
             {
@@ -1096,6 +1114,13 @@ namespace TraderTools.Brokers.FXCM
                     Log.Debug($"FCXM got {tmpCandles.Count} candles for {instrument} {timeframe} (Total {candles.Count}) {tmpTickData.Count} ticks (Total {ticks.Count} - {(ticks.Count > 0 ? ticks[ticks.Count - 1].Datetime.ToString() : string.Empty)} - {(ticks.Count > 0 ? ticks[0].Datetime.ToString() : string.Empty)})");
 
                     candles.AddRange(tmpCandles);
+                    downloadedCandles += tmpCandles.Count;
+
+                    if (DateTime.Now >= progressUpdateTime && progressUpdate != null)
+                    {
+                        progressUpdate($"Downloaded {downloadedCandles} candles");
+                        progressUpdateTime = DateTime.Now.AddSeconds(5);
+                    }
 
                     ticks.AddRange(tmpTickData);
                 }

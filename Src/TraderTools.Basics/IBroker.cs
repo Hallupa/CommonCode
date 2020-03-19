@@ -22,7 +22,7 @@ namespace TraderTools.Basics
     {
         string Name { get; }
         bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService, Action<string> updateProgressAction);
-        bool UpdateCandles(List<Candle> candles, string market, Timeframe timeframe, DateTime start);
+        bool UpdateCandles(List<Candle> candles, string market, Timeframe timeframe, DateTime start, Action<string> progressUpdate);
         void Connect();
         ConnectStatus Status { get; }
         BrokerKind Kind { get; }

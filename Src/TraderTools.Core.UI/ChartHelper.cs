@@ -457,6 +457,9 @@ namespace TraderTools.Core.UI
                 case Timeframe.M15:
                     candlesBeforeTrade = (2 * 12);
                     break;
+                case Timeframe.M30:
+                    candlesBeforeTrade = (2 * 12);
+                    break;
                 case Timeframe.H1:
                     candlesBeforeTrade = (2 * 24);
                     break;

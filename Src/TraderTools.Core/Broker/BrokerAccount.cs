@@ -186,8 +186,6 @@ namespace TraderTools.Core.Broker
                 MessageBox.Show($"Unable to update account - {ex.Message}", "Unable to update account", MessageBoxButtons.OK);
             }
 
-            updateProgressAction("Account updated");
-
             AccountLastUpdated = DateTime.UtcNow;
 
             foreach (var trade in Trades)

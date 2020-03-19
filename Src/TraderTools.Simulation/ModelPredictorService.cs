@@ -56,7 +56,7 @@ namespace TraderTools.Simulation
             ManualResetEvent wait = new ManualResetEvent(false);
             _producerConsumer.Add(() =>
             {
-                var x = np.array(np.array(xValues)).reshape(new Shape(1, xValues.Length));
+                /*var x = np.array(np.array(xValues)).reshape(new Shape(1, xValues.Length));
 
                 var y = ((ModelDetails)modelDetails).BaseModel.Predict(x)[0];
 
@@ -64,7 +64,7 @@ namespace TraderTools.Simulation
                 for (var i = 0; i < y.size; i++)
                 {
                     if ((float)y[i] > 0.9 && (yValue == -1 || (float)y[i] > (float)y[yValue])) yValue = i;
-                }
+                }*/
 
                 wait.Set();
             });

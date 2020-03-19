@@ -117,6 +117,7 @@ namespace TraderTools.Simulation
                 // Move candles forward
                 var strategyTimeframeCandleUpdated = false;
                 var strategyTimeframeCompleteCandleUpdated = false;
+                var complete = false;
                 foreach (var timeframe in strategyTimeframes)
                 {
                     var timeframeIndex = TimeframeLookup<int>.GetLookupIndex(timeframe);
@@ -124,6 +125,13 @@ namespace TraderTools.Simulation
                     var currentCandles = timeframesCurrentCandles[timeframeIndex];
                     var allCandles = timeframesAllCandles[timeframeIndex];
                     var nextTimeframeCandleIndex = currentTimeframeCandleIndex + 1;
+
+                    if (nextTimeframeCandleIndex >= allCandles.Count)
+                    {
+                        complete = true;
+                        break;
+
+                    }
 
                     if (allCandles[nextTimeframeCandleIndex].Candle.CloseTimeTicks <= m1Candle.CloseTimeTicks)
                     {
@@ -140,6 +148,11 @@ namespace TraderTools.Simulation
                         strategyTimeframeCandleUpdated = true;
                         if (newCandle.Candle.IsComplete == 1) strategyTimeframeCompleteCandleUpdated = true;
                     }
+                }
+
+                if (complete)
+                {
+                    break;
                 }
 
                 if (strategyTimeframeCompleteCandleUpdated)

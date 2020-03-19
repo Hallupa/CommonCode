@@ -172,7 +172,7 @@
 
         <GridSplitter Grid.Column="1" HorizontalAlignment="Center" Grid.RowSpan="2" VerticalAlignment="Stretch" Width="7" />
 
-        <ComboBox Grid.Row="0" Grid.Column="2" FontWeight="Bold" SelectedItem="{Binding LargeChartTimeframe}" ItemsSource="{Binding LargeChartTimeframeOptions}"/>
+        <ComboBox Grid.Row="0" Grid.Column="2" FontWeight="Bold" SelectedIndex="{Binding Path=SelectedLargeChartTimeframeIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ItemsSource="{Binding Path=LargeChartTimeframeOptions}"/>
 
         <Border Grid.Row="1" Grid.Column="2" BorderBrush="DarkGray" BorderThickness="1" Margin="5" Padding="5">
             <s:SciChartGroup ItemsSource="{Binding ChartViewModel.ChartPaneViewModels}"
