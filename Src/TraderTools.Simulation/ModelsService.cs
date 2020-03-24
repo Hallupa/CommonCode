@@ -22,7 +22,7 @@ namespace TraderTools.Simulation
         Candles = 8
     }
 
-    public class ModelDataPoint
+    public class Feature
     {
         public string Label { get; set; }
         public string Market { get; set; }
@@ -65,7 +65,7 @@ namespace TraderTools.Simulation
 
         ModelDataType ModelDataType { get; }
 
-        ObservableCollection<ModelDataPoint> DataPoints { get; }
+        ObservableCollection<Feature> Features { get; }
 
         string Name { get; set; }
 
@@ -73,9 +73,9 @@ namespace TraderTools.Simulation
 
         int TotalOutputs { get; }
 
-        void AddDataPoint(ModelDataPoint point);
+        void AddFeature(Feature point);
 
-        void RemoveDataPoint(ModelDataPoint point);
+        void RemoveFeature(Feature point);
     }
 
     public class ModelDetails : IModelDetails, INotifyPropertyChanged
@@ -83,17 +83,17 @@ namespace TraderTools.Simulation
         private int _inputsCount;
         public string Name { get; set; }
 
-        public ObservableCollection<ModelDataPoint> DataPoints { get; set; } = new ObservableCollection<ModelDataPoint>();
+        public ObservableCollection<Feature> Features { get; set; } = new ObservableCollection<Feature>();
 
-        public void AddDataPoint(ModelDataPoint point)
+        public void AddFeature(Feature point)
         {
-            DataPoints.Add(point);
+            Features.Add(point);
             OnPropertyChanged("TotalOutputs");
         }
 
-        public void RemoveDataPoint(ModelDataPoint point)
+        public void RemoveFeature(Feature point)
         {
-            DataPoints.Remove(point);
+            Features.Remove(point);
             OnPropertyChanged("TotalOutputs");
         }
 
@@ -117,7 +117,7 @@ namespace TraderTools.Simulation
 
         public ModelDataType ModelDataType { get; set; }
 
-        public int TotalOutputs => DataPoints.Select(x => x.Label).Distinct().Count();
+        public int TotalOutputs => Features.Select(x => x.Label).Distinct().Count();
         public Timeframe Timeframe { get; set; }
 
         public event PropertyChangedEventHandler PropertyChanged;

@@ -1,14 +1,10 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace TraderTools.Basics
 {
-    public class TimeframeLookupBasicCandleAndIndicators : TimeframeLookup<List<CandleAndIndicators>>
-    {
-
-    }
-
     public class TimeframeLookup<T> : IEnumerable<KeyValuePair<Timeframe, T>>
     {
         private T[] _items = new T[8];
@@ -17,6 +13,20 @@ namespace TraderTools.Basics
         {
             get => _items[GetLookupIndex(timeframe)];
             set => _items[GetLookupIndex(timeframe)] = value;
+        }
+
+        public List<Timeframe> GetSetTimeframes()
+        {
+            var timeframes = new List<Timeframe>();
+            for (var i = 0; i < _items.Length; i++)
+            {
+                if (_items[i] != null)
+                {
+                    timeframes.Add(GetTimeframe(i));
+                }
+            }
+
+            return timeframes;
         }
 
         public T this[int timeframeIndex]
