@@ -178,7 +178,7 @@ namespace TraderTools.Core.Broker
 
             try
             {
-                broker.UpdateAccount(this, candleService, marketsService, updateProgressAction);
+                broker.UpdateAccount(this, candleService, marketsService, updateProgressAction, AccountLastUpdated);
             }
             catch (Exception ex)
             {

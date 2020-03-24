@@ -152,7 +152,8 @@ namespace TraderTools.Brokers.FXCM
             return tableManager;
         }
 
-        public bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService, Action<string> updateProgressAction)
+        public bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService,
+            IMarketDetailsService marketsService, Action<string> updateProgressAction, DateTime? lastUpdateTime)
         {
             var tableManager = GetTableManager();
 
@@ -176,7 +177,7 @@ namespace TraderTools.Brokers.FXCM
 
             // Update trades from reports API
             updateProgressAction?.Invoke("Getting report");
-            var reportLines = GetReport();
+            var reportLines = GetReport(lastUpdateTime);
             Log.Info("Getting historic trades");
             updateProgressAction?.Invoke("Getting historic trades");
             updated = GetReportTrades(account, candlesService, marketsService, reportLines) || updated;
@@ -635,12 +636,17 @@ namespace TraderTools.Brokers.FXCM
             return ret;
         }
 
-        private string[] GetReport()
+        private string[] GetReport(DateTime? lastUpdateTime)
         {
             var url = "https://fxpa2.fxcorporate.com/fxpa/getreport.app/";
             var account = _user;
             var report = "REPORT_NAME_CUSTOMER_ACCOUNT_STATEMENT";
             var startDate = "1/1/2013";
+            if (lastUpdateTime != null)
+            {
+                startDate = lastUpdateTime.Value.AddDays(-5).ToString("M/d/yyyy");
+            }
+
             var endDate = DateTime.UtcNow.ToString("M/d/yyyy");
             var outputFormat = "csv-web";
             var locale = "enu";
@@ -759,8 +765,8 @@ namespace TraderTools.Brokers.FXCM
                     case "L":
                         trade.CloseReason = TradeCloseReason.HitLimit;
                         break;
-                    case "S(t)":
-                        trade.CloseReason = TradeCloseReason.HitExpiry;
+                    case "S(t)": // Hit trailing stop
+                        trade.CloseReason = TradeCloseReason.HitStop;
                         break;
                     case "C":
                         trade.CloseReason = TradeCloseReason.ManualClose;
