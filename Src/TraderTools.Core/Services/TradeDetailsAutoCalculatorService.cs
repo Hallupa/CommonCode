@@ -19,7 +19,6 @@ namespace TraderTools.Core.Services
         [Import] private IBrokersService _brokersService;
         [Import] private IMarketDetailsService _marketsService;
 
-
         public void RemoveTrade(Trade trade)
         {
             trade.PropertyChanged -= TradeOnPropertyChanged;
@@ -80,9 +79,9 @@ namespace TraderTools.Core.Services
 
             UpdateOrderPrice(trade);
 
-            UpdateStop(trade);
+            //UpdateStop(trade);
 
-            UpdateLimit(trade);
+            //UpdateLimit(trade);
 
             // Update price per pip
             if (!options.HasFlag(CalculateOptions.ExcludePipsCalculations))
