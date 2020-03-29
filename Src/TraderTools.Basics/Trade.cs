@@ -86,7 +86,6 @@ namespace TraderTools.Basics
             if (stop != null) trade.AddStopPrice(orderDateTime, stop.Value);
             if (limit != null) trade.AddLimitPrice(orderDateTime, limit.Value);
             trade.Broker = broker;
-            tradeCalculatorService.AddTrade(trade);
             trade.OrderKind = OrderKind.EntryPrice;
 
             if (direction == Basics.TradeDirection.Long)
@@ -123,7 +122,6 @@ namespace TraderTools.Basics
             trade.Custom3 = custom3;
             trade.Custom4 = custom4;
             trade.CalculateOptions = calculateOptions;
-            tradeCalculatorService.AddTrade(trade);
             return trade;
         }
 
@@ -527,6 +525,16 @@ namespace TraderTools.Basics
             }
         }
 
+        public bool IsAnalysed
+        {
+            get => _isAnalysed;
+            set
+            {
+                _isAnalysed = value;
+                OnPropertyChanged();
+            }
+        }
+
         public decimal? LimitPrice
         {
             get => _limitPrice;
@@ -590,6 +598,7 @@ namespace TraderTools.Basics
         private decimal? _entryValue;
         private string _entryValueCurrency;
         private decimal? _riskAmount;
+        private bool _isAnalysed;
 
         public void AddStopPrice(DateTime date, decimal? price)
         {
@@ -598,6 +607,7 @@ namespace TraderTools.Basics
                 return;
             }
 
+            var originalStops = StopPrices.ToList();
             if (StopPrices.Count > 0 && StopPrices.Last().Date == date)
             {
                 StopPrices.RemoveAt(StopPrices.Count - 1);
@@ -609,8 +619,9 @@ namespace TraderTools.Basics
             TradeCalculator.UpdateStop(this);
             TradeCalculator.UpdateStopPips(this);
 
-            if (StopPrices.Count == 1)
+            if (originalStops.Count == 0 || originalStops[0].Price != StopPrices[0].Price)
             {
+                InitialStop = StopPrices[0].Price;
                 TradeCalculator.UpdateInitialStopPips(this);
             }
         }
@@ -769,9 +780,16 @@ namespace TraderTools.Basics
                     ret.Append(" ");
                 }
 
-                var stop = StopPrices.First();
-                ret.Append("Initial stop price: ");
-                ret.Append($"{stop.Date}UTC {stop.Price:0.0000} ({initialStopInPips:0}pips)");
+                if (StopPrices.Count > 0)
+                {
+                    var stop = StopPrices.First();
+                    ret.Append("Initial stop price: ");
+                    ret.Append($"{stop.Date}UTC {stop.Price:0.0000} ({initialStopInPips:0}pips)");
+                }
+                else
+                {
+                    ret.Append("Initial stop price: -");
+                }
             }
 
             if (Timeframe != null)

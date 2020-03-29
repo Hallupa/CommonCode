@@ -32,5 +32,7 @@ namespace TraderTools.Basics
             ITradeDetailsAutoCalculatorService tradeCalculateService,
             Action<string> updateProgressAction,
             UpdateOption option = UpdateOption.OnlyIfNotRecentlyUpdated);
+
+        void RecalculateTrade(Trade trade, IBrokersCandlesService candleService, IMarketDetailsService marketsService, IBroker broker);
     }
 }
