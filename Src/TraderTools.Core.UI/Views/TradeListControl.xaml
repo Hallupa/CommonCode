@@ -172,11 +172,28 @@
                     </DataGridTextColumn.CellStyle>
                 </DataGridTextColumn>
 
-                <DataGridTemplateColumn Header="Strategies" Width="350" IsReadOnly="False" CanUserSort="True" SortMemberPath="Strategies"
+                <DataGridCheckBoxColumn Header="Analysed" Width="60" Binding="{Binding IsAnalysed, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                    <DataGridCheckBoxColumn.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="IsEditing" Value="True" />
+                                </Trigger>
+                            </Style.Triggers>
+                            <Setter Property="LayoutTransform">
+                                <Setter.Value>
+                                    <ScaleTransform ScaleX="1.5" ScaleY="1.5" />
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </DataGridCheckBoxColumn.CellStyle>
+                </DataGridCheckBoxColumn>
+
+                <DataGridTemplateColumn Header="Strategies" Width="260" IsReadOnly="False" CanUserSort="True" SortMemberPath="Strategies"
                                         Visibility="{Binding Data.TradeListDisplayOptions, Source={StaticResource Proxy}, Converter={StaticResource FlagsToVis}, ConverterParameter={x:Static views:TradeListDisplayOptionsFlag.Strategies}, Mode=OneWay}">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <tokenEditor:TokenContainerControl SelectedItemsCSV="{Binding Path=Strategies, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1"/> 
+                            <tokenEditor:TokenContainerControl SelectedItemsCSV="{Binding Path=Strategies, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>

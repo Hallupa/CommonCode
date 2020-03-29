@@ -7,11 +7,13 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Hallupa.Library;
 using log4net;
 using TraderTools.Basics;
-using TraderTools.Core.Services;
+using TraderTools.Basics.Extensions;
 
 namespace TraderTools.Core.Broker
 {
@@ -29,6 +31,8 @@ namespace TraderTools.Core.Broker
     {
         #region Fields
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private readonly AutoResetEvent _saveLock = new AutoResetEvent(true);
+        private DateTime? _lastBackedUp = null;
 
         public string BrokerName { get; set; }
 
@@ -72,7 +76,6 @@ namespace TraderTools.Core.Broker
 
                 if (trade.DataVersion == 0)
                 {
-                    tradeCalculatorService.AddTrade(trade);
                     trade.DataVersion = Trade.CurrentDataVersion;
                 }
             }
@@ -102,44 +105,65 @@ namespace TraderTools.Core.Broker
 
         public void SaveAccount()
         {
+            _saveLock.WaitOne();
+            var json = JsonConvert.SerializeObject(this);
             var mainPath = Path.Combine(_dataDirectoryService.MainDirectoryWithApplicationName, "BrokerAccounts");
 
-            if (!Directory.Exists(mainPath))
+            var t = Task.Run(() =>
             {
-                Directory.CreateDirectory(mainPath);
-            }
-
-            // Rename backups
-            int maxBackups = 50;
-            for (var i = maxBackups; i >= 1; i--)
-            {
-                var accountBackupPath = Path.Combine(mainPath, $"{BrokerName}_Account_{i}.json");
-
-                if (i == maxBackups && File.Exists(accountBackupPath))
+                try
                 {
-                    File.Delete(accountBackupPath);
-                }
+                    if (!Directory.Exists(mainPath))
+                    {
+                        Directory.CreateDirectory(mainPath);
+                    }
 
-                if (i != maxBackups && File.Exists(accountBackupPath))
+                    var accountFinalPath = Path.Combine(mainPath, $"{BrokerName}_Account.json");
+
+                    if (_lastBackedUp == null || _lastBackedUp < DateTime.UtcNow.AddMinutes(-30))
+                    {
+                        // Rename backups
+                        int maxBackups = 50;
+                        for (var i = maxBackups; i >= 1; i--)
+                        {
+                            var accountBackupPath = Path.Combine(mainPath, $"{BrokerName}_Account_{i}.json");
+
+                            if (i == maxBackups && File.Exists(accountBackupPath))
+                            {
+                                File.Delete(accountBackupPath);
+                            }
+
+                            if (i != maxBackups && File.Exists(accountBackupPath))
+                            {
+                                var accountNewBackupPath = Path.Combine(mainPath, $"{BrokerName}_Account_{i + 1}.json");
+                                File.Move(accountBackupPath, accountNewBackupPath);
+                            }
+                        }
+
+                        if (File.Exists(accountFinalPath))
+                        {
+                            var accountBackupPath = Path.Combine(mainPath, $"{BrokerName}_Account_1.json");
+                            File.Move(accountFinalPath, accountBackupPath);
+                        }
+
+                        _lastBackedUp = DateTime.UtcNow;
+                    }
+
+                    var accountTmpPath = Path.Combine(mainPath, $"{BrokerName}_Account_tmp.json");
+                    File.WriteAllText(accountTmpPath, json);
+
+                    if (File.Exists(accountFinalPath)) File.Delete(accountFinalPath);
+
+                    File.Copy(accountTmpPath, accountFinalPath);
+
+                    File.Delete(accountTmpPath);
+                }
+                finally
                 {
-                    var accountNewBackupPath = Path.Combine(mainPath, $"{BrokerName}_Account_{i + 1}.json");
-                    File.Move(accountBackupPath, accountNewBackupPath);
+
+                    _saveLock.Set();
                 }
-            }
-
-            var accountFinalPath = Path.Combine(mainPath, $"{BrokerName}_Account.json");
-            if (File.Exists(accountFinalPath))
-            {
-                var accountBackupPath = Path.Combine(mainPath, $"{BrokerName}_Account_1.json");
-                File.Move(accountFinalPath, accountBackupPath);
-            }
-
-            var accountTmpPath = Path.Combine(mainPath, $"{BrokerName}_Account_tmp.json");
-            File.WriteAllText(accountTmpPath, JsonConvert.SerializeObject(this));
-
-            File.Copy(accountTmpPath, accountFinalPath);
-
-            File.Delete(accountTmpPath);
+            });
         }
 
         public void UpdateBrokerAccount(
@@ -154,6 +178,40 @@ namespace TraderTools.Core.Broker
             }
 
             UpdateBrokerAccount(broker, candleService, marketsService, tradeCalculateService, UpdateProgressAction, option);
+        }
+
+        public void RecalculateTrade(Trade trade, IBrokersCandlesService candleService, IMarketDetailsService marketsService, IBroker broker)
+        {
+            // Update price per pip
+            if (trade.EntryQuantity != null && trade.EntryDateTime != null)
+            {
+
+                trade.PricePerPip = candleService.GetGBPPerPip(marketsService, broker, trade.Market,
+                    trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
+            }
+
+            // Update risk
+            if (trade.InitialStopInPips == null || trade.PricePerPip == null)
+            {
+                trade.RiskPercentOfBalance = null;
+                trade.RiskAmount = null;
+                trade.RiskPercentOfBalance = null;
+            }
+            else
+            {
+                trade.RiskAmount = trade.PricePerPip.Value * trade.InitialStopInPips.Value;
+
+                var balance = GetBalance(trade.StartDateTime);
+                if (balance != 0.0M)
+                {
+                    var startTime = trade.OrderDateTime ?? trade.EntryDateTime;
+                    trade.RiskPercentOfBalance = (trade.RiskAmount * 100M) / GetBalance(startTime);
+                }
+                else
+                {
+                    trade.RiskPercentOfBalance = null;
+                }
+            }
         }
 
         public void UpdateBrokerAccount(
@@ -178,7 +236,12 @@ namespace TraderTools.Core.Broker
 
             try
             {
-                broker.UpdateAccount(this, candleService, marketsService, updateProgressAction);
+                broker.UpdateAccount(this, candleService, marketsService, updateProgressAction, AccountLastUpdated, out var addedOrUpdatedTrades);
+
+                foreach (var trade in addedOrUpdatedTrades)
+                {
+                    RecalculateTrade(trade, candleService, marketsService, broker);
+                }
             }
             catch (Exception ex)
             {
@@ -191,7 +254,6 @@ namespace TraderTools.Core.Broker
             foreach (var trade in Trades)
             {
                 trade.Initialise();
-                tradeCalculateService.AddTrade(trade);
             }
 
             Log.Info($"Completed updating {broker.Name} trades");
@@ -213,7 +275,6 @@ namespace TraderTools.Core.Broker
             foreach (var trade in Trades)
             {
                 trade.Initialise();
-                tradeCalculateService.AddTrade(trade);
             }
 
             Log.Info($"Completed updating {broker.Name} trades");

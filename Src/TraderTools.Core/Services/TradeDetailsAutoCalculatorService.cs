@@ -18,7 +18,6 @@ namespace TraderTools.Core.Services
         [Import] private IBrokersCandlesService _candlesService;
         [Import] private IBrokersService _brokersService;
         [Import] private IMarketDetailsService _marketsService;
-
         public void RemoveTrade(Trade trade)
         {
             trade.PropertyChanged -= TradeOnPropertyChanged;
@@ -53,6 +52,7 @@ namespace TraderTools.Core.Services
 
         public void RecalculateTrade(Trade trade)
         {
+            // TODO Remove this altogether
             var startTime = trade.OrderDateTime ?? trade.EntryDateTime;
             var broker = _brokersService.Brokers.FirstOrDefault(x => x.Name == trade.Broker);
             var options = trade.CalculateOptions;

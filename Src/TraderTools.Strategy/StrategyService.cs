@@ -177,7 +177,7 @@ namespace TraderTools.Strategy
                     Log.Error(msg);
                 }
             }
-            */
+            
             return null;
         }
 

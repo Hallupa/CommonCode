@@ -12,7 +12,6 @@ namespace TraderTools.Basics
 
     public interface ITradeDetailsAutoCalculatorService
     {
-        void AddTrade(Trade trade);
         void RemoveTrade(Trade trade);
         void RecalculateTrade(Trade trade);
     }

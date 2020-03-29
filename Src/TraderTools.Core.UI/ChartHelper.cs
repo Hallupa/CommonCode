@@ -7,7 +7,6 @@ using System.Windows.Shapes;
 using Abt.Controls.SciChart;
 using Abt.Controls.SciChart.Common.Extensions;
 using Abt.Controls.SciChart.Model.DataSeries;
-using Abt.Controls.SciChart.Numerics.CoordinateCalculators;
 using Abt.Controls.SciChart.Visuals.Annotations;
 using Abt.Controls.SciChart.Visuals.RenderableSeries;
 using TraderTools.Basics;

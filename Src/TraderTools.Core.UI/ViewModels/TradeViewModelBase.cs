@@ -236,6 +236,7 @@ namespace TraderTools.Core.UI.ViewModels
         {
             _dispatcher.BeginInvoke((Action)(() =>
             {
+                var tradeShowingOnChartChanged = TradeShowingOnChart != trade;
                 TradeShowingOnChart = trade;
 
                 if (trade == null)
@@ -243,13 +244,20 @@ namespace TraderTools.Core.UI.ViewModels
                     return;
                 }
 
-                ViewCandles(trade.Market, smallChartTimeframe, smallChartCandles, largeChartTimeframe, largeChartCandles);
+                if (tradeShowingOnChartChanged)
+                {
+                    ViewCandles(trade.Market, smallChartTimeframe, smallChartCandles, largeChartTimeframe,
+                        largeChartCandles);
 
-                ChartHelper.SetChartViewModelVisibleRange(trade, ChartViewModel, largeChartCandles,
-                    largeChartTimeframe);
+                    ChartHelper.SetChartViewModelVisibleRange(trade, ChartViewModel, largeChartCandles,
+                        largeChartTimeframe);
 
-                ChartHelper.SetChartViewModelVisibleRange(trade, ChartViewModelSmaller1, smallChartCandles,
-                    smallChartTimeframe);
+                    ChartHelper.SetChartViewModelVisibleRange(trade, ChartViewModelSmaller1, smallChartCandles,
+                        smallChartTimeframe);
+                }
+
+                ChartViewModel.ChartPaneViewModels[0].TradeAnnotations?.Clear();
+                ChartViewModelSmaller1.ChartPaneViewModels[0].TradeAnnotations?.Clear();
 
                 ChartHelper.CreateTradeAnnotations(ChartViewModel.ChartPaneViewModels[0].TradeAnnotations,
                     ChartViewModel, TradeAnnotationsToShow.All, largeChartCandles, trade);

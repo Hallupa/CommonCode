@@ -152,9 +152,11 @@ namespace TraderTools.Brokers.FXCM
             return tableManager;
         }
 
-        public bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService, Action<string> updateProgressAction)
+        public bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService,
+            IMarketDetailsService marketsService, Action<string> updateProgressAction, DateTime? lastUpdateTime, out List<Trade> addedOrUpdatedTrades)
         {
             var tableManager = GetTableManager();
+            addedOrUpdatedTrades = new List<Trade>();
 
             if (tableManager == null)
             {
@@ -164,22 +166,22 @@ namespace TraderTools.Brokers.FXCM
             // Get open trades
             Log.Info("Getting open trades");
             updateProgressAction?.Invoke("Getting open trades");
-            var updated = GetOpenTrades(account, candlesService, marketsService, tableManager, out var openTrades);
+            var updated = GetOpenTrades(account, candlesService, marketsService, tableManager, out var openTrades, addedOrUpdatedTrades);
 
             Log.Info("Getting recently closed trades");
             updateProgressAction?.Invoke("Getting recently closed trades");
-            updated = GetClosedTrades(account, candlesService, marketsService, tableManager) || updated;
+            updated = GetClosedTrades(account, candlesService, marketsService, tableManager, addedOrUpdatedTrades) || updated;
 
             Log.Info("Getting orders");
             updateProgressAction?.Invoke("Getting orders");
-            updated = GetOrders(account, candlesService, marketsService, tableManager, out var orders) || updated;
+            updated = GetOrders(account, candlesService, marketsService, tableManager, out var orders, addedOrUpdatedTrades) || updated;
 
             // Update trades from reports API
             updateProgressAction?.Invoke("Getting report");
-            var reportLines = GetReport();
+            var reportLines = GetReport(lastUpdateTime);
             Log.Info("Getting historic trades");
-            updateProgressAction?.Invoke("Getting historic trades");
-            updated = GetReportTrades(account, candlesService, marketsService, reportLines) || updated;
+            updateProgressAction?.Invoke("Getting historic trades"); 
+            updated = GetReportTrades(account, candlesService, marketsService, reportLines, addedOrUpdatedTrades) || updated;
 
             Log.Info("Getting deposits/withdrawals");
             updateProgressAction?.Invoke("Updating deposits/withdrawals");
@@ -195,11 +197,21 @@ namespace TraderTools.Brokers.FXCM
                     {
                         trade.CloseDateTime = trade.OrderExpireTime;
                         trade.CloseReason = TradeCloseReason.HitExpiry;
+
+                        if (!addedOrUpdatedTrades.Contains(trade))
+                        {
+                            addedOrUpdatedTrades.Add(trade);
+                        }
                     }
                     else
                     {
                         trade.CloseDateTime = DateTime.UtcNow;
                         trade.CloseReason = TradeCloseReason.OrderClosed;
+
+                        if (!addedOrUpdatedTrades.Contains(trade))
+                        {
+                            addedOrUpdatedTrades.Add(trade);
+                        }
                     }
                 }
             }
@@ -207,7 +219,8 @@ namespace TraderTools.Brokers.FXCM
             return updated;
         }
 
-        private bool GetClosedTrades(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService, O2GTableManager tableManager)
+        private bool GetClosedTrades(IBrokerAccount account, IBrokersCandlesService candlesService,
+            IMarketDetailsService marketsService, O2GTableManager tableManager, List<Trade> addedOrUpdatedTrades)
         {
             O2GTableIterator iterator;
             var openTrades = tableManager.getTable(O2GTableType.ClosedTrades);
@@ -241,6 +254,7 @@ namespace TraderTools.Brokers.FXCM
                         marketsService, this, trade.Market, trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
 
                     addedOrUpdatedOpenTrade = true;
+                    if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                 }
                 else
                 {
@@ -248,18 +262,21 @@ namespace TraderTools.Brokers.FXCM
                     {
                         trade.EntryDateTime = DateTime.SpecifyKind(tradeRow.OpenTime, DateTimeKind.Utc);
                         addedOrUpdatedOpenTrade = true;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                     }
 
                     if (trade.CloseDateTime != DateTime.SpecifyKind(tradeRow.CloseTime, DateTimeKind.Utc))
                     {
                         trade.CloseDateTime = DateTime.SpecifyKind(tradeRow.CloseTime, DateTimeKind.Utc);
                         addedOrUpdatedOpenTrade = true;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                     }
 
                     if (trade.GrossProfitLoss != (decimal)tradeRow.GrossPL)
                     {
                         trade.GrossProfitLoss = (decimal)tradeRow.GrossPL;
                         addedOrUpdatedOpenTrade = true;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                     }
 
                     // tradeRow.NetPL is profit/loss in pips
@@ -268,18 +285,21 @@ namespace TraderTools.Brokers.FXCM
                     {
                         trade.Rollover = (decimal)tradeRow.RolloverInterest;
                         addedOrUpdatedOpenTrade = true;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                     }
 
                     if (trade.EntryPrice != (decimal)tradeRow.OpenRate)
                     {
                         trade.EntryPrice = (decimal)tradeRow.OpenRate;
                         addedOrUpdatedOpenTrade = true;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                     }
 
                     if (trade.ClosePrice != (decimal)tradeRow.CloseRate)
                     {
                         trade.ClosePrice = (decimal) tradeRow.CloseRate;
                         addedOrUpdatedOpenTrade = true;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                     }
 
                     if (trade.EntryQuantity != (decimal)tradeRow.Amount)
@@ -289,12 +309,14 @@ namespace TraderTools.Brokers.FXCM
                             marketsService, this, trade.Market, trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
 
                         addedOrUpdatedOpenTrade = true;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                     }
 
                     if (trade.TradeDirection != (tradeRow.BuySell == "S" ? TradeDirection.Short : TradeDirection.Long))
                     {
                         trade.TradeDirection = tradeRow.BuySell == "S" ? TradeDirection.Short : TradeDirection.Long;
                         addedOrUpdatedOpenTrade = true;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                     }
                 }
             }
@@ -303,7 +325,7 @@ namespace TraderTools.Brokers.FXCM
         }
 
         private bool GetOpenTrades(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService,
-            O2GTableManager tableManager, out List<Trade> openTradesFound)
+            O2GTableManager tableManager, out List<Trade> openTradesFound, List<Trade> addedOrUpdatedTrades)
         {
             O2GTableIterator iterator;
             openTradesFound = new List<Trade>();
@@ -347,6 +369,7 @@ namespace TraderTools.Brokers.FXCM
                         marketsService, this, trade.Market, trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
 
                     addedOrUpdatedOpenTrade = true;
+                    if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                 }
                 else
                 {
@@ -354,18 +377,21 @@ namespace TraderTools.Brokers.FXCM
                     {
                         trade.EntryDateTime = DateTime.SpecifyKind(tradeRow.OpenTime, DateTimeKind.Utc);
                         addedOrUpdatedOpenTrade = true;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                     }
 
                     if (trade.GrossProfitLoss != (decimal)tradeRow.GrossPL)
                     {
                         trade.GrossProfitLoss = (decimal)tradeRow.GrossPL;
                         addedOrUpdatedOpenTrade = true;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                     }
 
                     if (trade.Rollover != (decimal)tradeRow.RolloverInterest)
                     {
                         trade.Rollover = (decimal)tradeRow.RolloverInterest;
                         addedOrUpdatedOpenTrade = true;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                     }
 
                     // tradeRow.PL is profit/loss in pips
@@ -374,6 +400,7 @@ namespace TraderTools.Brokers.FXCM
                     {
                         trade.EntryPrice = (decimal)tradeRow.OpenRate;
                         addedOrUpdatedOpenTrade = true;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                     }
 
                     if (trade.EntryQuantity != (decimal)tradeRow.Amount)
@@ -383,24 +410,28 @@ namespace TraderTools.Brokers.FXCM
                             marketsService, this, trade.Market, trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
 
                         addedOrUpdatedOpenTrade = true;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                     }
 
                     if (trade.CloseReason != null)
                     {
                         trade.CloseReason = null;
                         addedOrUpdatedOpenTrade = true;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                     }
 
                     if (trade.CloseDateTime != null)
                     {
                         trade.CloseDateTime = null;
                         addedOrUpdatedOpenTrade = true;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                     }
 
                     if (trade.TradeDirection != (tradeRow.BuySell == "S" ? TradeDirection.Short : TradeDirection.Long))
                     {
                         trade.TradeDirection = tradeRow.BuySell == "S" ? TradeDirection.Short : TradeDirection.Long;
                         addedOrUpdatedOpenTrade = true;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                     }
 
                     if (!tradeRow.Limit.Equals(0))
@@ -409,6 +440,7 @@ namespace TraderTools.Brokers.FXCM
                         {
                             trade.AddLimitPrice(DateTime.UtcNow, (decimal)tradeRow.Limit);
                             addedOrUpdatedOpenTrade = true;
+                            if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                         }
                     }
                     else
@@ -417,6 +449,7 @@ namespace TraderTools.Brokers.FXCM
                         {
                             trade.AddLimitPrice(DateTime.UtcNow, null);
                             addedOrUpdatedOpenTrade = true;
+                            if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                         }
                     }
 
@@ -426,6 +459,7 @@ namespace TraderTools.Brokers.FXCM
                         {
                             trade.AddStopPrice(DateTime.UtcNow, (decimal)tradeRow.Stop);
                             addedOrUpdatedOpenTrade = true;
+                            if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                         }
                     }
                     else
@@ -434,6 +468,7 @@ namespace TraderTools.Brokers.FXCM
                         {
                             trade.AddStopPrice(DateTime.UtcNow, null);
                             addedOrUpdatedOpenTrade = true;
+                            if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                         }
                     }
                 }
@@ -445,7 +480,7 @@ namespace TraderTools.Brokers.FXCM
         }
 
         private bool GetOrders(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService,
-            O2GTableManager tableManager, out List<Trade> orders)
+            O2GTableManager tableManager, out List<Trade> orders, List<Trade> addedOrUpdatedTrades)
         {
             orders = new List<Trade>();
             var iterator = new O2GTableIterator();
@@ -527,6 +562,7 @@ namespace TraderTools.Brokers.FXCM
                     trade.TradeDirection = buySell == "B" ? TradeDirection.Long : TradeDirection.Short;
                     trade.OrderAmount = amount;
                     addedOrUpdatedOpenTrade = true;
+                    if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                 }
                 else
                 {
@@ -534,6 +570,7 @@ namespace TraderTools.Brokers.FXCM
                     {
                         trade.AddOrderPrice(time, (decimal)orderPrice);
                         addedOrUpdatedOpenTrade = true;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                     }
 
                     if (trade.OrderAmount != orderOrder.Amount)
@@ -542,30 +579,35 @@ namespace TraderTools.Brokers.FXCM
                         trade.PricePerPip =
                             candlesService.GetGBPPerPip(marketsService, this, trade.Market, trade.OrderAmount.Value, trade.OrderDateTime.Value, true);
                         addedOrUpdatedOpenTrade = true;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                     }
 
                     if (trade.OrderDateTime != time)
                     {
                         trade.OrderDateTime = time;
                         addedOrUpdatedOpenTrade = true;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                     }
 
                     if (trade.OrderExpireTime != actualExpiry)
                     {
                         trade.OrderExpireTime = actualExpiry;
                         addedOrUpdatedOpenTrade = true;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                     }
 
                     if (stop != null && trade.StopPrice != stop)
                     {
                         trade.AddStopPrice(time, stop);
                         addedOrUpdatedOpenTrade = true;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                     }
 
                     if (limit != null && trade.LimitPrice != limit)
                     {
                         trade.AddLimitPrice(time, limit);
                         addedOrUpdatedOpenTrade = true;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                     }
                 }
 
@@ -573,11 +615,21 @@ namespace TraderTools.Brokers.FXCM
                 {
                     if (orderOrder.Type == "SE")
                     {
-                        trade.OrderType = OrderType.StopEntry;
+                        if (trade.OrderType != OrderType.StopEntry)
+                        {
+                            trade.OrderType = OrderType.StopEntry;
+                            addedOrUpdatedOpenTrade = true;
+                            if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
+                        }
                     }
                     else if (orderOrder.Type == "LE")
                     {
-                        trade.OrderType = OrderType.LimitEntry;
+                        if (trade.OrderType != OrderType.LimitEntry)
+                        {
+                            trade.OrderType = OrderType.LimitEntry;
+                            if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
+                            addedOrUpdatedOpenTrade = true;
+                        }
                     }
                 }
 
@@ -635,12 +687,17 @@ namespace TraderTools.Brokers.FXCM
             return ret;
         }
 
-        private string[] GetReport()
+        private string[] GetReport(DateTime? lastUpdateTime)
         {
             var url = "https://fxpa2.fxcorporate.com/fxpa/getreport.app/";
             var account = _user;
             var report = "REPORT_NAME_CUSTOMER_ACCOUNT_STATEMENT";
             var startDate = "1/1/2013";
+            if (lastUpdateTime != null)
+            {
+                startDate = lastUpdateTime.Value.AddDays(-5).ToString("M/d/yyyy");
+            }
+
             var endDate = DateTime.UtcNow.ToString("M/d/yyyy");
             var outputFormat = "csv-web";
             var locale = "enu";
@@ -680,7 +737,8 @@ namespace TraderTools.Brokers.FXCM
             return lines;
         }
 
-        private bool GetReportTrades(IBrokerAccount brokerAccount, IBrokersCandlesService candlesService, IMarketDetailsService marketsService, string[] lines)
+        private bool GetReportTrades(IBrokerAccount brokerAccount,
+            IBrokersCandlesService candlesService, IMarketDetailsService marketsService, string[] lines, List<Trade> addedOrUpdatedTrades)
         {
             var updated = false;
 
@@ -748,9 +806,6 @@ namespace TraderTools.Brokers.FXCM
                     Rollover = decimal.Parse(rollover2)
                 };
 
-                trade.PricePerPip = candlesService.GetGBPPerPip(
-                    marketsService, this, trade.Market, trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
-
                 switch (condition2)
                 {
                     case "S":
@@ -759,10 +814,13 @@ namespace TraderTools.Brokers.FXCM
                     case "L":
                         trade.CloseReason = TradeCloseReason.HitLimit;
                         break;
-                    case "S(t)":
-                        trade.CloseReason = TradeCloseReason.HitExpiry;
+                    case "S(t)": // Hit trailing stop
+                        trade.CloseReason = TradeCloseReason.HitStop;
                         break;
                     case "C":
+                        trade.CloseReason = TradeCloseReason.ManualClose;
+                        break;
+                    case "Mkt": // Not sure what Mkt means? Some trades show as 'Mkt Mkt'
                         trade.CloseReason = TradeCloseReason.ManualClose;
                         break;
                     default:
@@ -772,7 +830,11 @@ namespace TraderTools.Brokers.FXCM
 
                 if (existingTrade == null)
                 {
+                    trade.PricePerPip = candlesService.GetGBPPerPip(
+                        marketsService, this, trade.Market, trade.EntryQuantity.Value, trade.EntryDateTime.Value, true);
                     brokerAccount.Trades.Add(trade);
+
+                    if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                     updated = true;
                 }
                 else
@@ -780,60 +842,70 @@ namespace TraderTools.Brokers.FXCM
                     if (trade.EntryQuantity != existingTrade.EntryQuantity)
                     {
                         existingTrade.EntryQuantity = trade.EntryQuantity;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                         updated = true;
                     }
 
                     if (trade.EntryDateTime != existingTrade.EntryDateTime)
                     {
                         existingTrade.EntryDateTime = trade.EntryDateTime;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                         updated = true;
                     }
 
                     if (trade.EntryPrice != existingTrade.EntryPrice)
                     {
                         existingTrade.EntryPrice = trade.EntryPrice;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                         updated = true;
                     }
 
                     if (trade.ClosePrice != existingTrade.ClosePrice)
                     {
                         existingTrade.ClosePrice = trade.ClosePrice;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                         updated = true;
                     }
 
                     if (trade.CloseDateTime != existingTrade.CloseDateTime)
                     {
                         existingTrade.CloseDateTime = trade.CloseDateTime;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                         updated = true;
                     }
 
                     if (trade.OrderKind != existingTrade.OrderKind)
                     {
                         existingTrade.OrderKind = trade.OrderKind;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                         updated = true;
                     }
 
                     if (trade.CloseReason != existingTrade.CloseReason)
                     {
                         existingTrade.CloseReason = trade.CloseReason;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                         updated = true;
                     }
 
                     if (trade.GrossProfitLoss != existingTrade.GrossProfitLoss)
                     {
                         existingTrade.GrossProfitLoss = trade.GrossProfitLoss;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                         updated = true;
                     }
 
                     if (trade.NetProfitLoss != existingTrade.NetProfitLoss)
                     {
                         existingTrade.NetProfitLoss = trade.NetProfitLoss;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                         updated = true;
                     }
 
                     if (trade.Rollover != existingTrade.Rollover)
                     {
                         existingTrade.Rollover = trade.Rollover;
+                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                         updated = true;
                     }
                 }
