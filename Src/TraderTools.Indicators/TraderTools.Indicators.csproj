@@ -81,6 +81,7 @@
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="AverageTrueRange.cs" />
+    <Compile Include="AwesomeOscillator.cs" />
     <Compile Include="CommodityChannelIndex.cs" />
     <Compile Include="ExponentialMovingAverage.cs" />
     <Compile Include="LengthIndicator.cs" />
