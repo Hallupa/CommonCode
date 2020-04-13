@@ -54,7 +54,7 @@ namespace TraderTools.Simulation
         public abstract List<Trade> CreateNewTrades(
             MarketDetails market, TimeframeLookup<List<CandleAndIndicators>> candlesLookup, List<Trade> existingTrades, ITradeDetailsAutoCalculatorService calculatorService, DateTime currentTime);
 
-        protected Trade CreateMarketOrder(string market, TradeDirection direction, Candle currentCandle, decimal stop, decimal riskPercent, decimal? limit = null)
+        protected Trade CreateMarketOrder(string market, TradeDirection direction, Candle currentCandle, decimal stop, decimal riskPercent, decimal? limit = null, string comments = "")
         {
             int? lotSize = 1000;
             var entryPrice = direction == TradeDirection.Long ? currentCandle.CloseAsk : currentCandle.CloseBid;
@@ -68,7 +68,7 @@ namespace TraderTools.Simulation
 
             var trade = Trade.CreateMarketEntry(
                 "FXCM", (decimal)entryPrice, currentCandle.CloseTime(), direction, lotSize.Value, market, stop, limit,
-                _calculator);
+                _calculator, comments: comments);
 
             return trade;
         }

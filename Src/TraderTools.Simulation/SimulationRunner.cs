@@ -373,6 +373,42 @@ namespace TraderTools.Simulation
                         }
                     }
                 }
+                else
+                {
+                    // Market trade
+                    // decimal latestBidPrice, decimal latestAskPrice,
+                    if (t.LimitPrice != null)
+                    {
+                        if (t.TradeDirection == TradeDirection.Long && t.LimitPrice < t.EntryPrice)
+                        {
+                            Log.Error($"Long trade for {t.Market} has limit price below current price. Ignoring trade");
+                            newTrades.RemoveAt(i);
+                            removed = true;
+                        }
+                        else if (t.TradeDirection == TradeDirection.Short && t.LimitPrice > t.EntryPrice)
+                        {
+                            Log.Error($"Short trade for {t.Market} has limit price above current price. Ignoring trade");
+                            newTrades.RemoveAt(i);
+                            removed = true;
+                        }
+                    }
+
+                    if (t.StopPrices != null && !removed)
+                    {
+                        if (t.TradeDirection == TradeDirection.Long && t.StopPrice > t.EntryPrice)
+                        {
+                            Log.Error($"Long trade for {t.Market} has stop price above current price. Ignoring trade");
+                            newTrades.RemoveAt(i);
+                            removed = true;
+                        }
+                        else if (t.TradeDirection == TradeDirection.Short && t.StopPrice < t.EntryPrice)
+                        {
+                            Log.Error($"Short trade for {t.Market} has stop price below current price. Ignoring trade");
+                            newTrades.RemoveAt(i);
+                            removed = true;
+                        }
+                    }
+                }
             }
         }
 

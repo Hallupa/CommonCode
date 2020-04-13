@@ -93,7 +93,7 @@ namespace TraderTools.Strategy
 
             var a = CSharpLanguage.CreateAssemblyDefinition(
                 alteredCode,
-                "TraderTools.AI.dll",
+             //   "TraderTools.AI.dll",
                 "TraderTools.Basics.dll",
                 "TraderTools.Core.dll",
                 "TraderTools.Simulation.dll",

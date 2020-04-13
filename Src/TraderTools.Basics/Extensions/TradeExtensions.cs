@@ -1,10 +1,14 @@
 ﻿using System;
+using System.Reflection;
+using log4net;
 using TraderTools.Basics.Helpers;
 
 namespace TraderTools.Basics.Extensions
 {
     public static class TradeExtensions
     {
+        private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public static decimal GetTradeProfit(this Trade trade, DateTime dateTimeUTC, Timeframe candlesTimeframe,
             IBrokersCandlesService candlesService, MarketDetails marketDetails, IBroker broker, bool updateCandles)
         {
@@ -132,13 +136,29 @@ namespace TraderTools.Basics.Extensions
             {
                 if (trade.TradeDirection == TradeDirection.Long)
                 {
-                    trade.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal) candleAskClose, trade.OrderAmount.Value);
-                    updated = true;
+                    var entry = (decimal)candleAskClose;
+                    if (trade.StopPrice == null || trade.StopPrice.Value <= entry)
+                    {
+                        trade.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), entry, trade.OrderAmount.Value);
+                        updated = true;
+                    }
+                    else
+                    {
+                        Log.Warn($"Long trade has stop price: {trade.StopPrice.Value:0.00000} above entry price: {entry:0.00000} - ignoring trade");
+                    }
                 }
                 else
                 {
-                    trade.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), (decimal) candleBidClose, trade.OrderAmount.Value);
-                    updated = true;
+                    var entry = (decimal)candleBidClose;
+                    if (trade.StopPrice == null || trade.StopPrice.Value >= entry)
+                    {
+                        trade.SetEntry(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), entry, trade.OrderAmount.Value);
+                        updated = true;
+                    }
+                    else
+                    {
+                        Log.Warn($"Short trade has stop price: {trade.StopPrice.Value:0.00000} below entry price: {entry:0.00000} - ignoring trade");
+                    }
                 }
             }
         }

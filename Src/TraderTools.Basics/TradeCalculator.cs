@@ -49,9 +49,13 @@ namespace TraderTools.Basics
                     {
                         trade.RMultiple = (trade.ClosePrice.Value - trade.EntryPrice.Value) / oneR;
                     }
+                    else if (oneR != 0)
+                    {
+                        trade.RMultiple = trade.EntryPrice.Value != trade.ClosePrice.Value ? (trade.EntryPrice.Value - trade.ClosePrice.Value) / oneR : 0;
+                    }
                     else
                     {
-                        trade.RMultiple = (trade.EntryPrice.Value - trade.ClosePrice.Value) / oneR;
+                        trade.RMultiple = null;
                     }
                 }
             }
@@ -107,7 +111,7 @@ namespace TraderTools.Basics
 
                 if (trade.LimitPrices.Count == 1)
                 {
-                    trade.InitialStop = trade.LimitPrice;
+                    trade.InitialLimit = trade.LimitPrice;
                 }
             }
         }
@@ -120,7 +124,7 @@ namespace TraderTools.Basics
             var price = trade.EntryPrice ?? trade.OrderPrice.Value;
 
             // Update current Limit
-            if (trade.InitialLimit != null)
+            if (trade.InitialLimit != null && !string.IsNullOrEmpty(trade.Broker))
             {
                 var LimitInPips = Math.Abs(
                     _marketsService.GetPriceInPips(trade.Broker, trade.InitialLimit.Value, trade.Market) -
@@ -141,7 +145,7 @@ namespace TraderTools.Basics
             var price = trade.EntryPrice ?? trade.OrderPrice.Value;
 
             // Update current Limit
-            if (trade.LimitPrice != null)
+            if (trade.LimitPrice != null && !string.IsNullOrEmpty(trade.Broker))
             {
                 var LimitInPips = Math.Abs(
                     _marketsService.GetPriceInPips(trade.Broker, trade.LimitPrice.Value, trade.Market) -
@@ -177,7 +181,7 @@ namespace TraderTools.Basics
             var price = trade.EntryPrice ?? trade.OrderPrice.Value;
 
             // Update current stop
-            if (trade.InitialStop != null)
+            if (trade.InitialStop != null && !string.IsNullOrEmpty(trade.Broker))
             {
                 var stopInPips = Math.Abs(
                     _marketsService.GetPriceInPips(trade.Broker, trade.InitialStop.Value, trade.Market) -
@@ -198,7 +202,7 @@ namespace TraderTools.Basics
             var price = trade.EntryPrice ?? trade.OrderPrice.Value;
 
             // Update current stop
-            if (trade.StopPrice != null)
+            if (trade.StopPrice != null && !string.IsNullOrEmpty(trade.Broker))
             {
                 var stopInPips = Math.Abs(
                     _marketsService.GetPriceInPips(trade.Broker, trade.StopPrice.Value, trade.Market) -

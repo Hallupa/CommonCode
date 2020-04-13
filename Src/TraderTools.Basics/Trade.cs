@@ -381,6 +381,12 @@ namespace TraderTools.Basics
             set
             {
                 _orderPrice = value;
+
+                TradeCalculator.UpdateStopPips(this);
+                TradeCalculator.UpdateInitialStopPips(this);
+                TradeCalculator.UpdateLimitPips(this);
+                TradeCalculator.UpdateInitialLimitPips(this);
+
                 OnPropertyChanged();
                 OnPropertyChanged("Status");
             }
@@ -645,6 +651,7 @@ namespace TraderTools.Basics
 
             OrderPrices.Add(new DatePrice(date, price));
             OrderPrices = OrderPrices.OrderBy(x => x.Date).ToList();
+            OrderPrice = OrderPrices[OrderPrices.Count - 1].Price;
         }
 
         public void ClearStopPrices()
