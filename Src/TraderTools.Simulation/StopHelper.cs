@@ -61,12 +61,13 @@ namespace TraderTools.Simulation
                 return;
             }
 
+            if (trade.StopPrices.Count == 0 || trade.StopPrices[0].Price == null) return;
+
             var trailStopTimeframeCandles = candles[trailTimeframe];
             var candle = trailStopTimeframeCandles[trailStopTimeframeCandles.Count - 1];
 
             // Only update the stop once per candle
-            if (trade.StopPrices.Count > 0 && trade.StopPrices[trade.StopPrices.Count - 1].Date.AddSeconds((int)trailTimeframe).Ticks > currentTimeTicks) return;
-            if (trade.StopPrices.Count == 0 || trade.StopPrices[0].Price == null) return;
+            if (candle.Candle.IsComplete == 0) return;
             if (!candle[trailIndicator].IsFormed) return;
 
             // Get initial stop distance from indicator

@@ -381,6 +381,7 @@ namespace TraderTools.Basics
             set
             {
                 _orderPrice = value;
+                OrderPriceFloat = (float)value;
 
                 TradeCalculator.UpdateStopPips(this);
                 TradeCalculator.UpdateInitialStopPips(this);
@@ -391,6 +392,12 @@ namespace TraderTools.Basics
                 OnPropertyChanged("Status");
             }
         }
+
+        /// <summary>
+        /// Float value used for simulation
+        /// </summary>
+        [JsonIgnore]
+        public float? OrderPriceFloat { get; private set; }
 
         public List<DatePrice> OrderPrices
         {
@@ -507,9 +514,16 @@ namespace TraderTools.Basics
             set
             {
                 _stopPrice = value;
+                StopPriceFloat = (float)value;
                 OnPropertyChanged();
             }
         }
+
+        /// <summary>
+        /// Used to speed up simulations.
+        /// </summary>
+        [JsonIgnore]
+        public float? StopPriceFloat { get; private set; }
 
         public decimal? StopInPips
         {
@@ -546,10 +560,17 @@ namespace TraderTools.Basics
             get => _limitPrice;
             set
             {
-                _limitPrice = value; 
+                _limitPrice = value;
+                LimitPriceFloat = (float)value;
                 OnPropertyChanged();
             }
         }
+
+        /// <summary>
+        /// Used to speed up simulations.
+        /// </summary>
+        [JsonIgnore]
+        public float? LimitPriceFloat { get; private set; }
 
         public const int CurrentDataVersion = 1;
 

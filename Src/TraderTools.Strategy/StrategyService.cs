@@ -69,58 +69,7 @@ namespace TraderTools.Strategy
 
         public void RegisterStrategy(string code, bool notifyChanged = true)
         {
-            _classNumber++;
-
-            var namespaceRegex = new Regex(@"namespace [a-zA-Z\.\r\n ]*{");
-            var match = namespaceRegex.Match(code);
-            if (match.Success)
-            {
-                code = namespaceRegex.Replace(code, "");
-
-                var removeLastBraces = new Regex("}[ \n]*$");
-                code = removeLastBraces.Replace(code, "");
-            }
-
-            // Get class name
-            var classNameRegex = new Regex("public class ([a-zA-Z0-9]*)");
-            match = classNameRegex.Match(code);
-            var className = match.Groups[1].Captures[0].Value;
-
-            var alteredCode = code
-                .Replace($"class {className}", "class Test" + _classNumber)
-                .Replace($"public {className}", "public Test" + _classNumber)
-                .Replace($"private {className}", "public Test" + _classNumber);
-
-            var a = CSharpLanguage.CreateAssemblyDefinition(
-                alteredCode,
-             //   "TraderTools.AI.dll",
-                "TraderTools.Basics.dll",
-                "TraderTools.Core.dll",
-                "TraderTools.Simulation.dll",
-                "Hallupa.Library.dll",
-                "TraderTools.Indicators.dll",
-                "Hallupa.Library.dll", 
-                "Python.Runtime.dll",
-                "Keras.dll",
-                "Numpy.Bare.dll");
-                //"NumSharp.Core.dll",
-                //"TensorFlow.NET.dll");
-                //@"C:\Users\Oliver Wickenden\AppData\Local\Programs\Python\Python37\python37.dll"
-
-            if (a == null)
-            {
-                Log.Error("Unable to compile strategy");
-                return;
-            }
-
-            var t = a.GetType("Test" + _classNumber);
-            if (t == null)
-            {
-                Log.Error("Unable to create class 'Test'");
-                return;
-            }
-
-            var strategy = (IStrategy)Activator.CreateInstance(t);
+            var strategy = StrategyHelper.CompileStrategy(code);
             RegisterStrategy(strategy, notifyChanged);
         }
     }

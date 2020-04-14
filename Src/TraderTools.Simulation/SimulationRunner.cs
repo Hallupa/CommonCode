@@ -98,13 +98,16 @@ namespace TraderTools.Simulation
                 {
                     if (c.NewCandleFlags.HasFlag(NewCandleFlags.CompleteNonM1Candle))
                     {
-                        AddNewTrades(orders, openTrades, strategy, market, c.CurrentCandles, c.M1Candle, updateTradesStrategy, c.M1Candle.CloseTime());
+                        AddNewTrades(orders, openTrades, strategy, market, c.CurrentCandles, c.M1Candle,
+                            updateTradesStrategy, c.M1Candle.CloseTime());
                     }
 
-                    if (c.NewCandleFlags.HasFlag(NewCandleFlags.CompleteNonM1Candle) || c.NewCandleFlags.HasFlag(NewCandleFlags.IncompleteNonM1Candle))
+                    if (c.NewCandleFlags.HasFlag(NewCandleFlags.CompleteNonM1Candle) ||
+                        c.NewCandleFlags.HasFlag(NewCandleFlags.IncompleteNonM1Candle))
                     {
                         // Update open trades
-                        UpdateOpenTrades(market.Name, openTrades, c.M1Candle.CloseTimeTicks, c.CurrentCandles, parameters => updateTradesStrategy?.UpdateTrade(parameters));
+                        UpdateOpenTrades(market.Name, openTrades, c.M1Candle.CloseTimeTicks, c.CurrentCandles,
+                            parameters => updateTradesStrategy?.UpdateTrade(parameters));
                     }
 
                     // Validate and update stops/limts/orders 
@@ -119,7 +122,9 @@ namespace TraderTools.Simulation
                     // Process open trades
                     TryCloseOpenTrades(openTrades, closedTrades, c.M1Candle);
                 },
-                percent => $"StrategyRunner: {market.Name} {percent:0.00}% complete - created {orders.Count + closedTrades.Count + openTrades.Count} trades");
+                r =>
+                    $"StrategyRunner: {market.Name} Up to: {r.LatestCandleDateTime:dd-MM-yy} - {r.PercentComplete:0.00}% complete. Running for: {r.SecondsRunning}s. "
+                    + $"Created {orders.Count + closedTrades.Count + openTrades.Count} trades. {openTrades.Count} open");
             
             return orders.Select(t => t.Trade).Union(closedTrades).Union(openTrades.Select(t => t.Trade)).ToList();
         }
@@ -249,7 +254,10 @@ namespace TraderTools.Simulation
 
             if (newTrades != null && newTrades.Count > 0)
             {
-                newTrades.ForEach(t => t.Strategies = strategy.Name);
+                newTrades.ForEach(t =>
+                {
+                    if (string.IsNullOrEmpty(t.Strategies)) t.Strategies = strategy.Name;
+                });
                 var latestBidPrice = (decimal)latestCandle.CloseBid;
                 var latestAskPrice = (decimal)latestCandle.CloseAsk;
 
