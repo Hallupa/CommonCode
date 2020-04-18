@@ -32,14 +32,6 @@ namespace TraderTools.Simulation
     /// </summary>
     public class SimulationRunner
     {
-        private class TradeWithStopLimitIndex
-        {
-            public Trade Trade { get; set; }
-            public int LimitIndex { get; set; } = -1;
-            public int StopIndex { get; set; } = -1;
-            public int OrderIndex { get; set; } = -1;
-        }
-
         private IBrokersCandlesService _candlesService;
         private readonly ITradeDetailsAutoCalculatorService _calculatorService;
         private readonly IMarketDetailsService _marketDetailsService;
@@ -62,7 +54,7 @@ namespace TraderTools.Simulation
 
         public List<Trade> Run(IStrategy strategy, MarketDetails market, IBroker broker,
             DateTime? earliest = null, DateTime? latest = null,
-            bool updatePrices = false, bool cacheCandles = true)
+            bool updatePrices = false, bool cacheCandles = true, Func<bool> getShouldStopFunc = null)
         {
             if (strategy == null) return null;
 
@@ -87,46 +79,53 @@ namespace TraderTools.Simulation
             var m1Candles = TimeframeLookupBasicCandleAndIndicators.GetM1Candles(
                 broker, market.Name, _candlesService, !_options.HasFlag(SimulationRunnerFlags.DoNotCacheM1Candles), updatePrices, earliest, latest);
 
-            var orders = new List<TradeWithStopLimitIndex>();
-            var openTrades = new List<TradeWithStopLimitIndex>();
-            var closedTrades = new List<Trade>();
+            var trades = new TradeWithIndexingCollection();
 
             TimeframeLookupBasicCandleAndIndicators.IterateThroughCandles(
                 timeframesAllCandles,
                 m1Candles,
-                c =>
-                {
-                    if (c.NewCandleFlags.HasFlag(NewCandleFlags.CompleteNonM1Candle))
-                    {
-                        AddNewTrades(orders, openTrades, strategy, market, c.CurrentCandles, c.M1Candle,
-                            updateTradesStrategy, c.M1Candle.CloseTime());
-                    }
-
-                    if (c.NewCandleFlags.HasFlag(NewCandleFlags.CompleteNonM1Candle) ||
-                        c.NewCandleFlags.HasFlag(NewCandleFlags.IncompleteNonM1Candle))
-                    {
-                        // Update open trades
-                        UpdateOpenTrades(market.Name, openTrades, c.M1Candle.CloseTimeTicks, c.CurrentCandles,
-                            parameters => updateTradesStrategy?.UpdateTrade(parameters));
-                    }
-
-                    // Validate and update stops/limts/orders 
-                    if (!_options.HasFlag(SimulationRunnerFlags.DoNotValidateStopsLimitsOrders))
-                    {
-                        ValidateAndUpdateStopsLimitsOrders(orders.Concat(openTrades).ToList(), c.M1Candle);
-                    }
-
-                    // Process orders
-                    FillOrders(orders, openTrades, c.M1Candle);
-
-                    // Process open trades
-                    TryCloseOpenTrades(openTrades, closedTrades, c.M1Candle);
-                },
+                c => ProcessNewCandles(strategy, market, c, trades, updateTradesStrategy),
                 r =>
-                    $"StrategyRunner: {market.Name} Up to: {r.LatestCandleDateTime:dd-MM-yy} - {r.PercentComplete:0.00}% complete. Running for: {r.SecondsRunning}s. "
-                    + $"Created {orders.Count + closedTrades.Count + openTrades.Count} trades. {openTrades.Count} open");
-            
-            return orders.Select(t => t.Trade).Union(closedTrades).Union(openTrades.Select(t => t.Trade)).ToList();
+                    $"StrategyRunner: {market.Name} Up to: {r.LatestCandleDateTime:dd-MM-yy HH:mm} - {r.PercentComplete:0.00}% complete. Running for: {r.SecondsRunning}s. "
+                    + $"Created {trades.OrderTrades.Count() + trades.ClosedTrades.Count() + trades.OpenTrades.Count()} trades. "
+                    + $"Open: {trades.OpenTrades.Count()}. Orders: {trades.OrderTrades.Count()} "
+                    + $"Closed: {trades.ClosedTrades.Count()}",
+                getShouldStopFunc);
+
+            return trades.AllTrades.Select(x => x.Trade).ToList();
+        }
+
+
+        private void ProcessNewCandles(
+            IStrategy strategy,
+            MarketDetails market,
+            (TimeframeLookup<List<CandleAndIndicators>> CurrentCandles, Candle M1Candle, NewCandleFlags NewCandleFlags) c,
+            TradeWithIndexingCollection trades, UpdateTradeStrategyAttribute updateTradesStrategy)
+        {
+            if (c.NewCandleFlags.HasFlag(NewCandleFlags.CompleteNonM1Candle))
+            {
+                AddNewTrades(trades, strategy, market, c.CurrentCandles, c.M1Candle,
+                    updateTradesStrategy, c.M1Candle.CloseTime());
+            }
+
+            if (updateTradesStrategy != null && (c.NewCandleFlags.HasFlag(NewCandleFlags.CompleteNonM1Candle) || c.NewCandleFlags.HasFlag(NewCandleFlags.IncompleteNonM1Candle))) // TODO only run when complete candle for update strategy
+            {
+                // Update open trades
+                UpdateOpenTrades(market.Name, trades, c.M1Candle.CloseTimeTicks, c.CurrentCandles,
+                    parameters => updateTradesStrategy?.UpdateTrade(parameters));
+            }
+
+            // Validate and update stops/limts/orders 
+            if (!_options.HasFlag(SimulationRunnerFlags.DoNotValidateStopsLimitsOrders))
+            {
+                ValidateAndUpdateStopsLimitsOrders(trades, c.M1Candle);
+            }
+
+            // Process orders
+            FillOrders(trades, c.M1Candle);
+
+            // Process open trades
+            TryCloseOpenTrades(trades, c.M1Candle);
         }
 
 
@@ -144,11 +143,11 @@ namespace TraderTools.Simulation
             return timeframeIndicators;
         }
 
-        private void ValidateAndUpdateStopsLimitsOrders(List<TradeWithStopLimitIndex> trades, Candle m1Candle)
+        private void ValidateAndUpdateStopsLimitsOrders(TradeWithIndexingCollection trades, Candle m1Candle)
         {
             var timeTicks = m1Candle.CloseTimeTicks;
 
-            foreach (var t in trades)
+            foreach (var t in trades.OpenTrades.Concat(trades.OrderTrades))
             {
                 for (var i = t.StopIndex + 1; i < t.Trade.StopPrices.Count; i++)
                 {
@@ -197,31 +196,27 @@ namespace TraderTools.Simulation
             }
         }
 
-        private static void TryCloseOpenTrades(List<TradeWithStopLimitIndex> openTrades, List<Trade> closedTrades, Candle m1Candle)
+        private static void TryCloseOpenTrades(TradeWithIndexingCollection trades, Candle m1Candle)
         {
-            for (var ii = openTrades.Count - 1; ii >= 0; ii--)
-            {
-                var trade = openTrades[ii];
 
+            foreach(var trade in trades.OpenTrades)
+            {
                 if (trade.Trade.EntryDateTime != null && m1Candle.OpenTimeTicks >= trade.Trade.EntryDateTime.Value.Ticks)
                 {
                     trade.Trade.SimulateTrade(m1Candle, out _);
                 }
-
-
+                
                 if (trade.Trade.CloseDateTime != null)
                 {
-                    closedTrades.Add(trade.Trade);
-                    openTrades.RemoveAt(ii);
+                    trades.MoveOpenToClose(trade);
                 }
             }
         }
 
-        private static void FillOrders(List<TradeWithStopLimitIndex> orders, List<TradeWithStopLimitIndex> openTrades, Candle m1Candle)
+        private static void FillOrders(TradeWithIndexingCollection trades, Candle m1Candle)
         {
-            for (var ii = 0; ii < orders.Count; ii++)
+            foreach(var order in trades.OrderTrades)
             {
-                var order = orders[ii];
                 var candleCloseTimeTicks = m1Candle.CloseTimeTicks;
 
                 if (order.Trade.OrderDateTime != null && candleCloseTimeTicks < order.Trade.OrderDateTime.Value.Ticks)
@@ -229,29 +224,27 @@ namespace TraderTools.Simulation
                     break;
                 }
 
-                orders[ii].Trade.SimulateTrade(m1Candle, out _);
+                order.Trade.SimulateTrade(m1Candle, out _);
 
-                if (orders[ii].Trade.EntryDateTime != null)
+
+                if (order.Trade.EntryDateTime != null)
                 {
-                    openTrades.Add(orders[ii]);
-                    orders.RemoveAt(ii);
-                    ii--;
+                    trades.MoveOrderToOpen(order);
                 }
-                else if (orders[ii].Trade.CloseDateTime != null)
+                else if (order.Trade.CloseDateTime != null)
                 {
-                    orders.RemoveAt(ii);
-                    ii--;
+                    trades.MoveOrderToClosed(order);
                 }
             }
         }
 
-
-        private void AddNewTrades(List<TradeWithStopLimitIndex> ordersList, List<TradeWithStopLimitIndex> openTrades, IStrategy strategy, MarketDetails market,
+        private void AddNewTrades(TradeWithIndexingCollection trades,
+            IStrategy strategy, MarketDetails market,
             TimeframeLookup<List<CandleAndIndicators>> timeframeCurrentCandles,
             Candle latestCandle, UpdateTradeStrategyAttribute updateTradeStrategy, DateTime currentTime)
         {
-            var newTrades = strategy.CreateNewTrades(market, timeframeCurrentCandles, ordersList.Concat(openTrades).Select(t => t.Trade).ToList(), _calculatorService, currentTime);
-
+            var newTrades = strategy.CreateNewTrades(market, timeframeCurrentCandles, trades.OpenTrades.Concat(trades.OrderTrades).Select(x => x.Trade), _calculatorService, currentTime);
+            
             if (newTrades != null && newTrades.Count > 0)
             {
                 newTrades.ForEach(t =>
@@ -265,27 +258,31 @@ namespace TraderTools.Simulation
                 {
                     if (trade.TradeDirection == TradeDirection.Long)
                     {
-                        trade.OrderType = (float)trade.OrderPrice.Value <= latestCandle.CloseAsk
+                        trade.OrderType = trade.OrderPriceFloat <= latestCandle.CloseAsk
                             ? OrderType.LimitEntry
                             : OrderType.StopEntry;
                     }
                     else
                     {
-                        trade.OrderType = (float)trade.OrderPrice.Value <= latestCandle.CloseBid
+                        trade.OrderType = trade.OrderPriceFloat <= latestCandle.CloseBid
                             ? OrderType.StopEntry
                             : OrderType.LimitEntry;
                     }
                 }
 
-                if (updateTradeStrategy != null)
-                {
-                    newTrades.ForEach(t => t.Custom1 = updateTradeStrategy.GetHashCode());
-                }
-
                 RemoveInvalidTrades(newTrades, latestBidPrice, latestAskPrice, _marketDetailsService);
 
-                ordersList.AddRange(newTrades.Where(t => t.EntryDateTime == null && t.OrderDateTime != null).Select(t => new TradeWithStopLimitIndex { Trade = t }));
-                openTrades.AddRange(newTrades.Where(t => t.EntryDateTime != null).Select(t => new TradeWithStopLimitIndex { Trade = t }));
+                foreach(var t in newTrades)
+                {
+                    if (t.EntryDateTime == null && t.OrderDateTime != null)
+                    {
+                        trades.AddOrderTrade(t);
+                    }
+                    else if (t.EntryDateTime != null)
+                    {
+                        trades.AddOpenTrade(t);
+                    }
+                }
             }
         }
 
@@ -420,18 +417,17 @@ namespace TraderTools.Simulation
             }
         }
 
-        private void UpdateOpenTrades(string market, List<TradeWithStopLimitIndex> openTrades,
+        private void UpdateOpenTrades(string market, TradeWithIndexingCollection trades,
             long timeTicks,
             TimeframeLookup<List<CandleAndIndicators>> timeframesCurrentCandles, Action<UpdateTradeParameters> updateOpenTradesAction)
         {
-            if (openTrades.Count == 0 || updateOpenTradesAction == null)
+            if (updateOpenTradesAction == null)
             {
                 return;
             }
 
-            for (var i = openTrades.Count - 1; i >= 0; i--)
+            foreach(var openTrade in trades.OpenTrades)
             {
-                var openTrade = openTrades[i];
                 updateOpenTradesAction(new UpdateTradeParameters
                 {
                     Market = market,

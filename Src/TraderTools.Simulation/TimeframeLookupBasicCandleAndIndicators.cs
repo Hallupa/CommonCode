@@ -270,7 +270,8 @@ namespace TraderTools.Simulation
             TimeframeLookupBasicCandleAndIndicators timeframesAllCandles,
             List<Candle> m1Candles,
             Action<(TimeframeLookup<List<CandleAndIndicators>> CurrentCandles, Candle M1Candle, NewCandleFlags NewCandleFlags)> processNewCandleAction,
-            Func<(DateTime LatestCandleDateTime, int SecondsRunning, double PercentComplete), string> getLogFunc)
+            Func<(DateTime LatestCandleDateTime, int SecondsRunning, double PercentComplete), string> getLogFunc,
+            Func<bool> getShouldStopFunc)
         {
             var timeframes = timeframesAllCandles.GetSetTimeframes();
             var timeframeCandleIndexes = new TimeframeLookup<int>();
@@ -293,6 +294,8 @@ namespace TraderTools.Simulation
             for (var i = 0; i < m1Candles.Count; i++)
             {
                 var m1Candle = m1Candles[i];
+
+                if (getShouldStopFunc != null && getShouldStopFunc()) break;
 
                 // Move candles forward
                 var timeframeCandleUpdated = false;

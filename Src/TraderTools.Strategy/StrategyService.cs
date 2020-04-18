@@ -93,8 +93,7 @@ namespace TraderTools.Strategy
                 MetadataReference.CreateFromFile(Path.Combine(netDirectory, "System.Net.Http.dll")),
                 MetadataReference.CreateFromFile(Path.Combine(netDirectory, "System.Xml.dll")),
                 MetadataReference.CreateFromFile(Path.Combine(netDirectory, "System.Core.dll")),
-                MetadataReference.CreateFromFile( Path.Combine(netDirectory, "Facades", "netstandard.dll")),
-                MetadataReference.CreateFromFile(@"System.Reactive.dll")
+                MetadataReference.CreateFromFile( Path.Combine(netDirectory, "Facades", "netstandard.dll"))
             };
 
             metadataReferences.AddRange(references.Select(r => MetadataReference.CreateFromFile(r)));
