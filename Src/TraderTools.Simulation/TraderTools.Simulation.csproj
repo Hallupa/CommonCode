@@ -77,7 +77,8 @@
     <Compile Include="StopTrailIndicatorAttribute.cs" />
     <Compile Include="StrategyBase.cs" />
     <Compile Include="TimeframeLookupBasicCandleAndIndicators.cs" />
-    <Compile Include="TradeDetailsKey.cs" />
+    <Compile Include="TradeWithIndexing.cs" />
+    <Compile Include="TradeWithIndexingCollection.cs" />
     <Compile Include="UpdateTradeStrategyAttribute.cs" />
   </ItemGroup>
   <ItemGroup>

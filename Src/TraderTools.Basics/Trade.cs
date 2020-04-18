@@ -102,8 +102,7 @@ namespace TraderTools.Basics
         public static Trade CreateMarketEntry(string broker, decimal entryPrice, DateTime entryTime,
             TradeDirection direction, decimal amount, string market,
             decimal? stop, decimal? limit, ITradeDetailsAutoCalculatorService tradeCalculatorService,
-            Timeframe? timeframe = null, string strategies = null, string comments = null, int custom1 = 0,
-            int custom2 = 0, int custom3 = 0, int custom4 = 0, bool alert = false, CalculateOptions calculateOptions = CalculateOptions.Default)
+            Timeframe? timeframe = null, string strategies = null, string comments = null, bool alert = false, CalculateOptions calculateOptions = CalculateOptions.Default)
         {
             var trade = new Trade { Broker = broker };
             if (stop != null) trade.AddStopPrice(entryTime, stop.Value);
@@ -117,10 +116,6 @@ namespace TraderTools.Basics
             trade.Alert = alert;
             trade.Comments = comments;
             trade.Strategies = strategies;
-            trade.Custom1 = custom1;
-            trade.Custom2 = custom2;
-            trade.Custom3 = custom3;
-            trade.Custom4 = custom4;
             trade.CalculateOptions = calculateOptions;
             return trade;
         }
@@ -294,19 +289,8 @@ namespace TraderTools.Basics
         public string BaseAsset { get; set; }
         
         public bool Alert { get; set; }
-        
-        public int? Custom1 { get; set; }
-        
-        public int? Custom2 { get; set; }
-        
-        public int? Custom3 { get; set; }
-        
-        public int? Custom4 { get; set; }
-        
-        public int? Custom5 { get; set; }
 
         public string CustomText1 { get; set; }
-
 
         public Timeframe? Timeframe
         {
@@ -402,7 +386,7 @@ namespace TraderTools.Basics
         public List<DatePrice> OrderPrices
         {
             get => _orderPrices;
-            set
+            private set
             {
                 _orderPrices = value;
                 OnPropertyChanged();
@@ -424,7 +408,7 @@ namespace TraderTools.Basics
         public List<DatePrice> StopPrices
         {
             get => _stopPrices;
-            set
+            private set
             {
                 _stopPrices = value; 
                 OnPropertyChanged();
@@ -434,7 +418,7 @@ namespace TraderTools.Basics
         public List<DatePrice> LimitPrices
         {
             get => _limitPrices;
-            set
+            private set
             {
                 _limitPrices = value; 
                 OnPropertyChanged();
@@ -641,7 +625,11 @@ namespace TraderTools.Basics
             }
 
             StopPrices.Add(new DatePrice(date, price));
-            StopPrices = StopPrices.OrderBy(x => x.Date).ToList();
+
+            if (StopPrices.Count > 1)
+            {
+                StopPrices = StopPrices.OrderBy(x => x.Date).ToList();
+            }
 
             TradeCalculator.UpdateStop(this);
             TradeCalculator.UpdateStopPips(this);
@@ -671,7 +659,12 @@ namespace TraderTools.Basics
             }
 
             OrderPrices.Add(new DatePrice(date, price));
-            OrderPrices = OrderPrices.OrderBy(x => x.Date).ToList();
+
+            if (OrderPrices.Count > 1)
+            {
+                OrderPrices = OrderPrices.OrderBy(x => x.Date).ToList();
+            }
+
             OrderPrice = OrderPrices[OrderPrices.Count - 1].Price;
         }
 
@@ -705,7 +698,11 @@ namespace TraderTools.Basics
             }
 
             LimitPrices.Add(new DatePrice(date, price));
-            LimitPrices = LimitPrices.OrderBy(x => x.Date).ToList();
+
+            if (LimitPrices.Count > 1)
+            {
+                LimitPrices = LimitPrices.OrderBy(x => x.Date).ToList();
+            }
 
             TradeCalculator.UpdateLimit(this);
             TradeCalculator.UpdateLimitPips(this);

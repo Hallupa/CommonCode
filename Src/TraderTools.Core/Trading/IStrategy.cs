@@ -11,7 +11,7 @@ namespace TraderTools.Core.Trading
         List<Trade> CreateNewTrades(
             MarketDetails market,
             TimeframeLookup<List<CandleAndIndicators>> candlesLookup,
-            List<Trade> existingTrades,
+            IEnumerable<Trade> existingTrades,
             ITradeDetailsAutoCalculatorService calculatorService,
             DateTime currentTime);
     }

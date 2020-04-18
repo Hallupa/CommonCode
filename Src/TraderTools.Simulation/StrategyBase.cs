@@ -52,7 +52,7 @@ namespace TraderTools.Simulation
         }
 
         public abstract List<Trade> CreateNewTrades(
-            MarketDetails market, TimeframeLookup<List<CandleAndIndicators>> candlesLookup, List<Trade> existingTrades, ITradeDetailsAutoCalculatorService calculatorService, DateTime currentTime);
+            MarketDetails market, TimeframeLookup<List<CandleAndIndicators>> candlesLookup, IEnumerable<Trade> existingTrades, ITradeDetailsAutoCalculatorService calculatorService, DateTime currentTime);
 
         protected Trade CreateMarketOrder(string market, TradeDirection direction, Candle currentCandle, decimal stop, decimal riskPercent, decimal? limit = null, string comments = "")
         {
