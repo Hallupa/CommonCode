@@ -18,7 +18,7 @@ namespace TraderTools.Indicators
             _smaFm = new SimpleMovingAverage(_fm);
             _smaSm = new SimpleMovingAverage(_sm);
 
-            if (_fm < _sm) throw new ApplicationException();
+            if (_fm >= _sm) throw new ApplicationException();
         }
 
         public bool IsFormed => _smaFm.IsFormed && _smaSm.IsFormed;
@@ -27,7 +27,9 @@ namespace TraderTools.Indicators
 
         public SignalAndValue Process(Candle candle)
         {
-            return new SignalAndValue(_smaFm.CurrentValue - _smaSm.CurrentValue, true);
+            var fmResult = _smaFm.Process(candle);
+            var smResult = _smaSm.Process(candle);
+            return new SignalAndValue(fmResult.Value - smResult.Value, _smaFm.IsFormed && _smaSm.IsFormed);
         }
 
         public void Reset()

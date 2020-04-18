@@ -15,6 +15,7 @@
         Range50,
         Range60,
         ATR,
-        T3CCI
+        T3CCI,
+        AO
     }
 }

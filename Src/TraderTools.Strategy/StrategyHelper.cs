@@ -43,13 +43,12 @@ namespace TraderTools.Strategy
                 "TraderTools.Simulation.dll",
                 "Hallupa.Library.dll",
                 "TraderTools.Indicators.dll",
-                "Hallupa.Library.dll",
-                "Python.Runtime.dll",
-                "Keras.dll",
-                "Numpy.Bare.dll");
+                "Hallupa.Library.dll");
+                //"Python.Runtime.dll",
+                //"Keras.dll",
+                //"Numpy.Bare.dll");
             //"NumSharp.Core.dll",
             //"TensorFlow.NET.dll");
-            //@"C:\Users\Oliver Wickenden\AppData\Local\Programs\Python\Python37\python37.dll"
 
             if (a == null)
             {

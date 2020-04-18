@@ -6,7 +6,6 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using log4net;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -93,8 +92,7 @@ namespace TraderTools.Strategy
                 MetadataReference.CreateFromFile(Path.Combine(netDirectory, "System.Net.Http.dll")),
                 MetadataReference.CreateFromFile(Path.Combine(netDirectory, "System.Xml.dll")),
                 MetadataReference.CreateFromFile(Path.Combine(netDirectory, "System.Core.dll")),
-                MetadataReference.CreateFromFile( Path.Combine(netDirectory, "Facades", "netstandard.dll")),
-                MetadataReference.CreateFromFile(@"System.Reactive.dll")
+                MetadataReference.CreateFromFile( Path.Combine(netDirectory, "Facades", "netstandard.dll"))
             };
 
             metadataReferences.AddRange(references.Select(r => MetadataReference.CreateFromFile(r)));
