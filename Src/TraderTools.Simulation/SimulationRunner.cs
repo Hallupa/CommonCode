@@ -86,10 +86,17 @@ namespace TraderTools.Simulation
                 m1Candles,
                 c => ProcessNewCandles(strategy, market, c, trades, updateTradesStrategy),
                 r =>
-                    $"StrategyRunner: {market.Name} Up to: {r.LatestCandleDateTime:dd-MM-yy HH:mm} - {r.PercentComplete:0.00}% complete. Running for: {r.SecondsRunning}s. "
-                    + $"Created {trades.OrderTrades.Count() + trades.ClosedTrades.Count() + trades.OpenTrades.Count()} trades. "
-                    + $"Open: {trades.OpenTrades.Count()}. Orders: {trades.OrderTrades.Count()} "
-                    + $"Closed: {trades.ClosedTrades.Count()}",
+                {
+                    var tradesForExpectancy = trades.ClosedTrades.Where(x => x.Trade.RMultiple != null).ToList();
+                    var expectancy = tradesForExpectancy.Any() ? tradesForExpectancy.Average(x => x.Trade.RMultiple.Value) : 0.0M;
+                    return $"StrategyRunner: {market.Name} Up to: {r.LatestCandleDateTime:dd-MM-yy HH:mm} - {r.PercentComplete:0.00}% complete. Running for: {r.SecondsRunning}s. "
+                        + $"Created {trades.OrderTrades.Count() + trades.ClosedTrades.Count() + trades.OpenTrades.Count()} trades. "
+                        + $"Open: {trades.OpenTrades.Count()}. Orders: {trades.OrderTrades.Count()} "
+                        + $"Closed: {trades.ClosedTrades.Count()} (Hit stop: {trades.ClosedTrades.Count(x => x.Trade.CloseReason == TradeCloseReason.HitStop)} "
+                        + $"Hit limit: {trades.ClosedTrades.Count(x => x.Trade.CloseReason == TradeCloseReason.HitLimit)} "
+                        + $"Hit expiry: {trades.ClosedTrades.Count(x => x.Trade.CloseReason == TradeCloseReason.HitExpiry)}) "
+                        + $"Expectancy: {expectancy:0.00}";
+                },
                 getShouldStopFunc);
 
             return trades.AllTrades.Select(x => x.Trade).ToList();
