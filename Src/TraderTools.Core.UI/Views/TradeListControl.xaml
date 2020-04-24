@@ -9,7 +9,7 @@
              xmlns:converters1="clr-namespace:TraderTools.Core.UI.Converters"
              xmlns:tokenEditor="clr-namespace:Hallupa.Library.UI.TokenEditor;assembly=Hallupa.Library.UI"
              xmlns:behaviours="clr-namespace:Hallupa.Library.UI.Behaviours;assembly=Hallupa.Library.UI"
-             xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+             xmlns:b="http://schemas.microsoft.com/xaml/behaviors"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
@@ -44,9 +44,9 @@
                     <MenuItem Header="Show orders only" IsCheckable="True" IsChecked="{Binding Data.ShowOrdersOnly, Source={StaticResource Proxy}}"/>
                 </ContextMenu>
             </DataGrid.ContextMenu>
-            <i:Interaction.Behaviors>
+            <b:Interaction.Behaviors>
                 <behaviours:DataGridCancelEditBehaviour CancelEditCommand="{Binding CancelEditCommand, Mode=OneWayToSource}"/>
-            </i:Interaction.Behaviors>
+            </b:Interaction.Behaviors>
 
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Id" Binding="{Binding Id, Mode=OneWay}" IsReadOnly="True" Width="70" />
