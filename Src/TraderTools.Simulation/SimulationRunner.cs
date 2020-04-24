@@ -30,13 +30,16 @@ namespace TraderTools.Simulation
     /// <summary>
     /// -Set trade expire/close/entry/etc to M1 candle open time so they appear in the correct position on the chart.
     /// </summary>
-    public class SimulationRunner
+    public class SimulationRunner : IObserver<(Trade Trade, TradeUpdated Updated)>
     {
         private IBrokersCandlesService _candlesService;
         private readonly ITradeDetailsAutoCalculatorService _calculatorService;
         private readonly IMarketDetailsService _marketDetailsService;
         private readonly SimulationRunnerFlags _options;
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private NextPricePoint _nextPricePoint;
+        private readonly List<IDisposable> _tradeNotificationsDisposables = new List<IDisposable>();
+        private bool _updateNextPricePoint = false;
 
         public SimulationRunner(IBrokersCandlesService candleService, ITradeDetailsAutoCalculatorService calculatorService, IMarketDetailsService marketDetailsService,
             SimulationRunnerFlags options = SimulationRunnerFlags.Default)
@@ -57,6 +60,9 @@ namespace TraderTools.Simulation
             bool updatePrices = false, bool cacheCandles = true, Func<bool> getShouldStopFunc = null)
         {
             if (strategy == null) return null;
+
+            _nextPricePoint = new NextPricePoint();
+            _updateNextPricePoint = false;
 
             // Get update trade strategy
             var updateTradesStrategies = strategy.GetType()
@@ -92,9 +98,73 @@ namespace TraderTools.Simulation
                     + $"Closed: {trades.ClosedTrades.Count()}",
                 getShouldStopFunc);
 
+            // Un-subscribe
+            foreach (var t in _tradeNotificationsDisposables)
+            {
+                t.Dispose();
+            }
+            _tradeNotificationsDisposables.Clear();
+
             return trades.AllTrades.Select(x => x.Trade).ToList();
         }
 
+        private class NextPricePoint
+        {
+            public decimal? PriceBidAbove { get; set; }
+            public decimal? PriceAskAbove { get; set; }
+            public decimal? PriceBidBelow { get; set; }
+            public decimal? PriceAskBelow { get; set; }
+        }
+
+        private void UpdateNextPricePoint(Trade t)
+        {
+            // Order
+            if (t.OrderPrice != null && t.CloseDateTime != null)
+            {
+                switch(t.OrderType)
+                {
+                    case OrderType.LimitEntry: // Buy below current market price or sell above current market price
+                    {
+                        if (t.TradeDirection == TradeDirection.Long && (_nextPricePoint.PriceAskBelow == null || t.OrderPrice < _nextPricePoint.PriceAskBelow))
+                            _nextPricePoint.PriceAskBelow = t.OrderPrice;
+
+                        if (t.TradeDirection == TradeDirection.Short && (_nextPricePoint.PriceBidBelow == null || t.OrderPrice < _nextPricePoint.PriceBidBelow))
+                            _nextPricePoint.PriceBidBelow = t.OrderPrice;
+                        break;
+                    }
+
+                    case OrderType.StopEntry: // Buy above current price or sell below current market price
+                    {
+                        if (t.TradeDirection == TradeDirection.Long && (_nextPricePoint.PriceAskAbove == null || t.OrderPrice > _nextPricePoint.PriceAskAbove))
+                            _nextPricePoint.PriceAskAbove = t.OrderPrice;
+
+                        if (t.TradeDirection == TradeDirection.Short && (_nextPricePoint.PriceBidAbove == null || t.OrderPrice > _nextPricePoint.PriceBidAbove))
+                            _nextPricePoint.PriceBidAbove = t.OrderPrice;
+                        break;
+                    }
+                }
+            }
+
+            // Stop
+            if (t.StopPrice != null)
+            {
+                if (t.TradeDirection == TradeDirection.Long && (_nextPricePoint.PriceBidBelow == null || t.StopPrice < _nextPricePoint.PriceBidBelow))
+                    _nextPricePoint.PriceBidBelow = t.StopPrice;
+
+                if (t.TradeDirection == TradeDirection.Short && (_nextPricePoint.PriceAskAbove == null || t.StopPrice > _nextPricePoint.PriceAskAbove))
+                    _nextPricePoint.PriceBidBelow = t.StopPrice;
+            }
+
+            // Limit
+            if (t.LimitPrice != null)
+            {
+                if (t.TradeDirection == TradeDirection.Long && (_nextPricePoint.PriceBidAbove == null || t.LimitPrice > _nextPricePoint.PriceBidAbove))
+                    _nextPricePoint.PriceBidAbove = t.LimitPrice;
+
+                if (t.TradeDirection == TradeDirection.Short && (_nextPricePoint.PriceAskBelow == null || t.LimitPrice < _nextPricePoint.PriceAskBelow))
+                    _nextPricePoint.PriceAskBelow = t.LimitPrice;
+            }
+        }
 
         private void ProcessNewCandles(
             IStrategy strategy,
@@ -104,11 +174,20 @@ namespace TraderTools.Simulation
         {
             if (c.NewCandleFlags.HasFlag(NewCandleFlags.CompleteNonM1Candle))
             {
-                AddNewTrades(trades, strategy, market, c.CurrentCandles, c.M1Candle,
+                var newTrades = AddNewTrades(trades, strategy, market, c.CurrentCandles, c.M1Candle,
                     updateTradesStrategy, c.M1Candle.CloseTime());
+
+                if (newTrades != null)
+                {
+                    foreach (var t in newTrades)
+                    {
+                        _tradeNotificationsDisposables.Add(t.UpdatedObservable.Subscribe(this));
+                        UpdateNextPricePoint(t);
+                    }
+                }
             }
 
-            if (updateTradesStrategy != null && (c.NewCandleFlags.HasFlag(NewCandleFlags.CompleteNonM1Candle) || c.NewCandleFlags.HasFlag(NewCandleFlags.IncompleteNonM1Candle))) // TODO only run when complete candle for update strategy
+            if (updateTradesStrategy != null && (c.NewCandleFlags.HasFlag(NewCandleFlags.CompleteNonM1Candle) || c.NewCandleFlags.HasFlag(NewCandleFlags.IncompleteNonM1Candle)))
             {
                 // Update open trades
                 UpdateOpenTrades(market.Name, trades, c.M1Candle.CloseTimeTicks, c.CurrentCandles,
@@ -121,11 +200,30 @@ namespace TraderTools.Simulation
                 ValidateAndUpdateStopsLimitsOrders(trades, c.M1Candle);
             }
 
-            // Process orders
-            FillOrders(trades, c.M1Candle);
+            // Update next price point
+            if (_updateNextPricePoint)
+            {
+                foreach (var t in trades.OrderTrades.Concat(trades.OpenTrades))
+                {
+                    UpdateNextPricePoint(t.Trade);
+                }
 
-            // Process open trades
-            TryCloseOpenTrades(trades, c.M1Candle);
+                _updateNextPricePoint = false;
+            }
+
+            var process = (_nextPricePoint.PriceAskAbove != null && (decimal)c.M1Candle.HighAsk >= _nextPricePoint.PriceAskAbove)
+                    || (_nextPricePoint.PriceAskBelow != null && (decimal)c.M1Candle.LowAsk <= _nextPricePoint.PriceAskBelow)
+                    || (_nextPricePoint.PriceBidAbove != null && (decimal)c.M1Candle.HighBid <= _nextPricePoint.PriceBidAbove)
+                    || (_nextPricePoint.PriceBidBelow != null && (decimal)c.M1Candle.LowBid <= _nextPricePoint.PriceBidBelow);
+
+            if (process)
+            {
+                // Process orders
+                FillOrders(trades, c.M1Candle);
+
+                // Process open trades
+                TryCloseOpenTrades(trades, c.M1Candle);
+            }
         }
 
 
@@ -238,7 +336,7 @@ namespace TraderTools.Simulation
             }
         }
 
-        private void AddNewTrades(TradeWithIndexingCollection trades,
+        private List<Trade> AddNewTrades(TradeWithIndexingCollection trades,
             IStrategy strategy, MarketDetails market,
             TimeframeLookup<List<CandleAndIndicators>> timeframeCurrentCandles,
             Candle latestCandle, UpdateTradeStrategyAttribute updateTradeStrategy, DateTime currentTime)
@@ -284,6 +382,8 @@ namespace TraderTools.Simulation
                     }
                 }
             }
+
+            return newTrades;
         }
 
         private static void RemoveInvalidTrades(List<Trade> newTrades, decimal latestBidPrice, decimal latestAskPrice, IMarketDetailsService marketDetailsService)
@@ -453,6 +553,23 @@ namespace TraderTools.Simulation
 
             return TimeframeLookupBasicCandleAndIndicators.PopulateCandles(
                 broker, market, requiredTimeframesAndIndicators.Select(x => x.Timeframe).ToArray(), timeframeIndicators, candlesService);
+        }
+
+        public void OnNext((Trade Trade, TradeUpdated Updated) value)
+        {
+            _nextPricePoint.PriceAskAbove = null;
+            _nextPricePoint.PriceAskBelow = null;
+            _nextPricePoint.PriceBidAbove = null;
+            _nextPricePoint.PriceBidBelow = null;
+            _updateNextPricePoint = true;
+        }
+
+        public void OnError(Exception error)
+        {
+        }
+
+        public void OnCompleted()
+        {
         }
     }
 }

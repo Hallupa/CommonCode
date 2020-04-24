@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
 using System.Linq;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Hallupa.Library;
@@ -39,6 +41,13 @@ namespace TraderTools.Basics
         StopEntry
     }
 
+    public enum TradeUpdated
+    {
+        Order,
+        Stop,
+        Limit
+    }
+
     public class Trade : INotifyPropertyChanged
     {
         #region Fields
@@ -69,11 +78,16 @@ namespace TraderTools.Basics
         private decimal? _limitPrice;
         private decimal? _grossProfitLoss;
 
+        [JsonIgnore]
+        private Subject<(Trade Trade, TradeUpdated Updated)> _updatedSubject = new Subject<(Trade Trade, TradeUpdated Updated)>();
+
         #endregion
 
         public Trade()
         {
         }
+
+        public IObservable<(Trade Trade, TradeUpdated Updated)> UpdatedObservable => _updatedSubject.AsObservable();
 
         public static Trade CreateOrder(string broker, decimal entryOrder, Candle latestCandle,
             TradeDirection direction, decimal amount, string market, DateTime? orderExpireTime,
@@ -374,6 +388,7 @@ namespace TraderTools.Basics
 
                 OnPropertyChanged();
                 OnPropertyChanged("Status");
+                _updatedSubject.OnNext((this, TradeUpdated.Order));
             }
         }
 
@@ -500,6 +515,7 @@ namespace TraderTools.Basics
                 _stopPrice = value;
                 StopPriceFloat = (float)value;
                 OnPropertyChanged();
+                _updatedSubject.OnNext((this, TradeUpdated.Stop));
             }
         }
 
@@ -547,6 +563,7 @@ namespace TraderTools.Basics
                 _limitPrice = value;
                 LimitPriceFloat = (float)value;
                 OnPropertyChanged();
+                _updatedSubject.OnNext((this, TradeUpdated.Limit));
             }
         }
 
