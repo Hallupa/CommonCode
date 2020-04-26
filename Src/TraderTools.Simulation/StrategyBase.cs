@@ -66,9 +66,9 @@ namespace TraderTools.Simulation
 
             if (lotSize == null) return null;
 
-            var trade = Trade.CreateMarketEntry(
+            var trade = TradeFactory.CreateMarketEntry(
                 "FXCM", (decimal)entryPrice, currentCandle.CloseTime(), direction, lotSize.Value, market, stop, limit,
-                _calculator, comments: comments);
+                _calculator, comments: comments, calculateOptions: CalculateOptions.ExcludePipsCalculations);
 
             return trade;
         }
@@ -85,7 +85,7 @@ namespace TraderTools.Simulation
                 if (lotSize == null) return null;
             }
 
-            var trade = Trade.CreateOrder(
+            var trade = TradeFactory.CreateOrder(
                     "FXCM",
                     entryPrice,
                     currentCandle,
@@ -95,7 +95,7 @@ namespace TraderTools.Simulation
                     expiryDateTime,
                     stop,
                     limit,
-                    _calculator);
+                    calculateOptions: CalculateOptions.ExcludePipsCalculations);
 
             return trade;
         }

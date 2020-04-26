@@ -350,7 +350,8 @@ namespace TraderTools.Simulation
 
                 processNewCandleAction((timeframesCurrentCandles, m1Candle, newCandlesFlags));
 
-                if (DateTime.UtcNow > nextLogTime || i == m1Candles.Count - 1)
+                // Restrict number of times UtcNow is called as this can slow things down
+                if (i == m1Candles.Count - 1 || (timeframeCompleteCandleUpdated && DateTime.UtcNow > nextLogTime))
                 {
                     var percent = (i * 100.0) / m1Candles.Count;
                     Log.Info(getLogFunc((m1Candle.CloseTime(), (int)(DateTime.UtcNow - startTimeUtc).TotalSeconds, percent)));

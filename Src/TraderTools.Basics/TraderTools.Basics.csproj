@@ -122,6 +122,7 @@
     <Compile Include="Trade.cs" />
     <Compile Include="TradeCalculator.cs" />
     <Compile Include="TradeDirection.cs" />
+    <Compile Include="TradeFactory.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

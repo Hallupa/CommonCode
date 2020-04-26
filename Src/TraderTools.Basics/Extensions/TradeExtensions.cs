@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Reflection;
 using log4net;
 using TraderTools.Basics.Helpers;
@@ -48,6 +49,27 @@ namespace TraderTools.Basics.Extensions
             }
 
             return 0M;
+        }
+
+        public static decimal GetProfitForLatestDay(this Trade trade, IBrokersCandlesService candlesService, IBrokersService brokersService, IMarketDetailsService marketDetailsService)
+        {
+            var broker = brokersService.Brokers.FirstOrDefault(x => x.Name == trade.Broker);
+
+            if (broker != null)
+            {
+                var marketDetails = marketDetailsService.GetMarketDetails(broker.Name, trade.Market);
+
+                var now = DateTime.UtcNow;
+                var endDate = trade.CloseDateTime != null
+                    ? new DateTime(trade.CloseDateTime.Value.Year, trade.CloseDateTime.Value.Month, trade.CloseDateTime.Value.Day, 23,
+                        59, 59, DateTimeKind.Utc)
+                    : new DateTime(now.Year, now.Month, now.Day, 23, 59, 59, DateTimeKind.Utc);
+                var startDate = new DateTime(endDate.Year, endDate.Month, endDate.Day, 0, 0, 0, DateTimeKind.Utc);
+                return trade.GetTradeProfit(endDate, Basics.Timeframe.D1, candlesService, marketDetails, broker, false)
+                       - trade.GetTradeProfit(startDate, Basics.Timeframe.D1, candlesService, marketDetails, broker, false);
+            }
+
+            return decimal.MinValue;
         }
 
         public static void SimulateTrade(this Trade trade, Candle candle, out bool updated)

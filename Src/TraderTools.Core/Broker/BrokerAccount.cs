@@ -72,8 +72,6 @@ namespace TraderTools.Core.Broker
 
             foreach (var trade in account.Trades)
             {
-                trade.Initialise();
-
                 if (trade.DataVersion == 0)
                 {
                     trade.DataVersion = Trade.CurrentDataVersion;
@@ -253,7 +251,7 @@ namespace TraderTools.Core.Broker
 
             foreach (var trade in Trades)
             {
-                trade.Initialise();
+                //trade.Initialise();
             }
 
             Log.Info($"Completed updating {broker.Name} trades");
@@ -274,7 +272,7 @@ namespace TraderTools.Core.Broker
 
             foreach (var trade in Trades)
             {
-                trade.Initialise();
+                //trade.Initialise();
             }
 
             Log.Info($"Completed updating {broker.Name} trades");

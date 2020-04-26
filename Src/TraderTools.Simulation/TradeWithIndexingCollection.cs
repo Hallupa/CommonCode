@@ -25,7 +25,18 @@ namespace TraderTools.Simulation
             };
 
             AddToList(tradeWithIndexing, ref _firstOpen);
+        }
 
+        public int CachedTradesCount { get; set; } = 0;
+
+        public void AddClosedTrade(Trade t)
+        {
+            var tradeWithIndexing = new TradeWithIndexing
+            {
+                Trade = t
+            };
+
+            AddToList(tradeWithIndexing, ref _firstClosed);
         }
 
         public void AddOrderTrade(Trade t)
@@ -82,6 +93,8 @@ namespace TraderTools.Simulation
         {
             get
             {
+                if (_firstOpen == null) yield break;
+
                 var v = _firstOpen;
                 while (v != null)
                 {
@@ -96,6 +109,8 @@ namespace TraderTools.Simulation
         {
             get
             {
+                if (_firstOrder == null) yield break;
+
                 var v = _firstOrder;
                 while (v != null)
                 {
@@ -112,6 +127,8 @@ namespace TraderTools.Simulation
         {
             get
             {
+                if (_firstClosed == null) yield break;
+
                 var v = _firstClosed;
                 while (v != null)
                 {
@@ -121,108 +138,5 @@ namespace TraderTools.Simulation
                 }
             }
         }
-
-        /*
-         *
-             public class TradeWithIndexingCollection
-    {
-        private LinkedList<TradeWithIndexing> _orders = new LinkedList<TradeWithIndexing>();
-        private LinkedList<TradeWithIndexing> _open = new LinkedList<TradeWithIndexing>();
-        private LinkedList<TradeWithIndexing> _closed = new LinkedList<TradeWithIndexing>();
-
-        public List<TradeWithIndexing> Trades = new List<TradeWithIndexing>();
-
-        private int _openTradesStartIndex = 0;
-        private int _orderTradesStartIndex = 0;
-        private const int ReorderIntervalMilliSeoncds = 500;
-        private DateTime? _lastReorderTime = null;
-
-
-        public void AddTrade(Trade t)
-        {
-            var tradeWithIndexing = new TradeWithIndexing
-            {
-                Trade = t
-            };
-
-            var z = new LinkedList<TradeWithIndexing>();
-            var p = z.AddAfter(null);
-
-            
-
-            Trades.Add(tradeWithIndexing);
-
-            if (_lastReorderTime == null)
-            {
-                _lastReorderTime = DateTime.UtcNow;
-            }
-            else if ((DateTime.UtcNow - _lastReorderTime.Value).TotalMilliseconds > ReorderIntervalMilliSeoncds)
-            {
-                Trades = ClosedTrades.Concat(OpenTrades).Concat(OrderTrades).ToList();
-                _openTradesStartIndex = 0;
-                _orderTradesStartIndex = 0;
-                _lastReorderTime = DateTime.UtcNow;
-            }
-        }
-
-        public IEnumerable<TradeWithIndexing> OpenTrades
-        {
-            get
-            {
-                var foundStart = false;
-                for (var i = _openTradesStartIndex; i < Trades.Count; i++)
-                {
-                    var t = Trades[i];
-                    if (t.Trade.EntryDateTime != null && t.Trade.CloseDateTime == null)
-                    {
-                        if (!foundStart)
-                        {
-                            foundStart = true;
-                            _openTradesStartIndex = i;
-                        }
-
-                        yield return Trades[i];
-                    }
-                }
-            }
-        }
-
-        public IEnumerable<TradeWithIndexing> OrderTrades
-        {
-            get
-            {
-                var foundStart = false;
-                for (var i = _orderTradesStartIndex; i < Trades.Count; i++)
-                {
-                    var t = Trades[i];
-                    if (t.Trade.EntryDateTime == null && t.Trade.CloseDateTime == null && t.Trade.OrderPrice != null)
-                    {
-                        if (!foundStart)
-                        {
-                            foundStart = true;
-                            _orderTradesStartIndex = i;
-                        }
-
-                        yield return Trades[i];
-                    }
-                }
-            }
-        }
-
-        public IEnumerable<TradeWithIndexing> ClosedTrades
-        {
-            get
-            {
-                for (var i = 0; i < Trades.Count; i++)
-                {
-                    var t = Trades[i];
-                    if (t.Trade.CloseDateTime != null)
-                    {
-                        yield return Trades[i];
-                    }
-                }
-            }
-        }
-         */
     }
 }

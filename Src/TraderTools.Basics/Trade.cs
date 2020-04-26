@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.ComponentModel.Composition;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Runtime.CompilerServices;
 using System.Text;
-using Hallupa.Library;
 using Newtonsoft.Json;
-using TraderTools.Basics.Extensions;
 
 namespace TraderTools.Basics
 {
@@ -20,12 +17,6 @@ namespace TraderTools.Basics
         HitExpiry,
         ManualClose,
         OrderClosed
-    }
-
-    public enum OrderKind
-    {
-        Market,
-        EntryPrice
     }
 
     public enum OrderType
@@ -48,23 +39,36 @@ namespace TraderTools.Basics
         Limit
     }
 
+    public enum TradeUpdateMode
+    {
+        Default,
+
+        /// <summary>
+        /// An unchanging trade has the order price, stop, limit and expiry time set upfront then doesn't change.
+        /// This type is useful as trades can be cached to speed up simulation.
+        /// </summary>
+        Unchanging
+    }
+
     public class Trade : INotifyPropertyChanged
     {
         #region Fields
-        private decimal? _currentStopPrice = null;
-        private decimal? _pricePerPip;
         private decimal? _entryPrice;
         private decimal? _closePrice;
-        private decimal? _netProfitLoss;
-        private Timeframe? _timeframe;
         private TradeDirection? _tradeDirection;
-        private DateTime? _closeDateTime;
-        private TradeCloseReason? _closeReason;
         private decimal? _orderPrice;
         private DateTime? _orderDateTime;
         private DateTime? _orderExpireTime;
-        private OrderKind _orderKind;
         private DateTime? _entryDateTime;
+        private decimal? _limitPrice;
+        private decimal? _stopPrice;
+        private OrderType? _orderType;
+
+        private decimal? _pricePerPip;
+        private decimal? _netProfitLoss;
+        private Timeframe? _timeframe;
+        private DateTime? _closeDateTime;
+        private TradeCloseReason? _closeReason;
         private string _comments;
         private string _strategies;
         private decimal? _stopInPips;
@@ -74,9 +78,16 @@ namespace TraderTools.Basics
         private decimal? _rMultiple;
         private decimal? _initialStop;
         private decimal? _initialLimit;
-        private decimal? _stopPrice;
-        private decimal? _limitPrice;
         private decimal? _grossProfitLoss;
+        private List<DatePrice> _limitPrices = new List<DatePrice>();
+        private List<DatePrice> _stopPrices = new List<DatePrice>();
+        private List<DatePrice> _orderPrices = new List<DatePrice>();
+        private string _commissionValueCurrency;
+        private decimal? _commissionValue;
+        private decimal? _entryValue;
+        private string _entryValueCurrency;
+        private decimal? _riskAmount;
+        private bool _isAnalysed;
 
         [JsonIgnore]
         private Subject<(Trade Trade, TradeUpdated Updated)> _updatedSubject = new Subject<(Trade Trade, TradeUpdated Updated)>();
@@ -87,52 +98,8 @@ namespace TraderTools.Basics
         {
         }
 
+        [JsonIgnore]
         public IObservable<(Trade Trade, TradeUpdated Updated)> UpdatedObservable => _updatedSubject.AsObservable();
-
-        public static Trade CreateOrder(string broker, decimal entryOrder, Candle latestCandle,
-            TradeDirection direction, decimal amount, string market, DateTime? orderExpireTime,
-            decimal? stop, decimal? limit, ITradeDetailsAutoCalculatorService tradeCalculatorService)
-        {
-            var orderDateTime = latestCandle.CloseTime();
-
-            var trade = new Trade();
-            trade.SetOrder(orderDateTime, entryOrder, market, direction, amount, orderExpireTime);
-            if (stop != null) trade.AddStopPrice(orderDateTime, stop.Value);
-            if (limit != null) trade.AddLimitPrice(orderDateTime, limit.Value);
-            trade.Broker = broker;
-            trade.OrderKind = OrderKind.EntryPrice;
-
-            if (direction == Basics.TradeDirection.Long)
-            {
-                trade.OrderType = (float)entryOrder <= latestCandle.CloseAsk ? Basics.OrderType.LimitEntry : Basics.OrderType.StopEntry;
-            }
-            else
-            {
-                trade.OrderType = (float)entryOrder <= latestCandle.CloseBid ? Basics.OrderType.StopEntry : Basics.OrderType.LimitEntry;
-            }
-            return trade;
-        }
-
-        public static Trade CreateMarketEntry(string broker, decimal entryPrice, DateTime entryTime,
-            TradeDirection direction, decimal amount, string market,
-            decimal? stop, decimal? limit, ITradeDetailsAutoCalculatorService tradeCalculatorService,
-            Timeframe? timeframe = null, string strategies = null, string comments = null, bool alert = false, CalculateOptions calculateOptions = CalculateOptions.Default)
-        {
-            var trade = new Trade { Broker = broker };
-            if (stop != null) trade.AddStopPrice(entryTime, stop.Value);
-            if (limit != null) trade.AddLimitPrice(entryTime, limit.Value);
-            trade.Market = market;
-            trade.TradeDirection = direction;
-            trade.EntryPrice = entryPrice;
-            trade.EntryDateTime = entryTime;
-            trade.EntryQuantity = amount;
-            trade.Timeframe = timeframe;
-            trade.Alert = alert;
-            trade.Comments = comments;
-            trade.Strategies = strategies;
-            trade.CalculateOptions = calculateOptions;
-            return trade;
-        }
 
         public string Comments
         {
@@ -143,6 +110,8 @@ namespace TraderTools.Basics
                 OnPropertyChanged();
             }
         }
+
+        public TradeUpdateMode UpdateMode { get; set; } = TradeUpdateMode.Default;
 
         public string Strategies
         {
@@ -166,26 +135,16 @@ namespace TraderTools.Basics
         }
 
         public Guid UniqueId { get; set; } = Guid.NewGuid();
-        
-        public string Id { get; set; }
-        
-        public string Broker { get; set; }
-        
-        public decimal? Commission { get; set; }
-        
-        public string CommissionAsset { get; set; }
-        
-        public string OrderId { get; set; }
 
-        public OrderKind OrderKind
-        {
-            get => _orderKind;
-            set
-            {
-                _orderKind = value;
-                OnPropertyChanged();
-            }
-        }
+        public string Id { get; set; }
+
+        public string Broker { get; set; }
+
+        public decimal? Commission { get; set; }
+
+        public string CommissionAsset { get; set; }
+
+        public string OrderId { get; set; }
 
         public decimal? EntryPrice
         {
@@ -299,9 +258,9 @@ namespace TraderTools.Basics
         }
 
         public string Market { get; set; }
-        
+
         public string BaseAsset { get; set; }
-        
+
         public bool Alert { get; set; }
 
         public string CustomText1 { get; set; }
@@ -425,7 +384,7 @@ namespace TraderTools.Basics
             get => _stopPrices;
             private set
             {
-                _stopPrices = value; 
+                _stopPrices = value;
                 OnPropertyChanged();
             }
         }
@@ -435,7 +394,7 @@ namespace TraderTools.Basics
             get => _limitPrices;
             private set
             {
-                _limitPrices = value; 
+                _limitPrices = value;
                 OnPropertyChanged();
             }
         }
@@ -463,35 +422,6 @@ namespace TraderTools.Basics
                 _initialStop = value;
                 TradeCalculator.UpdateRMultiple(this);
                 OnPropertyChanged();
-            }
-        }
-
-        public decimal ProfitLatestDay
-        {
-            get
-            {
-                var candlesService = DependencyContainer.Container.GetExportedValue<IBrokersCandlesService>();
-                var brokersService = DependencyContainer.Container.GetExportedValue<IBrokersService>();
-                var marketDetailsService = DependencyContainer.Container.GetExportedValue<IMarketDetailsService>();
-                var broker = brokersService.Brokers.FirstOrDefault(x => x.Name == Broker);
-
-                if (broker != null)
-                {
-                    var marketDetails = marketDetailsService.GetMarketDetails(broker.Name, Market);
-
-                    var now = DateTime.UtcNow;
-                    var endDate = CloseDateTime != null
-                        ? new DateTime(CloseDateTime.Value.Year, CloseDateTime.Value.Month, CloseDateTime.Value.Day, 23,
-                            59, 59, DateTimeKind.Utc)
-                        : new DateTime(now.Year, now.Month, now.Day, 23, 59, 59, DateTimeKind.Utc);
-                    var startDate = new DateTime(endDate.Year, endDate.Month, endDate.Day, 0, 0, 0, DateTimeKind.Utc);
-                    return this.GetTradeProfit(endDate, Basics.Timeframe.D1, candlesService, marketDetails, broker,
-                               false)
-                           - this.GetTradeProfit(startDate, Basics.Timeframe.D1, candlesService, marketDetails, broker,
-                               false);
-                }
-
-                return decimal.MinValue;
             }
         }
 
@@ -617,23 +547,14 @@ namespace TraderTools.Basics
             }
         }
 
-        private OrderType? _orderType;
-        private List<DatePrice> _limitPrices = new List<DatePrice>();
-        private List<DatePrice> _stopPrices = new List<DatePrice>();
-        private List<DatePrice> _orderPrices = new List<DatePrice>();
-        private string _commissionValueCurrency;
-        private decimal? _commissionValue;
-        private decimal? _entryValue;
-        private string _entryValueCurrency;
-        private decimal? _riskAmount;
-        private bool _isAnalysed;
-
         public void AddStopPrice(DateTime date, decimal? price)
         {
             if (StopPrices.Count > 0 && StopPrices.Last().Price == price)
             {
                 return;
             }
+
+            if (UpdateMode == TradeUpdateMode.Unchanging) throw new ApplicationException("Trade set to untouched mode cannot change it's stop price after being set");
 
             var originalStops = StopPrices.ToList();
             if (StopPrices.Count > 0 && StopPrices.Last().Date == date)
@@ -670,6 +591,8 @@ namespace TraderTools.Basics
                 return;
             }
 
+            if (UpdateMode == TradeUpdateMode.Unchanging) throw new ApplicationException("Trade set to untouched mode cannot change it's order price after being set");
+
             if (OrderPrices.Count > 0 && OrderPrices.Last().Date == date)
             {
                 OrderPrices.RemoveAt(OrderPrices.Count - 1);
@@ -687,19 +610,23 @@ namespace TraderTools.Basics
 
         public void ClearStopPrices()
         {
+            if (UpdateMode == TradeUpdateMode.Unchanging) throw new ApplicationException("Trade set to untouched mode cannot change it's stop price after being set");
+
             StopPrices.Clear();
-            _currentStopPrice = null;
+            StopPrice = null;
         }
 
         public void RemoveStopPrice(int index)
         {
+            if (UpdateMode == TradeUpdateMode.Unchanging) throw new ApplicationException("Trade set to untouched mode cannot change it's stop price after being set");
+
             if (index >= StopPrices.Count)
             {
                 return;
             }
 
             StopPrices.RemoveAt(index);
-            _currentStopPrice = null;
+            StopPrice = null;
         }
 
         public void AddLimitPrice(DateTime date, decimal? price)
@@ -713,6 +640,8 @@ namespace TraderTools.Basics
             {
                 LimitPrices.RemoveAt(OrderPrices.Count - 1);
             }
+
+            if (UpdateMode == TradeUpdateMode.Unchanging) throw new ApplicationException("Trade set to untouched mode cannot change it's limit price after being set");
 
             LimitPrices.Add(new DatePrice(date, price));
 
@@ -736,6 +665,8 @@ namespace TraderTools.Basics
             {
                 return;
             }
+
+            if (UpdateMode == TradeUpdateMode.Unchanging) throw new ApplicationException("Trade set to untouched mode cannot change it's stop price after being set");
 
             LimitPrices.RemoveAt(index);
         }
@@ -796,20 +727,14 @@ namespace TraderTools.Basics
 
             if (EntryDateTime != null)
             {
-                if (ret.Length > 0)
-                {
-                    ret.Append(" ");
-                }
+                if (ret.Length > 0) ret.Append(" ");
 
                 ret.Append($"Entry: {EntryDateTime.Value}UTC {EntryQuantity:0.0000} @ Price: {EntryPrice:0.0000}");
             }
 
             if (CloseDateTime != null)
             {
-                if (ret.Length > 0)
-                {
-                    ret.Append(" ");
-                }
+                if (ret.Length > 0) ret.Append(" ");
 
                 ret.Append($"Close: {CloseDateTime.Value}UTC Price: {ClosePrice:0.0000} Reason: {CloseReason}");
             }
@@ -817,10 +742,7 @@ namespace TraderTools.Basics
             var initialStopInPips = InitialStopInPips;
             if (initialStopInPips != null)
             {
-                if (ret.Length > 0)
-                {
-                    ret.Append(" ");
-                }
+                if (ret.Length > 0) ret.Append(" ");
 
                 if (StopPrices.Count > 0)
                 {
@@ -836,10 +758,7 @@ namespace TraderTools.Basics
 
             if (Timeframe != null)
             {
-                if (ret.Length > 0)
-                {
-                    ret.Append(" ");
-                }
+                if (ret.Length > 0) ret.Append(" ");
 
                 ret.Append($"Timeframe: {Timeframe}");
             }
@@ -888,59 +807,6 @@ namespace TraderTools.Basics
         }
 
         public List<ChartLine> ChartLines { get; set; }
-
-        public void Initialise()
-        {
-            if (EntryDateTime != null && OrderDateTime == null)
-            {
-                OrderDateTime = EntryDateTime;
-            }
-
-            if (LimitPrices == null)
-            {
-                LimitPrices = new List<DatePrice>();
-            }
-
-            if (LimitPrices.Count == 0 && LimitPrice != null)
-            {
-                var date = OrderDateTime ?? EntryDateTime;
-
-                if (date != null)
-                {
-                    LimitPrices.Add(new DatePrice(date.Value, LimitPrice));
-                }
-            }
-
-            // Remove duplicate stops
-            if (StopPrices != null)
-            {
-                for (var i = StopPrices.Count - 1; i >= 1; i--)
-                {
-                    var current = StopPrices[i];
-                    var prev = StopPrices[i - 1];
-
-                    if (current.Price == prev.Price)
-                    {
-                        StopPrices.RemoveAt(i);
-                    }
-                }
-            }
-
-            // Remove duplicate limits
-            if (LimitPrices != null)
-            {
-                for (var i = LimitPrices.Count - 1; i >= 1; i--)
-                {
-                    var current = LimitPrices[i];
-                    var prev = LimitPrices[i - 1];
-
-                    if (current.Price == prev.Price)
-                    {
-                        LimitPrices.RemoveAt(i);
-                    }
-                }
-            }
-        }
 
         public event PropertyChangedEventHandler PropertyChanged;
 

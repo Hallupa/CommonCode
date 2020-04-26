@@ -37,18 +37,12 @@ namespace TraderTools.Strategy
 
             var a = CSharpLanguage.CreateAssemblyDefinition(
                 alteredCode,
-                //   "TraderTools.AI.dll",
                 "TraderTools.Basics.dll",
                 "TraderTools.Core.dll",
                 "TraderTools.Simulation.dll",
                 "Hallupa.Library.dll",
                 "TraderTools.Indicators.dll",
                 "Hallupa.Library.dll");
-                //"Python.Runtime.dll",
-                //"Keras.dll",
-                //"Numpy.Bare.dll");
-            //"NumSharp.Core.dll",
-            //"TensorFlow.NET.dll");
 
             if (a == null)
             {
