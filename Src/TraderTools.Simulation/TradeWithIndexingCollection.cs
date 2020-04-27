@@ -98,9 +98,8 @@ namespace TraderTools.Simulation
                 var v = _firstOpen;
                 while (v != null)
                 {
-                    var next = v.Next; // Take copy of next here in-case it is removed from the list
                     yield return v;
-                    v = next;
+                    v = v.Next;
                 }
             }
         }
@@ -114,9 +113,8 @@ namespace TraderTools.Simulation
                 var v = _firstOrder;
                 while (v != null)
                 {
-                    var next = v.Next; // Take copy of next here in-case it is removed from the list
                     yield return v;
-                    v = next;
+                    v = v.Next;
                 }
             }
         }
@@ -132,9 +130,8 @@ namespace TraderTools.Simulation
                 var v = _firstClosed;
                 while (v != null)
                 {
-                    var next = v.Next; // Take copy of next here in-case it is removed from the list
                     yield return v;
-                    v = next;
+                    v = v.Next;
                 }
             }
         }

@@ -62,6 +62,8 @@ namespace TraderTools.Simulation
         {
             if (strategy == null) return null;
 
+            _tradeCacheService.LoadTrades(market.Name);
+
             // Get update trade strategy
             var updateTradesStrategies = strategy.GetType()
                 .GetCustomAttributes(typeof(UpdateTradeStrategyAttribute), true).Cast<UpdateTradeStrategyAttribute>()
@@ -102,33 +104,26 @@ namespace TraderTools.Simulation
                 },
                 r =>
                 {
-                    var tradesForExpectancy = trades.ClosedTrades.Where(x => x.Trade.RMultiple != null).ToList();
+                    var closedTrades = trades.ClosedTrades.ToList();
+                    var tradesForExpectancy = closedTrades.Where(x => x.Trade.RMultiple != null).ToList();
                     var expectancy = tradesForExpectancy.Any() ? tradesForExpectancy.Average(x => x.Trade.RMultiple.Value) : 0.0M;
-                    return $"StrategyRunner: {market.Name} Up to: {r.LatestCandleDateTime:dd-MM-yy HH:mm} - {r.PercentComplete:0.00}% complete. Running for: {r.SecondsRunning}s. "
-                        + $"Created {trades.OrderTrades.Count() + trades.ClosedTrades.Count() + trades.OpenTrades.Count()} trades. "
+                    return $"{market.Name} {r.PercentComplete:0.00}% Up to: {r.LatestCandleDateTime:dd-MM-yy HH:mm}. Running: {r.SecondsRunning}s. "
+                        + $"Created: {trades.OrderTrades.Count() + closedTrades.Count + trades.OpenTrades.Count()} "
                         + $"Open: {trades.OpenTrades.Count()}. Orders: {trades.OrderTrades.Count()} "
-                        + $"Closed: {trades.ClosedTrades.Count()} (Hit stop: {trades.ClosedTrades.Count(x => x.Trade.CloseReason == TradeCloseReason.HitStop)} "
-                        + $"Hit limit: {trades.ClosedTrades.Count(x => x.Trade.CloseReason == TradeCloseReason.HitLimit)} "
-                        + $"Hit expiry: {trades.ClosedTrades.Count(x => x.Trade.CloseReason == TradeCloseReason.HitExpiry)} "
+                        + $"Closed: {closedTrades.Count} (Hit stop: {closedTrades.Count(x => x.Trade.CloseReason == TradeCloseReason.HitStop)} "
+                        + $"Hit limit: {closedTrades.Count(x => x.Trade.CloseReason == TradeCloseReason.HitLimit)} "
+                        + $"Hit expiry: {closedTrades.Count(x => x.Trade.CloseReason == TradeCloseReason.HitExpiry)} "
                         + $"Cached trades: {trades.CachedTradesCount}) " 
                         + $"Expectancy: {expectancy:0.00}";
                 },
                 getShouldStopFunc);
 
-            foreach (var t in trades.ClosedTrades)
-            {
-                if (t.Trade.UpdateMode == TradeUpdateMode.Unchanging)
-                {
-                    _tradeCacheService.AddTrade(t.Trade);
-                }
-            }
+            _tradeCacheService.AddTrades(market.Name, trades.ClosedTrades.Where(t => t.Trade.UpdateMode == TradeUpdateMode.Unchanging).Select(x => x.Trade));
 
             _tradeCacheService.SaveTrades();
 
             return trades.AllTrades.Select(x => x.Trade).ToList();
         }
-
-
 
         private void ProcessNewCandles(
             IStrategy strategy,
@@ -156,16 +151,11 @@ namespace TraderTools.Simulation
                 ValidateAndUpdateStopsLimitsOrders(trades, c.M1Candle);
             }
 
-
-
-
             // Process orders
-            FillOrders(trades, c.M1Candle, out var anyOrdersFilledOrClosed);
+            FillOrders(trades, c.M1Candle);
 
             // Process open trades
-            TryCloseOpenTrades(trades, c.M1Candle, out var anyClosed);
-
-
+            TryCloseOpenTrades(trades, c.M1Candle);
         }
 
         private static TimeframeLookup<Indicator[]> GetTimeframeIndicatorsForRun(List<RequiredTimeframeCandlesAttribute> requiredTimeframesAndIndicators)
@@ -235,9 +225,8 @@ namespace TraderTools.Simulation
             }
         }
 
-        private static void TryCloseOpenTrades(TradeWithIndexingCollection trades, Candle m1Candle, out bool anyClosed)
+        private static void TryCloseOpenTrades(TradeWithIndexingCollection trades, Candle m1Candle)
         {
-            anyClosed = false;
             foreach (var trade in trades.OpenTrades)
             {
                 if (trade.Trade.EntryDateTime != null && m1Candle.OpenTimeTicks >= trade.Trade.EntryDateTime.Value.Ticks)
@@ -247,16 +236,13 @@ namespace TraderTools.Simulation
                 
                 if (trade.Trade.CloseDateTime != null)
                 {
-                    anyClosed = true;
                     trades.MoveOpenToClose(trade);
                 }
             }
         }
 
-        private static void FillOrders(TradeWithIndexingCollection trades, Candle m1Candle, out bool anyOrdersFilledOrClosed)
+        private static void FillOrders(TradeWithIndexingCollection trades, Candle m1Candle)
         {
-            anyOrdersFilledOrClosed = false;
-
             foreach (var order in trades.OrderTrades)
             {
                 var candleCloseTimeTicks = m1Candle.CloseTimeTicks;
@@ -271,12 +257,10 @@ namespace TraderTools.Simulation
 
                 if (order.Trade.EntryDateTime != null)
                 {
-                    anyOrdersFilledOrClosed = true;
                     trades.MoveOrderToOpen(order);
                 }
                 else if (order.Trade.CloseDateTime != null)
                 {
-                    anyOrdersFilledOrClosed = true;
                     trades.MoveOrderToClosed(order);
                 }
             }
@@ -323,10 +307,7 @@ namespace TraderTools.Simulation
                         var cachedTrade = _tradeCacheService.GetCachedTrade(t);
                         if (cachedTrade != null)
                         {
-                            t.CloseDateTime = cachedTrade.CloseDateTime;
-                            t.ClosePrice = cachedTrade.ClosePrice;
-                            t.CloseReason = cachedTrade.CloseReason;
-                            t.RMultiple = cachedTrade.RMultiple;
+                            cachedTrade.Value.UpdateTrade(t);
                             trades.CachedTradesCount++;
                         }
                     }
