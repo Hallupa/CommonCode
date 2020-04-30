@@ -98,8 +98,9 @@ namespace TraderTools.Simulation
                 var v = _firstOpen;
                 while (v != null)
                 {
+                    var n = v.Next;
                     yield return v;
-                    v = v.Next;
+                    v = n;
                 }
             }
         }
@@ -113,8 +114,9 @@ namespace TraderTools.Simulation
                 var v = _firstOrder;
                 while (v != null)
                 {
+                    var n = v.Next;
                     yield return v;
-                    v = v.Next;
+                    v = n;
                 }
             }
         }
@@ -130,8 +132,9 @@ namespace TraderTools.Simulation
                 var v = _firstClosed;
                 while (v != null)
                 {
+                    var n = v.Next;
                     yield return v;
-                    v = v.Next;
+                    v = n;
                 }
             }
         }

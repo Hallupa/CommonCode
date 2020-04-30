@@ -58,7 +58,7 @@ namespace TraderTools.Basics
         {
             if (Indicators == null)
             {
-                Indicators = new SignalAndValue[13];
+                Indicators = new SignalAndValue[14];
             }
 
             Indicators[(int)indicator] = signalValue;

@@ -67,7 +67,10 @@
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="CachedDetails.cs" />
+    <Compile Include="CachedTradeKey.cs" />
+    <Compile Include="CachedTradeResult.cs" />
     <Compile Include="IndicatorsHelper.cs" />
+    <Compile Include="ITradeCacheService.cs" />
     <Compile Include="ModelPredictorService.cs" />
     <Compile Include="ModelsService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

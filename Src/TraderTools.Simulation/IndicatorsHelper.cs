@@ -58,6 +58,9 @@ namespace TraderTools.Simulation
                 case Indicator.AO:
                     indicatorInstance = new AwesomeOscillator(23, 45);
                     break;
+                case Indicator.ADR:
+                    indicatorInstance = new AverageDayRange();
+                    break;
                 default:
                     throw new ApplicationException("Indicator not found");
             }
