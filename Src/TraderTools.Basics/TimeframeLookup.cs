@@ -7,7 +7,7 @@ namespace TraderTools.Basics
 {
     public class TimeframeLookup<T> : IEnumerable<KeyValuePair<Timeframe, T>>
     {
-        private T[] _items = new T[8];
+        private T[] _items = new T[9];
 
         public T this[Timeframe timeframe]
         {
@@ -78,14 +78,16 @@ namespace TraderTools.Basics
                 case 2:
                     return Timeframe.M15;
                 case 3:
-                    return Timeframe.H1;
+                    return Timeframe.M30;
                 case 4:
-                    return Timeframe.H2;
+                    return Timeframe.H1;
                 case 5:
-                    return Timeframe.H4;
+                    return Timeframe.H2;
                 case 6:
-                    return Timeframe.H8;
+                    return Timeframe.H4;
                 case 7:
+                    return Timeframe.H8;
+                case 8:
                     return Timeframe.D1;
             }
 

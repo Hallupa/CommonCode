@@ -67,17 +67,22 @@
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="CachedDetails.cs" />
+    <Compile Include="CachedTradeKey.cs" />
+    <Compile Include="CachedTradeResult.cs" />
     <Compile Include="IndicatorsHelper.cs" />
+    <Compile Include="ITradeCacheService.cs" />
     <Compile Include="ModelPredictorService.cs" />
     <Compile Include="ModelsService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RequiredTimeframeCandlesAttribute.cs" />
     <Compile Include="StopHelper.cs" />
-    <Compile Include="SimulationRunner.cs" />
+    <Compile Include="StrategyRunner.cs" />
     <Compile Include="StopTrailIndicatorAttribute.cs" />
     <Compile Include="StrategyBase.cs" />
     <Compile Include="TimeframeLookupBasicCandleAndIndicators.cs" />
-    <Compile Include="TradeDetailsKey.cs" />
+    <Compile Include="TradeCacheService.cs" />
+    <Compile Include="TradeWithIndexing.cs" />
+    <Compile Include="TradeWithIndexingCollection.cs" />
     <Compile Include="UpdateTradeStrategyAttribute.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -305,9 +305,9 @@ namespace TraderTools.Brokers.Binance
             return priceAsset;
         }
 
-        private TradeDetails CreateTrade(BinanceTrade binanceTrade, string asset, string baseAsset)
+        private Trade CreateTrade(BinanceTrade binanceTrade, string asset, string baseAsset)
         {
-            return new TradeDetails
+            return new Trade
             {
                 Id = binanceTrade.Id.ToString(),
                 Broker = "Binance",

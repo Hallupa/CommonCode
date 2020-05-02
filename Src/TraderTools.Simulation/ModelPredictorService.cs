@@ -32,8 +32,8 @@ namespace TraderTools.Simulation
             _modelsService = modelsService;
             _dataDirectoryService = dataDirectoryService;
             _producerConsumer = new ProducerConsumer<Action>(1, ConsumeAction);
-            _producerConsumer.Add(() => _y = Py.GIL());
-            _producerConsumer.Start();
+            //_producerConsumer.Add(() => _y = Py.GIL());
+            //_producerConsumer.Start();
         }
 
         private ProducerConsumerActionResult ConsumeAction(Action arg)

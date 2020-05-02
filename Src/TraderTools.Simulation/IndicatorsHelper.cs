@@ -55,6 +55,12 @@ namespace TraderTools.Simulation
                 case Indicator.T3CCI:
                     indicatorInstance = new T3CommodityChannelIndex();
                     break;
+                case Indicator.AO:
+                    indicatorInstance = new AwesomeOscillator(23, 45);
+                    break;
+                case Indicator.ADR:
+                    indicatorInstance = new AverageDayRange();
+                    break;
                 default:
                     throw new ApplicationException("Indicator not found");
             }

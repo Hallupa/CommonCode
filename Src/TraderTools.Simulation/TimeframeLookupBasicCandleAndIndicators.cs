@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using log4net;
 using TraderTools.Basics;
+using TraderTools.Basics.Extensions;
 
 namespace TraderTools.Simulation
 {
@@ -269,11 +270,13 @@ namespace TraderTools.Simulation
             TimeframeLookupBasicCandleAndIndicators timeframesAllCandles,
             List<Candle> m1Candles,
             Action<(TimeframeLookup<List<CandleAndIndicators>> CurrentCandles, Candle M1Candle, NewCandleFlags NewCandleFlags)> processNewCandleAction,
-            Func<double, string> getLogFunc)
+            Func<(DateTime LatestCandleDateTime, int SecondsRunning, double PercentComplete), string> getLogFunc,
+            Func<bool> getShouldStopFunc)
         {
             var timeframes = timeframesAllCandles.GetSetTimeframes();
             var timeframeCandleIndexes = new TimeframeLookup<int>();
             var timeframesCurrentCandles = new TimeframeLookup<List<CandleAndIndicators>>();
+            var startTimeUtc = DateTime.UtcNow;
 
             foreach (var timeframe in timeframes)
             {
@@ -291,6 +294,8 @@ namespace TraderTools.Simulation
             for (var i = 0; i < m1Candles.Count; i++)
             {
                 var m1Candle = m1Candles[i];
+
+                if (getShouldStopFunc != null && getShouldStopFunc()) break;
 
                 // Move candles forward
                 var timeframeCandleUpdated = false;
@@ -345,10 +350,11 @@ namespace TraderTools.Simulation
 
                 processNewCandleAction((timeframesCurrentCandles, m1Candle, newCandlesFlags));
 
-                if (DateTime.UtcNow > nextLogTime || i == m1Candles.Count - 1)
+                // Restrict number of times UtcNow is called as this can slow things down
+                if (i == m1Candles.Count - 1 || (timeframeCompleteCandleUpdated && DateTime.UtcNow > nextLogTime))
                 {
                     var percent = (i * 100.0) / m1Candles.Count;
-                    Log.Info(getLogFunc(percent));
+                    Log.Info(getLogFunc((m1Candle.CloseTime(), (int)(DateTime.UtcNow - startTimeUtc).TotalSeconds, percent)));
                     nextLogTime = DateTime.UtcNow.AddSeconds(LogIntervalSeconds);
                 }
             }

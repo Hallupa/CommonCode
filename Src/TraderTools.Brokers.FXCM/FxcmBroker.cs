@@ -806,7 +806,6 @@ namespace TraderTools.Brokers.FXCM
                     ClosePrice = !string.IsNullOrEmpty(sold2) ? decimal.Parse(sold2) : decimal.Parse(bought2),
                     CloseDateTime = DateTime.SpecifyKind(DateTime.ParseExact(date2, "M/d/y h:m tt", CultureInfo.InvariantCulture), DateTimeKind.Utc),
                     TradeDirection = !string.IsNullOrEmpty(sold) ? TradeDirection.Short : TradeDirection.Long,
-                    OrderKind = condition == "Mkt" ? OrderKind.Market : OrderKind.EntryPrice,
                     GrossProfitLoss = decimal.Parse(grossProfitLoss2),
                     NetProfitLoss = decimal.Parse(netProfitLoss2),
                     Rollover = decimal.Parse(rollover2)
@@ -876,13 +875,6 @@ namespace TraderTools.Brokers.FXCM
                     if (trade.CloseDateTime != existingTrade.CloseDateTime)
                     {
                         existingTrade.CloseDateTime = trade.CloseDateTime;
-                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
-                        updated = true;
-                    }
-
-                    if (trade.OrderKind != existingTrade.OrderKind)
-                    {
-                        existingTrade.OrderKind = trade.OrderKind;
                         if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                         updated = true;
                     }

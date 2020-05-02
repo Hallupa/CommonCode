@@ -52,9 +52,9 @@ namespace TraderTools.Simulation
         }
 
         public abstract List<Trade> CreateNewTrades(
-            MarketDetails market, TimeframeLookup<List<CandleAndIndicators>> candlesLookup, List<Trade> existingTrades, ITradeDetailsAutoCalculatorService calculatorService, DateTime currentTime);
+            MarketDetails market, TimeframeLookup<List<CandleAndIndicators>> candlesLookup, IEnumerable<Trade> existingTrades, ITradeDetailsAutoCalculatorService calculatorService, DateTime currentTime);
 
-        protected Trade CreateMarketOrder(string market, TradeDirection direction, Candle currentCandle, decimal stop, decimal riskPercent, decimal? limit = null)
+        protected Trade CreateMarketOrder(string market, TradeDirection direction, Candle currentCandle, decimal stop, decimal riskPercent, decimal? limit = null, string comments = "")
         {
             int? lotSize = 1000;
             var entryPrice = direction == TradeDirection.Long ? currentCandle.CloseAsk : currentCandle.CloseBid;
@@ -66,9 +66,9 @@ namespace TraderTools.Simulation
 
             if (lotSize == null) return null;
 
-            var trade = Trade.CreateMarketEntry(
+            var trade = TradeFactory.CreateMarketEntry(
                 "FXCM", (decimal)entryPrice, currentCandle.CloseTime(), direction, lotSize.Value, market, stop, limit,
-                _calculator);
+                _calculator, comments: comments, calculateOptions: CalculateOptions.ExcludePipsCalculations);
 
             return trade;
         }
@@ -85,7 +85,7 @@ namespace TraderTools.Simulation
                 if (lotSize == null) return null;
             }
 
-            var trade = Trade.CreateOrder(
+            var trade = TradeFactory.CreateOrder(
                     "FXCM",
                     entryPrice,
                     currentCandle,
@@ -95,7 +95,7 @@ namespace TraderTools.Simulation
                     expiryDateTime,
                     stop,
                     limit,
-                    _calculator);
+                    calculateOptions: CalculateOptions.ExcludePipsCalculations);
 
             return trade;
         }
