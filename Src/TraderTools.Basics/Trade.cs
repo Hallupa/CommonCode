@@ -645,6 +645,7 @@ namespace TraderTools.Basics
 
             OrderPrices.Add(new DatePrice(date, price));
             OrderPrices = OrderPrices.OrderBy(x => x.Date).ToList();
+            OrderPrice = OrderPrices[OrderPrices.Count - 1].Price;
         }
 
         public void ClearStopPrices()

@@ -515,7 +515,7 @@ namespace TraderTools.Brokers.FXCM
             {
                 var orderOrder = kvp.Value.FirstOrDefault(x => x.Type == "SE" || x.Type == "LE");
                 var orderOffer = orderOrder != null ? offersLookup[orderOrder.OfferID] : null;
-                var stopOrder = kvp.Value.FirstOrDefault(x => x.Type == "S");
+                var stopOrder = kvp.Value.FirstOrDefault(x => x.Type == "S" || x.Type == "ST"); // ST = Stop Trailing
                 var stopOffer = stopOrder != null ? offersLookup[stopOrder.OfferID] : null;
                 var limitOrder = kvp.Value.FirstOrDefault(x => x.Type == "L");
                 var limitOffer = limitOrder != null ? offersLookup[limitOrder.OfferID] : null;
@@ -530,6 +530,12 @@ namespace TraderTools.Brokers.FXCM
                 var instrument = orderOffer.Instrument;
                 var orderPrice = orderOrder.Rate;
                 var buySell = orderOrder.BuySell;
+                
+                if (string.IsNullOrEmpty(instrument))
+                {
+                    continue;
+                }
+
                 decimal? stop = GetStopPrice(stopOrder, candlesService, marketsService, instrument, (decimal)orderPrice, buySell);
                 decimal? limit = GetLimitPrice(limitOrder, candlesService, marketsService, instrument, (decimal)orderPrice, buySell);
                 var amount = orderOrder.Amount;
