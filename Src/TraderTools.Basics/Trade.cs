@@ -338,7 +338,7 @@ namespace TraderTools.Basics
             set
             {
                 _orderPrice = value;
-                OrderPriceFloat = (float)value;
+                OrderPriceFloat = (float?)value;
 
                 TradeCalculator.UpdateStopPips(this);
                 TradeCalculator.UpdateInitialStopPips(this);
@@ -443,7 +443,7 @@ namespace TraderTools.Basics
             set
             {
                 _stopPrice = value;
-                StopPriceFloat = (float)value;
+                StopPriceFloat = (float?)value;
                 OnPropertyChanged();
                 _updatedSubject.OnNext((this, TradeUpdated.Stop));
             }
@@ -491,7 +491,7 @@ namespace TraderTools.Basics
             set
             {
                 _limitPrice = value;
-                LimitPriceFloat = (float)value;
+                LimitPriceFloat = (float?)value;
                 OnPropertyChanged();
                 _updatedSubject.OnNext((this, TradeUpdated.Limit));
             }
