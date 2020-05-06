@@ -178,7 +178,7 @@ namespace TraderTools.Brokers.FXCM
 
             // Update trades from reports API
             updateProgressAction?.Invoke("Getting report");
-            var reportLines = GetReport(lastUpdateTime);
+            var reportLines = GetReport(); // Don't use lastUpdateTime because the broker account could have multiple accounts
             Log.Info("Getting historic trades");
             updateProgressAction?.Invoke("Getting historic trades"); 
             updated = GetReportTrades(account, candlesService, marketsService, reportLines, addedOrUpdatedTrades) || updated;
@@ -693,7 +693,7 @@ namespace TraderTools.Brokers.FXCM
             return ret;
         }
 
-        private string[] GetReport(DateTime? lastUpdateTime)
+        private string[] GetReport(DateTime? lastUpdateTime = null)
         {
             var url = "https://fxpa2.fxcorporate.com/fxpa/getreport.app/";
             var account = _user;
@@ -826,6 +826,7 @@ namespace TraderTools.Brokers.FXCM
                         trade.CloseReason = TradeCloseReason.ManualClose;
                         break;
                     case "Mkt": // Not sure what Mkt means? Some trades show as 'Mkt Mkt'
+                    case "MC": // Not sure what MC means? Market Close? Manual close?
                         trade.CloseReason = TradeCloseReason.ManualClose;
                         break;
                     default:

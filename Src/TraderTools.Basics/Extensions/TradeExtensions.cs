@@ -194,6 +194,25 @@ namespace TraderTools.Basics.Extensions
             }
         }
 
+        private static void ApplyOrderType(Trade t, float candleCloseAsk, float candleCloseBid)
+        {
+            if (t.OrderPrice != null)
+            {
+                if (t.TradeDirection == TradeDirection.Long)
+                {
+                    t.OrderType = t.OrderPrice.Value <= (decimal)candleCloseAsk
+                        ? OrderType.LimitEntry
+                        : OrderType.StopEntry;
+                }
+                else
+                {
+                    t.OrderType = t.OrderPrice.Value <= (decimal)candleCloseBid
+                        ? OrderType.StopEntry
+                        : OrderType.LimitEntry;
+                }
+            }
+        }
+
         private static void ProcessOrder(Trade trade, float candleBidLow, float candleBidHigh, float candleBidClose,
             float candleAskLow, float candleAskHigh, float candleAskClose, long candleCloseTimeTicks, ref bool updated)
         {
@@ -201,6 +220,8 @@ namespace TraderTools.Basics.Extensions
 
             if (order.OrderPrice != null)
             {
+                if (order.OrderType == null) ApplyOrderType(trade, candleAskClose, candleBidClose);
+
                 var orderType = order.OrderType ?? OrderType.LimitEntry;
                 var direction = order.TradeDirection;
                 var orderPrice = order.OrderPriceFloat;

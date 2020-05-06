@@ -24,7 +24,7 @@ namespace TraderTools.Simulation
                 Trade = t
             };
 
-            AddToList(tradeWithIndexing, ref _firstOpen);
+            AddToListStart(tradeWithIndexing, ref _firstOpen);
         }
 
         public int CachedTradesCount { get; set; } = 0;
@@ -36,7 +36,7 @@ namespace TraderTools.Simulation
                 Trade = t
             };
 
-            AddToList(tradeWithIndexing, ref _firstClosed);
+            AddToListStart(tradeWithIndexing, ref _firstClosed);
         }
 
         public void AddOrderTrade(Trade t)
@@ -46,28 +46,49 @@ namespace TraderTools.Simulation
                 Trade = t
             };
 
-            AddToList(tradeWithIndexing, ref _firstOrder);
+            if (_firstOrder == null)
+            {
+                _firstOrder = tradeWithIndexing;
+                return;
+            }
+
+            if (t.OrderDateTime.Value.Ticks <= _firstOrder.Trade.OrderDateTime.Value.Ticks)
+            {
+                AddToListStart(tradeWithIndexing, ref _firstOrder);
+                return;
+            }
+
+            // Find position
+            var positionNext = _firstOrder;
+            while (positionNext.Next != null && positionNext.Next.Trade.OrderDateTime.Value.Ticks < t.OrderDateTime.Value.Ticks)
+            {
+                positionNext = positionNext.Next;
+            }
+
+            tradeWithIndexing.Next = positionNext.Next;
+            tradeWithIndexing.Prev = positionNext;
+            positionNext.Next = tradeWithIndexing;
         }
 
         public void MoveOrderToOpen(TradeWithIndexing t)
         {
             RemoveFromList(t, ref _firstOrder);
-            AddToList(t, ref _firstOpen);
+            AddToListStart(t, ref _firstOpen);
         }
 
         public void MoveOrderToClosed(TradeWithIndexing t)
         {
             RemoveFromList(t, ref _firstOrder);
-            AddToList(t, ref _firstClosed);
+            AddToListStart(t, ref _firstClosed);
         }
 
         public void MoveOpenToClose(TradeWithIndexing t)
         {
             RemoveFromList(t, ref _firstOpen);
-            AddToList(t, ref _firstClosed);
+            AddToListStart(t, ref _firstClosed);
         }
 
-        private void AddToList(TradeWithIndexing t, ref TradeWithIndexing first)
+        private void AddToListStart(TradeWithIndexing t, ref TradeWithIndexing first)
         {
             t.Prev = null;
             t.Next = first;
@@ -105,7 +126,7 @@ namespace TraderTools.Simulation
             }
         }
 
-        public IEnumerable<TradeWithIndexing> OrderTrades
+        public IEnumerable<TradeWithIndexing> OrderTradesAsc
         {
             get
             {
@@ -121,7 +142,7 @@ namespace TraderTools.Simulation
             }
         }
 
-        public IEnumerable<TradeWithIndexing> AllTrades => OrderTrades.Concat(OpenTrades).Concat(ClosedTrades);
+        public IEnumerable<TradeWithIndexing> AllTrades => OrderTradesAsc.Concat(OpenTrades).Concat(ClosedTrades);
 
         public IEnumerable<TradeWithIndexing> ClosedTrades
         {

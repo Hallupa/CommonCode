@@ -93,6 +93,7 @@
     <Compile Include="BindingProxy.cs" />
     <Compile Include="Converters\BoolMultiConverter.cs" />
     <Compile Include="Converters\BoolToVisibilityConverter.cs" />
+    <Compile Include="Converters\EnumDescriptionConverter.cs" />
     <Compile Include="Converters\InvBoolConverter.cs" />
     <Compile Include="Converters\InvObjectToBoolConverter.cs" />
     <Compile Include="Converters\ObjectToBoolConverter.cs" />
