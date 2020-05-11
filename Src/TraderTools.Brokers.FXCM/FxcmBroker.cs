@@ -153,7 +153,7 @@ namespace TraderTools.Brokers.FXCM
         }
 
         public bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService,
-            IMarketDetailsService marketsService, Action<string> updateProgressAction, DateTime? lastUpdateTime, out List<Trade> addedOrUpdatedTrades)
+            IMarketDetailsService marketsService, Action<string> updateProgressAction, DateTime? lastUpdateTime, out List<Trade> addedOrUpdatedTrades, Action<string> f)
         {
             var tableManager = GetTableManager();
             addedOrUpdatedTrades = new List<Trade>();
@@ -924,6 +924,7 @@ namespace TraderTools.Brokers.FXCM
                 }
             }
 
+
             return -1;
         }
 
@@ -932,6 +933,18 @@ namespace TraderTools.Brokers.FXCM
             GetHistoryPrices(market, "t1", Timeframe.T1, utcStart, utcEnd, null, out _, out var ret);
 
             return ret;
+        }
+
+        public bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService,
+            Action<string> updateProgressAction)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService,
+            Action<string> updateProgressAction, DateTime? lastUpdateTime, out List<Trade> addedOrUpdatedTrades)
+        {
+            throw new NotImplementedException();
         }
 
         public bool UpdateCandles(List<Candle> candles, string market, Timeframe timeframe, DateTime start, Action<string> progressUpdate)
@@ -1183,7 +1196,17 @@ namespace TraderTools.Brokers.FXCM
                         }
                     }
                     ConstructCandles(Session, response, timeframe, out var tmpCandles, out var tmpTickData);
-                    Log.Debug($"FCXM got {tmpCandles.Count} candles for {instrument} {timeframe} (Total {candles.Count}) {tmpTickData.Count} ticks (Total {ticks.Count} - {(ticks.Count > 0 ? ticks[ticks.Count - 1].Datetime.ToString() : string.Empty)} - {(ticks.Count > 0 ? ticks[0].Datetime.ToString() : string.Empty)})");
+
+
+                    if (tmpCandles.Count > 0)
+                    {
+                        Log.Debug($"FCXM got {tmpCandles.Count} candles for {instrument} {timeframe} (Total {candles.Count})");
+                    }
+
+                    if (tmpTickData.Count > 0)
+                    {
+                        Log.Debug($"FCXM got {tmpTickData.Count} ticks (Total {ticks.Count} - {(ticks.Count > 0 ? ticks[ticks.Count - 1].Datetime.ToString() : string.Empty)} - {(ticks.Count > 0 ? ticks[0].Datetime.ToString() : string.Empty)})");
+                    }
 
                     candles.AddRange(tmpCandles);
                     downloadedCandles += tmpCandles.Count;

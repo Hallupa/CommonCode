@@ -50,9 +50,9 @@ namespace TraderTools.Core.Services
             }
         }
 
-        public void UpdateCandles(IBroker broker, string market, Timeframe timeframe, bool forceUpdate = true)
+        public void UpdateCandles(IBroker broker, string market, Timeframe timeframe, bool forceUpdate = true, bool saveCandles = true)
         {
-            GetCandles(broker, market, timeframe, true, forceUpdate: forceUpdate);
+            GetCandles(broker, market, timeframe, true, forceUpdate: forceUpdate, saveCandles: saveCandles);
         }
 
         private Dictionary<(IBroker Broker, string Market, Timeframe Timeframe), object> _lockLookups = new Dictionary<(IBroker Broker, string Market, Timeframe Timeframe), object>();
@@ -74,7 +74,8 @@ namespace TraderTools.Core.Services
         }
 
         public List<Candle> GetCandles(IBroker broker, string market, Timeframe timeframe,
-            bool updateCandles, DateTime? minOpenTimeUtc = null, DateTime? maxCloseTimeUtc = null, bool cacheData = true, bool forceUpdate = false, Action<string> progressUpdate = null)
+            bool updateCandles, DateTime? minOpenTimeUtc = null, DateTime? maxCloseTimeUtc = null, bool cacheData = true,
+            bool forceUpdate = false, Action<string> progressUpdate = null, bool saveCandles = true)
         {
             var lck = GetLock(broker, market, timeframe);
             var start = _earliestDateTime;
@@ -125,12 +126,17 @@ namespace TraderTools.Core.Services
                     if (candles.Any())
                     {
                         var change = timeframe == Timeframe.M1 ? -2 : -10;
+                        if (timeframe == Timeframe.M5) change = -6;
                         start = new DateTime(candles[candles.Count - 1].OpenTimeTicks).AddMinutes(change);
                     }
                     
                     if (broker.UpdateCandles(candles, market, timeframe, start, progressUpdate))
                     {
-                        SaveCandles(candles, broker, market, timeframe);
+                        if (saveCandles)
+                        {
+                            SaveCandles(candles, broker, market, timeframe);
+                        }
+
                         Log.Debug($"Updated {broker.Name} {market} {timeframe} candles");
                     }
 

@@ -203,12 +203,21 @@ namespace Hallupa.Library.UI
         {
             if (ShowExpanded)
             {
-                LogRow.Height = new GridLength(300);
+                LogRowHeight = new GridLength(300);
             }
             else
             {
-                LogRow.Height = new GridLength(0);
+                LogRowHeight = new GridLength(0);
             }
+        }
+
+        public static readonly DependencyProperty LogRowHeightProperty = DependencyProperty.Register(
+            "LogRowHeight", typeof(GridLength), typeof(LogControl), new PropertyMetadata(new GridLength(0)));
+
+        public GridLength LogRowHeight
+        {
+            get { return (GridLength) GetValue(LogRowHeightProperty); }
+            set { SetValue(LogRowHeightProperty, value); }
         }
     }
 }
