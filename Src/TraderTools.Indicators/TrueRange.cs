@@ -16,14 +16,27 @@ namespace TraderTools.Indicators
         /// <param name="currentCandle">The current candle.</param>
         /// <param name="prevCandle">The previous candle.</param>
         /// <returns>Price components.</returns>
-        private float[] GetPriceMovements(Candle currentCandle, Candle prevCandle)
+        private float GetPriceMovementsMax(Candle currentCandle, Candle prevCandle)
         {
-            return new[]
+            var ret = currentCandle.HighBid - currentCandle.LowBid;
+            var a = Math.Abs(prevCandle.CloseBid - currentCandle.HighBid);
+            var b = Math.Abs(prevCandle.CloseBid - currentCandle.LowBid);
+
+            if (a > ret)
             {
-                Math.Abs(currentCandle.HighBid - currentCandle.LowBid),
-                Math.Abs(prevCandle.CloseBid - currentCandle.HighBid),
-                Math.Abs(prevCandle.CloseBid - currentCandle.LowBid)
-            };
+                ret = a;
+
+                if (b > ret)
+                {
+                    ret = b;
+                }
+            }
+            else if (b > ret)
+            {
+                ret = b;
+            }
+
+            return ret;
         }
 
         public void Reset()
@@ -41,12 +54,12 @@ namespace TraderTools.Indicators
                 if (candle.IsComplete == 1)
                     IsFormed = true;
 
-                var priceMovements = GetPriceMovements(candle, _prevCandle.Value);
+                var priceMovementsMax = GetPriceMovementsMax(candle, _prevCandle.Value);
 
                 if (candle.IsComplete == 1)
                     _prevCandle = candle;
 
-                return new SignalAndValue(priceMovements.Max(), IsFormed);
+                return new SignalAndValue(priceMovementsMax, IsFormed);
             }
 
             if (candle.IsComplete == 1)

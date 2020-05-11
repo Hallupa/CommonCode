@@ -178,7 +178,7 @@ namespace TraderTools.Brokers.FXCM
 
             // Update trades from reports API
             updateProgressAction?.Invoke("Getting report");
-            var reportLines = GetReport(lastUpdateTime);
+            var reportLines = GetReport(); // Don't use lastUpdateTime because the broker account could have multiple accounts
             Log.Info("Getting historic trades");
             updateProgressAction?.Invoke("Getting historic trades"); 
             updated = GetReportTrades(account, candlesService, marketsService, reportLines, addedOrUpdatedTrades) || updated;
@@ -515,7 +515,7 @@ namespace TraderTools.Brokers.FXCM
             {
                 var orderOrder = kvp.Value.FirstOrDefault(x => x.Type == "SE" || x.Type == "LE");
                 var orderOffer = orderOrder != null ? offersLookup[orderOrder.OfferID] : null;
-                var stopOrder = kvp.Value.FirstOrDefault(x => x.Type == "S");
+                var stopOrder = kvp.Value.FirstOrDefault(x => x.Type == "S" || x.Type == "ST"); // ST = Stop Trailing
                 var stopOffer = stopOrder != null ? offersLookup[stopOrder.OfferID] : null;
                 var limitOrder = kvp.Value.FirstOrDefault(x => x.Type == "L");
                 var limitOffer = limitOrder != null ? offersLookup[limitOrder.OfferID] : null;
@@ -530,6 +530,12 @@ namespace TraderTools.Brokers.FXCM
                 var instrument = orderOffer.Instrument;
                 var orderPrice = orderOrder.Rate;
                 var buySell = orderOrder.BuySell;
+                
+                if (string.IsNullOrEmpty(instrument))
+                {
+                    continue;
+                }
+
                 decimal? stop = GetStopPrice(stopOrder, candlesService, marketsService, instrument, (decimal)orderPrice, buySell);
                 decimal? limit = GetLimitPrice(limitOrder, candlesService, marketsService, instrument, (decimal)orderPrice, buySell);
                 var amount = orderOrder.Amount;
@@ -687,7 +693,7 @@ namespace TraderTools.Brokers.FXCM
             return ret;
         }
 
-        private string[] GetReport(DateTime? lastUpdateTime)
+        private string[] GetReport(DateTime? lastUpdateTime = null)
         {
             var url = "https://fxpa2.fxcorporate.com/fxpa/getreport.app/";
             var account = _user;
@@ -800,7 +806,6 @@ namespace TraderTools.Brokers.FXCM
                     ClosePrice = !string.IsNullOrEmpty(sold2) ? decimal.Parse(sold2) : decimal.Parse(bought2),
                     CloseDateTime = DateTime.SpecifyKind(DateTime.ParseExact(date2, "M/d/y h:m tt", CultureInfo.InvariantCulture), DateTimeKind.Utc),
                     TradeDirection = !string.IsNullOrEmpty(sold) ? TradeDirection.Short : TradeDirection.Long,
-                    OrderKind = condition == "Mkt" ? OrderKind.Market : OrderKind.EntryPrice,
                     GrossProfitLoss = decimal.Parse(grossProfitLoss2),
                     NetProfitLoss = decimal.Parse(netProfitLoss2),
                     Rollover = decimal.Parse(rollover2)
@@ -821,6 +826,7 @@ namespace TraderTools.Brokers.FXCM
                         trade.CloseReason = TradeCloseReason.ManualClose;
                         break;
                     case "Mkt": // Not sure what Mkt means? Some trades show as 'Mkt Mkt'
+                    case "MC": // Not sure what MC means? Market Close? Manual close?
                         trade.CloseReason = TradeCloseReason.ManualClose;
                         break;
                     default:
@@ -870,13 +876,6 @@ namespace TraderTools.Brokers.FXCM
                     if (trade.CloseDateTime != existingTrade.CloseDateTime)
                     {
                         existingTrade.CloseDateTime = trade.CloseDateTime;
-                        if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
-                        updated = true;
-                    }
-
-                    if (trade.OrderKind != existingTrade.OrderKind)
-                    {
-                        existingTrade.OrderKind = trade.OrderKind;
                         if (!addedOrUpdatedTrades.Contains(trade)) addedOrUpdatedTrades.Add(trade);
                         updated = true;
                     }

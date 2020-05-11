@@ -108,7 +108,7 @@ namespace TraderTools.Core.UI.ViewModels
             var t = (Trade)obj;
             return ((ShowOpenTrades && t.EntryPrice != null && t.CloseDateTime == null)
                    || (ShowOrders && t.OrderPrice != null && t.EntryPrice == null && t.CloseDateTime == null)
-                   || (ShowClosedTrades && t.CloseDateTime != null));// && t.Id == "34728772";
+                   || (ShowClosedTrades && t.CloseDateTime != null));
         }
 
         public static readonly DependencyProperty TradeSelectionModeProperty = DependencyProperty.Register(
@@ -172,11 +172,11 @@ namespace TraderTools.Core.UI.ViewModels
         {
         }
 
-        public void ViewTrade(Trade tradeDetails, bool updatePrices, Action<string> updateProgressAction = null)
+        public void ViewTrade(Trade trade, bool updatePrices, Action<string> updateProgressAction = null)
         {
-            if (tradeDetails == null) return;
+            if (trade == null) return;
 
-            ShowTrade(tradeDetails, updatePrices, updateProgressAction);
+            ShowTrade(trade, trade.Timeframe ?? Timeframe.H4, updatePrices, updateProgressAction);
         }
 
         protected override void LargeChartTimeframeChanged()
@@ -244,8 +244,9 @@ namespace TraderTools.Core.UI.ViewModels
                     return;
                 }
 
-                if (tradeShowingOnChartChanged)
+                if (tradeShowingOnChartChanged || LargeChartTimeframe != largeChartTimeframe)
                 {
+                    LargeChartTimeframe = largeChartTimeframe;
                     ViewCandles(trade.Market, smallChartTimeframe, smallChartCandles, largeChartTimeframe,
                         largeChartCandles);
 
@@ -302,12 +303,12 @@ namespace TraderTools.Core.UI.ViewModels
 
         protected event Action<Trade> TradeShown;
 
-        protected void ShowTrade(Trade trade, bool updateCandles = false, Action<string> updateProgressAction = null)
+        protected void ShowTrade(Trade trade, Timeframe largeChartTimeframe, bool updateCandles = false, Action<string> updateProgressAction = null)
         {
             _showingTradeSetup = false;
             DateTime? start = null, end = null;
 
-            if (LargeChartTimeframe == Timeframe.M1)
+            if (largeChartTimeframe == Timeframe.M1)
             {
                 start = trade.StartDateTime.Value.AddMinutes(-20);
                 end = trade.CloseDateTime != null
@@ -315,10 +316,10 @@ namespace TraderTools.Core.UI.ViewModels
                     : trade.StartDateTime.Value.AddMinutes(240);
             }
 
-            var largeChartCandles = BrokerCandles.GetCandles(Broker, trade.Market, LargeChartTimeframe, updateCandles, cacheData: false, minOpenTimeUtc: start, maxCloseTimeUtc: end, progressUpdate: updateProgressAction);
+            var largeChartCandles = BrokerCandles.GetCandles(Broker, trade.Market, largeChartTimeframe, updateCandles, cacheData: false, minOpenTimeUtc: start, maxCloseTimeUtc: end, progressUpdate: updateProgressAction);
             var smallChartCandles = BrokerCandles.GetCandles(Broker, trade.Market, SmallChartTimeframe, updateCandles, progressUpdate: updateProgressAction);
 
-            ShowTrade(trade, SmallChartTimeframe, smallChartCandles, LargeChartTimeframe, largeChartCandles);
+            ShowTrade(trade, SmallChartTimeframe, smallChartCandles, largeChartTimeframe, largeChartCandles);
         }
 
         protected void ShowTradeSetup(Trade trade, bool updateCandles = false)

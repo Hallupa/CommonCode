@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using log4net;
 using TraderTools.Basics;
+using TraderTools.Basics.Extensions;
 
 namespace TraderTools.Simulation
 {
@@ -18,7 +19,7 @@ namespace TraderTools.Simulation
     public class TimeframeLookupBasicCandleAndIndicators : TimeframeLookup<List<CandleAndIndicators>>
     {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        private const int LogIntervalSeconds = 5;
+        private const int LogIntervalSeconds = 10;
         public static CachedDetails Cache { get; set; } = new CachedDetails();
 
         public static List<Candle> GetM1Candles(IBroker broker, string market, IBrokersCandlesService candlesService,
@@ -71,7 +72,6 @@ namespace TraderTools.Simulation
             var earliestCandle = earliest != null ? (DateTime?)earliest.Value.AddDays(-100) : null;
 
             var ret = new TimeframeLookupBasicCandleAndIndicators();
-
 
             // Get existing candles
             var missingCandles = false;
@@ -180,10 +180,10 @@ namespace TraderTools.Simulation
                     var completedCandleAdded = false;
                     var timeframeLookupIndex = TimeframeLookup<int>.GetLookupIndex(timeframe);
 
-                    if (timeframe == Timeframe.M15)
+                    if (timeframe == smallestTimeframe)
                     {
                         var candleWithIndicators = new CandleAndIndicators(smallestCandle, timeframeMaxIndicatorValues[timeframeLookupIndex]);
-                        UpdateIndicators(timeframeIndicators, timeframeLookupIndex, candleWithIndicators);
+                        UpdateIndicators(timeframeIndicators, timeframeLookupIndex, ref candleWithIndicators);
                         timeframeAllCandlesProcessed[timeframeLookupIndex].Add(candleWithIndicators);
                         continue;
                     }
@@ -197,7 +197,7 @@ namespace TraderTools.Simulation
                         {
                             completedCandleAdded = true;
                             var candleWithIndicators = new CandleAndIndicators(timeframeCandle, timeframeMaxIndicatorValues[timeframeLookupIndex]);
-                            UpdateIndicators(timeframeIndicators, timeframeLookupIndex, candleWithIndicators);
+                            UpdateIndicators(timeframeIndicators, timeframeLookupIndex, ref candleWithIndicators);
                             timeframeCandleIndexes[timeframeLookupIndex] = ii + 1;
                             timeframeAllCandlesProcessed[timeframeLookupIndex].Add(candleWithIndicators);
                         }
@@ -233,7 +233,7 @@ namespace TraderTools.Simulation
                             );
 
                             timeframeAllCandlesProcessed[timeframeLookupIndex].Add(incompleteCandle);
-                            UpdateIndicators(timeframeIndicators, timeframeLookupIndex, incompleteCandle);
+                            UpdateIndicators(timeframeIndicators, timeframeLookupIndex, ref incompleteCandle);
                         }
                         else
                         {
@@ -254,7 +254,7 @@ namespace TraderTools.Simulation
                             );
 
                             timeframeAllCandlesProcessed[timeframeLookupIndex].Add(incompleteCandle);
-                            UpdateIndicators(timeframeIndicators, timeframeLookupIndex, incompleteCandle);
+                            UpdateIndicators(timeframeIndicators, timeframeLookupIndex, ref incompleteCandle);
                         }
                     }
                 }
@@ -269,11 +269,13 @@ namespace TraderTools.Simulation
             TimeframeLookupBasicCandleAndIndicators timeframesAllCandles,
             List<Candle> m1Candles,
             Action<(TimeframeLookup<List<CandleAndIndicators>> CurrentCandles, Candle M1Candle, NewCandleFlags NewCandleFlags)> processNewCandleAction,
-            Func<double, string> getLogFunc)
+            Func<(DateTime LatestCandleDateTime, int SecondsRunning, double PercentComplete), string> getLogFunc,
+            Func<bool> getShouldStopFunc)
         {
             var timeframes = timeframesAllCandles.GetSetTimeframes();
             var timeframeCandleIndexes = new TimeframeLookup<int>();
             var timeframesCurrentCandles = new TimeframeLookup<List<CandleAndIndicators>>();
+            var startTimeUtc = DateTime.UtcNow;
 
             foreach (var timeframe in timeframes)
             {
@@ -291,6 +293,8 @@ namespace TraderTools.Simulation
             for (var i = 0; i < m1Candles.Count; i++)
             {
                 var m1Candle = m1Candles[i];
+
+                if (getShouldStopFunc != null && getShouldStopFunc()) break;
 
                 // Move candles forward
                 var timeframeCandleUpdated = false;
@@ -345,10 +349,11 @@ namespace TraderTools.Simulation
 
                 processNewCandleAction((timeframesCurrentCandles, m1Candle, newCandlesFlags));
 
-                if (DateTime.UtcNow > nextLogTime || i == m1Candles.Count - 1)
+                // Restrict number of times UtcNow is called as this can slow things down
+                if (i == m1Candles.Count - 1 || (timeframeCompleteCandleUpdated && DateTime.UtcNow > nextLogTime))
                 {
                     var percent = (i * 100.0) / m1Candles.Count;
-                    Log.Info(getLogFunc(percent));
+                    Log.Info(getLogFunc((m1Candle.CloseTime(), (int)(DateTime.UtcNow - startTimeUtc).TotalSeconds, percent)));
                     nextLogTime = DateTime.UtcNow.AddSeconds(LogIntervalSeconds);
                 }
             }
@@ -357,7 +362,7 @@ namespace TraderTools.Simulation
         private static void UpdateIndicators(
             TimeframeLookup<List<(Indicator, IIndicator)>> timeframeIndicators,
             int timeframeLookupIndex,
-            CandleAndIndicators timeframeCandle)
+            ref CandleAndIndicators timeframeCandle)
         {
             var indicators = timeframeIndicators[timeframeLookupIndex];
             if (indicators != null)
