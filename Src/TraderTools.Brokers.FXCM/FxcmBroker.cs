@@ -159,7 +159,7 @@ namespace TraderTools.Brokers.FXCM
         }
 
         public bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService,
-            IMarketDetailsService marketsService, Action<string> updateProgressAction, out List<Trade> addedOrUpdatedTrades, Action<string> f)
+            IMarketDetailsService marketsService, Action<string> updateProgressAction, out List<Trade> addedOrUpdatedTrades)
         {
             var tableManager = GetTableManager();
             addedOrUpdatedTrades = new List<Trade>();
