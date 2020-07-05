@@ -31,11 +31,5 @@ namespace TraderTools.Indicators
             var smResult = _smaSm.Process(candle);
             return new SignalAndValue(fmResult.Value - smResult.Value, _smaFm.IsFormed && _smaSm.IsFormed);
         }
-
-        public void Reset()
-        {
-            _smaFm.Reset();
-            _smaSm.Reset();
-        }
     }
 }

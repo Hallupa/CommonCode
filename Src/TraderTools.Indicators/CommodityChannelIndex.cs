@@ -11,14 +11,14 @@ namespace TraderTools.Indicators
             Length = 15;
         }
 
+        public CommodityChannelIndex(int length)
+        {
+            Length = length;
+        }
+
         public override string Name => "CCI";
 
         public override bool IsFormed => _mean.IsFormed;
-
-        public override void Reset()
-        {
-            _mean.Length = Length;
-        }
 
         public override SignalAndValue Process(Candle candle)
         {

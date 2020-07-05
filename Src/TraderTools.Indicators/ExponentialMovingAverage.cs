@@ -13,21 +13,13 @@ namespace TraderTools.Indicators
         /// Initializes a new instance of the <see cref="ExponentialMovingAverage"/>.
         /// </summary>
         public ExponentialMovingAverage()
+            : this(32)
         {
-            Length = 32;
         }
 
         public ExponentialMovingAverage(int length)
         {
             Length = length;
-        }
-
-        /// <summary>
-        /// To reset the indicator status to initial. The method is called each time when initial settings are changed (for example, the length of period).
-        /// </summary>
-        public override void Reset()
-        {
-            base.Reset();
             _multiplier = 2.0F / (Length + 1);
             _prevFinalValue = 0;
         }

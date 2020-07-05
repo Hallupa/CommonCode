@@ -16,7 +16,7 @@ namespace TraderTools.Indicators
 
         public T3CommodityChannelIndex()
         {
-            _cci = new CommodityChannelIndex { Length = 14 };
+            _cci = new CommodityChannelIndex(14);
             _t3Period = 5;
         }
 
@@ -61,17 +61,6 @@ namespace TraderTools.Indicators
             var xccir = c1 * e6 + c2 * e5 + c3 * e4 + c4 * e3;
 
             return new SignalAndValue(xccir, IsFormed);
-        }
-
-        public void Reset()
-        {
-            e1 = float.NaN;
-            e2 = float.NaN;
-            e3 = float.NaN;
-            e4 = float.NaN;
-            e5 = float.NaN;
-            e6 = float.NaN;
-            _cci.Reset();
         }
     }
 }

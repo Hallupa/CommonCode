@@ -48,12 +48,6 @@ namespace TraderTools.Indicators
         /// </summary>
         public bool IsFormed => LongMa.IsFormed;
 
-        public void Reset()
-        {
-            ShortMa.Reset();
-            LongMa.Reset();
-        }
-
         public SignalAndValue Process(Candle candle)
         {
             var shortValue = ShortMa.Process(candle);

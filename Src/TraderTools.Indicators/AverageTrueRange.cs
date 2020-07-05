@@ -7,39 +7,38 @@ namespace TraderTools.Indicators
     {
         public AverageTrueRange()
         {
-            MovingAverage = new WilderMovingAverage();
-            TrueRange = new TrueRange();
         }
 
-        public WilderMovingAverage MovingAverage { get; }
+        private SimpleMovingAverage _movingAverage = new SimpleMovingAverage(14);
+        private Candle _prevCandle;
 
-        public TrueRange TrueRange { get; }
 
         /// <summary>
         /// Whether the indicator is set.
         /// </summary>
         public bool IsFormed { get; set; }
 
-        public string Name => "ATR";
+        public string Name => $"ATR{_movingAverage.Length}";
 
-        public void Reset()
+        public float GetTrueRange(Candle candle, Candle candlePrev)
         {
-            IsFormed = false;
+            var hl = Math.Abs(candle.HighBid - candle.LowBid);
+            var hc = Math.Abs(candle.HighBid - candlePrev.CloseBid);
+            var lc = Math.Abs(candle.LowBid - candlePrev.CloseBid);
 
-            MovingAverage.Reset();
-            TrueRange.Reset();
+            var tr = hl;
+            if (tr < hc) tr = hc;
+            if (tr < lc) tr = lc;
+            return tr;
         }
 
         public SignalAndValue Process(Candle candle)
         {
-            IsFormed = MovingAverage.IsFormed;
+            var ma = _movingAverage.Process(GetTrueRange(candle, _prevCandle), _prevCandle.IsComplete == 1);
+            IsFormed = ma.IsFormed;
 
-            var v = TrueRange.Process(candle);
-            return MovingAverage.Process(new Candle
-            {
-                CloseBid = v.Value,
-                IsComplete = candle.IsComplete
-            });
+            _prevCandle = candle;
+            return new SignalAndValue(ma.Value, ma.IsFormed);
         }
     }
 }

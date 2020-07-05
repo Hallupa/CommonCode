@@ -18,13 +18,6 @@ namespace TraderTools.Indicators
 
         public string Name => "ADR";
 
-        public void Reset()
-        {
-            IsFormed = false;
-
-            MovingAverage.Reset();
-        }
-
         public SignalAndValue Process(Candle candle)
         {
             IsFormed = MovingAverage.IsFormed;

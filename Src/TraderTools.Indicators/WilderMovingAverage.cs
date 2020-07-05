@@ -1,12 +1,11 @@
-﻿using System.Linq;
-using TraderTools.Basics;
+﻿using TraderTools.Basics;
 
 namespace TraderTools.Indicators
 {
-    public class WilderMovingAverage : LengthIndicator
+    public class WilderMovingAverage : IIndicator
     {
-        private float _prevFinalValue;
-        private float _multiplier = 1;
+        private float _prevValue = 0;
+        private int _valueCount = 0;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WilderMovingAverage"/>.
@@ -16,48 +15,38 @@ namespace TraderTools.Indicators
             Length = 32;
         }
 
+        public int Length { get; }
+
         public WilderMovingAverage(int length)
         {
             Length = length;
         }
 
-        /// <summary>
-        /// To reset the indicator status to initial. The method is called each time when initial settings are changed (for example, the length of period).
-        /// </summary>
-        public override void Reset()
-        {
-            base.Reset();
-            _multiplier = 1.0F / Length;
-            _prevFinalValue = 0;
-        }
 
-        public override string Name => $"WMA{Length}";
+        public bool IsFormed => _valueCount >= Length;
 
-        public override SignalAndValue Process(Candle candle)
+        public string Name => $"WMA{Length}";
+
+        public SignalAndValue Process(Candle candle)
         {
             var newValue = candle.CloseBid;
 
-            if (!IsFormed)
+            var valueCount = _valueCount + 1;
+            if (valueCount > Length) valueCount = Length;
+
+            if (candle.IsComplete == 1)
             {
-                if (candle.IsComplete == 1)
-                {
-                    Buffer.Add(newValue);
-
-                    _prevFinalValue = Buffer.Sum() / Length;
-
-                    return new SignalAndValue(_prevFinalValue, IsFormed);
-                }
-
-                return new SignalAndValue((Buffer.Skip(1).Sum() + newValue) / Length, IsFormed);
+                _valueCount = valueCount;
             }
-            else
+
+            var v = (_prevValue * (valueCount - 1) + newValue) / valueCount;
+
+            if (candle.IsComplete == 1)
             {
-                var curValue = (newValue - _prevFinalValue) * _multiplier + _prevFinalValue;
-
-                if (candle.IsComplete == 1) _prevFinalValue = curValue;
-
-                return new SignalAndValue(curValue, IsFormed);
+                _prevValue = v;
             }
+
+            return new SignalAndValue(v, IsFormed);
         }
     }
 }
