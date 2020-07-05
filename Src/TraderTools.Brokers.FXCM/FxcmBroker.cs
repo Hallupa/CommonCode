@@ -11,11 +11,17 @@ using com.fxcm.report;
 using fxcore2;
 using Hallupa.Library;
 using log4net;
+using Newtonsoft.Json;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
 
 namespace TraderTools.Brokers.FXCM
 {
+    public class CustomJson
+    {
+        public Dictionary<string, DateTime> LastUpdateTime { get; set; } = new Dictionary<string, DateTime>();
+    }
+
     public class FxcmBroker : IDisposable, IBroker
     {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
@@ -153,7 +159,7 @@ namespace TraderTools.Brokers.FXCM
         }
 
         public bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService,
-            IMarketDetailsService marketsService, Action<string> updateProgressAction, DateTime? lastUpdateTime, out List<Trade> addedOrUpdatedTrades)
+            IMarketDetailsService marketsService, Action<string> updateProgressAction, out List<Trade> addedOrUpdatedTrades)
         {
             var tableManager = GetTableManager();
             addedOrUpdatedTrades = new List<Trade>();
@@ -161,6 +167,12 @@ namespace TraderTools.Brokers.FXCM
             if (tableManager == null)
             {
                 return false;
+            }
+
+            var custom = new CustomJson();
+            if (!string.IsNullOrEmpty(account.CustomJson))
+            {
+                custom = JsonConvert.DeserializeObject<CustomJson>(account.CustomJson);
             }
 
             // Get open trades
@@ -178,7 +190,14 @@ namespace TraderTools.Brokers.FXCM
 
             // Update trades from reports API
             updateProgressAction?.Invoke("Getting report");
-            var reportLines = GetReport(); // Don't use lastUpdateTime because the broker account could have multiple accounts
+
+            DateTime? lastUpdateTime = null;
+            if (custom.LastUpdateTime.ContainsKey(_user)) lastUpdateTime = custom.LastUpdateTime[_user];
+
+            var reportLines = GetReport(lastUpdateTime);
+            custom.LastUpdateTime[_user] = DateTime.UtcNow;
+            account.CustomJson = JsonConvert.SerializeObject(custom);
+
             Log.Info("Getting historic trades");
             updateProgressAction?.Invoke("Getting historic trades"); 
             updated = GetReportTrades(account, candlesService, marketsService, reportLines, addedOrUpdatedTrades) || updated;
