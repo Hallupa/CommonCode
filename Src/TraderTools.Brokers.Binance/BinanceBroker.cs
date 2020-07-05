@@ -88,7 +88,7 @@ namespace TraderTools.Brokers.Binance
         private string _apiKey;
         private string _apiSecret;
 
-        public ICandle GetSingleCandle(string market, Timeframe timeframe, DateTime date)
+        public Candle? GetSingleCandle(string market, Timeframe timeframe, DateTime date)
         {
             this.WaitForStatus(ConnectStatus.Connected);
             var interval = GetKlineInterval(timeframe);
@@ -103,7 +103,7 @@ namespace TraderTools.Brokers.Binance
             return CreateCandle(klines.Data.OrderByDescending(x => x.CloseTime).First(), market);
         }
 
-        public bool UpdateCandles(List<ICandle> candles, string market, Timeframe timeframe, DateTime start)
+        public bool UpdateCandles(List<Candle> candles, string market, Timeframe timeframe, DateTime start, Action<string> progressUpdate)
         {
             var limit = 500;
             var to = DateTime.UtcNow;
@@ -146,7 +146,7 @@ namespace TraderTools.Brokers.Binance
                 foreach (var kline in klines.Data)
                 {
                     var candle = CreateCandle(kline, market);
-                    candle.Timeframe = (int)timeframe;
+                    //candle.Timeframe = (int)timeframe;
 
                     if (candles.All(x => x.CloseTimeTicks != candle.CloseTimeTicks))
                     {
@@ -329,13 +329,13 @@ namespace TraderTools.Brokers.Binance
             {
                 CloseTimeTicks = kline.CloseTime.Ticks,
                 IsComplete = kline.CloseTime <= DateTime.UtcNow ? (byte)1 : (byte)0,
-                Close = (double)kline.Close,
-                High = (double)kline.High,
-                Low = (double)kline.Low,
+                CloseAsk = (float)kline.Close,
+                HighAsk = (float)kline.High,
+                LowAsk = (float)kline.Low,
                 OpenTimeTicks = kline.OpenTime.Ticks,
-                Open = (double)kline.Open,
-                Volume = (double)kline.Volume,
-                TradeCount = kline.TradeCount
+                OpenAsk = (float)kline.Open,
+                //Volume = (double)kline.Volume,
+                //TradeCount = kline.TradeCount
             };
         }
 

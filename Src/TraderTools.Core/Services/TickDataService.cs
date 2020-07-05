@@ -24,14 +24,16 @@ namespace TraderTools.Core.Services
             _dataDirectoryService = dataDirectoryService;
         }
 
-        private void TrySaveData(List<bool> completedIndexes, List<TickData> tickDataItems, string path, ref int saveUptoIndex)
+        private void TrySaveData(List<(bool Completed, int TickDataItemsCount)> completedIndexes, List<TickData> tickDataItems, string path, ref int saveUptoIndex)
         {
             var newSaveUptoIndex = -1;
+            var tickDataItemsCount = 0;
             for (var i = 0; i < completedIndexes.Count; i++)
             {
-                if (completedIndexes[i])
+                if (completedIndexes[i].Completed)
                 {
                     newSaveUptoIndex = i;
+                    tickDataItemsCount = completedIndexes[i].TickDataItemsCount;
                 }
                 else
                 {
@@ -44,7 +46,7 @@ namespace TraderTools.Core.Services
                 return;
             }
 
-            SaveData(tickDataItems, path);
+            SaveData(tickDataItems.Take(tickDataItemsCount).ToList(), path);
             saveUptoIndex = newSaveUptoIndex;
         }
 
@@ -92,6 +94,12 @@ namespace TraderTools.Core.Services
         {
             Log.Info($"Getting tick data for {market}");
             var path = Path.Combine(_dataDirectoryService.MainDirectory, "TickData", $"{market.Replace("/", "")}.dat");
+
+            if (!Directory.Exists(Path.GetDirectoryName(path)))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+            }
+
             var start = new DateTime(2017, 1, 1);
             var end = DateTime.UtcNow;
 
@@ -151,14 +159,17 @@ namespace TraderTools.Core.Services
         private void DownloadData(string market, IBroker broker, List<TickData> tickDataItems, string path, DateTime start, DateTime end)
         {
             var saveUptoIndex = -1;
-            var completed = new List<bool>();
+            var completed = new List<(bool Completed, int TickDataItemsCount)>();
             var producerConsumer = new ProducerConsumer<(DateTime Start, DateTime End, int CompletedIndex)>(3, d =>
             {
                 var partial = broker.GetTickData(broker, market, d.Start, d.End);
                 lock (tickDataItems)
                 {
                     tickDataItems.AddRange(partial);
-                    completed[d.CompletedIndex] = true;
+                    var newItems = tickDataItems.OrderByDescending(x => x.Datetime).ToList();
+                    tickDataItems.Clear();
+                    tickDataItems.AddRange(newItems);
+                    completed[d.CompletedIndex] = (true, tickDataItems.Count);
                     TrySaveData(completed, tickDataItems, path, ref saveUptoIndex);
                 }
 
@@ -176,7 +187,7 @@ namespace TraderTools.Core.Services
                     s = start;
                 }
 
-                completed.Add(false);
+                completed.Add((false, 0));
                 queue.Add((s, e.AddSeconds(1), completed.Count - 1));
 
                 e = s;

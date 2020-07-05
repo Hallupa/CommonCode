@@ -21,8 +21,7 @@ namespace TraderTools.Basics
     public interface IBroker
     {
         string Name { get; }
-        bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService,
-            IMarketDetailsService marketsService, Action<string> updateProgressAction, DateTime? lastUpdateTime, out List<Trade> addedOrUpdatedTrades);
+        bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService, Action<string> updateProgressAction, out List<Trade> addedOrUpdatedTrades);
         bool UpdateCandles(List<Candle> candles, string market, Timeframe timeframe, DateTime start, Action<string> progressUpdate);
         void Connect();
         ConnectStatus Status { get; }

@@ -38,6 +38,8 @@ namespace TraderTools.Core.Broker
 
         public DateTime? AccountLastUpdated { get; set; }
 
+        public string CustomJson { get; set; }
+
         public List<Trade> Trades { get; set; } = new List<Trade>();
 
         [JsonIgnore]
@@ -234,7 +236,7 @@ namespace TraderTools.Core.Broker
 
             try
             {
-                broker.UpdateAccount(this, candleService, marketsService, updateProgressAction, AccountLastUpdated, out var addedOrUpdatedTrades);
+                broker.UpdateAccount(this, candleService, marketsService, updateProgressAction, out var addedOrUpdatedTrades);
 
                 foreach (var trade in addedOrUpdatedTrades)
                 {
