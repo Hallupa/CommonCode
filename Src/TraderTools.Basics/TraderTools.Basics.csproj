@@ -91,7 +91,6 @@
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Candle.cs" />
-    <Compile Include="CandleAndIndicators.cs" />
     <Compile Include="ChartDataRunner.cs" />
     <Compile Include="ChartLine.cs" />
     <Compile Include="DatePrice.cs" />
@@ -108,7 +107,6 @@
     <Compile Include="IDataDirectoryService.cs" />
     <Compile Include="IIndicator.cs" />
     <Compile Include="IMarketDetailsService.cs" />
-    <Compile Include="Indicator.cs" />
     <Compile Include="ITradeDetailsAutoCalculatorService.cs" />
     <Compile Include="Market.cs" />
     <Compile Include="MarketDetails.cs" />
@@ -123,6 +121,7 @@
     <Compile Include="TradeCalculator.cs" />
     <Compile Include="TradeDirection.cs" />
     <Compile Include="TradeFactory.cs" />
+    <Compile Include="TradingCalculator.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

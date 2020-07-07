@@ -7,7 +7,5 @@
         string Name { get; }
 
         SignalAndValue Process(Candle candle);
-
-        void Reset();
     }
 }

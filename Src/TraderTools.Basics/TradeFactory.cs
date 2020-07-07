@@ -31,7 +31,7 @@ namespace TraderTools.Basics
 
         public static Trade CreateMarketEntry(string broker, decimal entryPrice, DateTime entryTime,
             TradeDirection direction, decimal amount, string market,
-            decimal? stop, decimal? limit, ITradeDetailsAutoCalculatorService tradeCalculatorService,
+            decimal? stop, decimal? limit,
             Timeframe? timeframe = null, string strategies = null, string comments = null, bool alert = false, CalculateOptions calculateOptions = CalculateOptions.Default, TradeUpdateMode updateMode = TradeUpdateMode.Default)
         {
             var trade = new Trade { Broker = broker, CalculateOptions = calculateOptions };

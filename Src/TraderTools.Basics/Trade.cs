@@ -123,6 +123,12 @@ namespace TraderTools.Basics
             }
         }
 
+        public Trade SetStrategies(string value)
+        {
+            Strategies = value;
+            return this;
+        }
+
         public DateTime? EntryDateTime
         {
             get => _entryDateTime;
@@ -134,8 +140,6 @@ namespace TraderTools.Basics
             }
         }
 
-        public Guid UniqueId { get; set; } = Guid.NewGuid();
-
         public string Id { get; set; }
 
         public string Broker { get; set; }
@@ -146,16 +150,23 @@ namespace TraderTools.Basics
 
         public string OrderId { get; set; }
 
+        public bool Ignore { get; set; }
+
         public decimal? EntryPrice
         {
             get => _entryPrice;
             set
             {
                 _entryPrice = value;
-                TradeCalculator.UpdateStopPips(this);
-                TradeCalculator.UpdateInitialStopPips(this);
-                TradeCalculator.UpdateLimitPips(this);
-                TradeCalculator.UpdateInitialLimitPips(this);
+
+                if (!CalculateOptions.HasFlag(CalculateOptions.ExcludePipsCalculations))
+                {
+                    TradeCalculator.UpdateStopPips(this);
+                    TradeCalculator.UpdateInitialStopPips(this);
+                    TradeCalculator.UpdateLimitPips(this);
+                    TradeCalculator.UpdateInitialLimitPips(this);
+                }
+
                 TradeCalculator.UpdateRMultiple(this);
                 OnPropertyChanged();
                 OnPropertyChanged("Status");
@@ -275,6 +286,12 @@ namespace TraderTools.Basics
             }
         }
 
+        public Trade SetChartTimeframe(Timeframe timeframe)
+        {
+            Timeframe = timeframe;
+            return this;
+        }
+
         public TradeDirection? TradeDirection
         {
             get => _tradeDirection;
@@ -340,10 +357,13 @@ namespace TraderTools.Basics
                 _orderPrice = value;
                 OrderPriceFloat = (float?)value;
 
-                TradeCalculator.UpdateStopPips(this);
-                TradeCalculator.UpdateInitialStopPips(this);
-                TradeCalculator.UpdateLimitPips(this);
-                TradeCalculator.UpdateInitialLimitPips(this);
+                if (!CalculateOptions.HasFlag(CalculateOptions.ExcludePipsCalculations))
+                {
+                    TradeCalculator.UpdateStopPips(this);
+                    TradeCalculator.UpdateInitialStopPips(this);
+                    TradeCalculator.UpdateLimitPips(this);
+                    TradeCalculator.UpdateInitialLimitPips(this);
+                }
 
                 OnPropertyChanged();
                 OnPropertyChanged("Status");
@@ -570,12 +590,20 @@ namespace TraderTools.Basics
             }
 
             TradeCalculator.UpdateStop(this);
-            TradeCalculator.UpdateStopPips(this);
+
+            if (!CalculateOptions.HasFlag(CalculateOptions.ExcludePipsCalculations))
+            {
+                TradeCalculator.UpdateStopPips(this);
+            }
 
             if (originalStops.Count == 0 || originalStops[0].Price != StopPrices[0].Price)
             {
                 InitialStop = StopPrices[0].Price;
-                TradeCalculator.UpdateInitialStopPips(this);
+
+                if (!CalculateOptions.HasFlag(CalculateOptions.ExcludePipsCalculations))
+                {
+                    TradeCalculator.UpdateInitialStopPips(this);
+                }
             }
         }
 
@@ -651,11 +679,15 @@ namespace TraderTools.Basics
             }
 
             TradeCalculator.UpdateLimit(this);
-            TradeCalculator.UpdateLimitPips(this);
 
-            if (LimitPrices.Count == 1)
+            if (!CalculateOptions.HasFlag(CalculateOptions.ExcludePipsCalculations))
             {
-                TradeCalculator.UpdateInitialLimitPips(this);
+                TradeCalculator.UpdateLimitPips(this);
+
+                if (LimitPrices.Count == 1)
+                {
+                    TradeCalculator.UpdateInitialLimitPips(this);
+                }
             }
         }
 

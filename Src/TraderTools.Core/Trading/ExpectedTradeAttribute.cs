@@ -1,49 +1,41 @@
 ﻿using System;
 using TraderTools.Basics;
-using TraderTools.Core.Services;
 
 namespace TraderTools.Core.Trading
 {
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
-    public class StrategyDetailsAttribute : Attribute
+    public class ExpectedTradesFileAttribute : Attribute
     {
-        public StrategyDetailsAttribute(string tagName, bool groupDayTrades = false)
+        public ExpectedTradesFileAttribute(string path)
         {
-            TagName = tagName;
-            GroupDayTrades = groupDayTrades;
+            Path = path;
         }
-        public string TagName { get; }
-        public bool GroupDayTrades { get; }
+        public string Path { get; }
     }
 
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public class ExpectedTradeAttribute : Attribute
     {
-        public ExpectedTradeAttribute(
-            string market, int year, int month, int day, int orderHourUtc,
-            Timeframe timeframe, int pips, double orderPrice, TradeDirection direction, double triggerCandleClose)
+        public ExpectedTradeAttribute(string market, string openTimeUTC, string closeTimeUTC, decimal entryPrice, decimal closePrice, TradeDirection direction)
         {
             Market = market;
-            Year = year;
-            Month = month;
-            Day = day;
-            OrderHourUtc = orderHourUtc;
-            Timeframe = timeframe;
-            Pips = pips;
-            OrderPrice = orderPrice;
+            OpenTimeUTC = DateTime.Parse(openTimeUTC);
+            CloseTimeUTC = DateTime.Parse(closeTimeUTC);
+            EntryPrice = entryPrice;
+            ClosePrice = closePrice;
             Direction = direction;
-            TriggerCandleClose = triggerCandleClose;
         }
 
-        public string Market { get; }
-        public int Year { get; }
-        public int Month { get; }
-        public int Day { get; }
-        public int OrderHourUtc { get; }
-        public Timeframe Timeframe { get; }
-        public int Pips { get; }
-        public double OrderPrice { get; }
+        public decimal ClosePrice { get; }
+
         public TradeDirection Direction { get; }
-        public double TriggerCandleClose { get; }
+
+        public decimal EntryPrice { get; }
+
+        public DateTime CloseTimeUTC { get; }
+
+        public DateTime OpenTimeUTC { get; }
+
+        public string Market { get; }
     }
 }

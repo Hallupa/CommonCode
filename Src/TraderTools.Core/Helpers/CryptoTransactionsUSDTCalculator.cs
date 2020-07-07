@@ -221,7 +221,6 @@ namespace TraderTools.Core.Helpers
                     Timeframe = firstTrade.Timeframe,
                     Market = firstTrade.Market,
                     Id = firstTrade.Id,
-                    UniqueId = firstTrade.UniqueId,
                     TradeDirection = firstTrade.TradeDirection
                 };
 

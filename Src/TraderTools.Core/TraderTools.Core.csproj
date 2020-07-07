@@ -91,7 +91,6 @@
     <Compile Include="Balance.cs" />
     <Compile Include="Broker\BrokerAccount.cs" />
     <Compile Include="Extensions\BrokerExtensions.cs" />
-    <Compile Include="Extensions\CandleExtensions.cs" />
     <Compile Include="Helpers\AccountValueHelper.cs" />
     <Compile Include="Services\AssetValueCalculatorService.cs" />
     <Compile Include="Helpers\CryptoTransactionsUSDTCalculator.cs" />
@@ -104,10 +103,7 @@
     <Compile Include="Services\TickDataService.cs" />
     <Compile Include="Services\TradeDetailsAutoCalculatorService.cs" />
     <Compile Include="Trading\ExpectedTradeAttribute.cs" />
-    <Compile Include="Trading\IStrategy.cs" />
-    <Compile Include="Trading\ITimeframeColour.cs" />
     <Compile Include="Trading\NotExpectedTradeAttribute.cs" />
-    <Compile Include="Trading\TradesAndCandles.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

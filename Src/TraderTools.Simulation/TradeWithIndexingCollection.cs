@@ -17,6 +17,10 @@ namespace TraderTools.Simulation
         private TradeWithIndexing _firstOpen;
         private TradeWithIndexing _firstClosed;
 
+        public bool AnyOrders => _firstOrder != null;
+
+        public bool AnyOpen => _firstOpen != null;
+
         public void AddOpenTrade(Trade t)
         {
             var tradeWithIndexing = new TradeWithIndexing
