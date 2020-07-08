@@ -1,7 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
@@ -42,9 +41,6 @@ namespace TraderTools.Core.Broker
 
         public List<Trade> Trades { get; set; } = new List<Trade>();
 
-        [JsonIgnore]
-        [Import] private IDataDirectoryService _dataDirectoryService;
-
         private Subject<BrokerAccountUpdated> _brokerAccountUpdatedSubject = new Subject<BrokerAccountUpdated>();
 
         public List<DepositWithdrawal> DepositsWithdrawals { get; set; } = new List<DepositWithdrawal>();
@@ -57,12 +53,9 @@ namespace TraderTools.Core.Broker
             DependencyContainer.ComposeParts(this);
         }
 
-        public static BrokerAccount LoadAccount(
-            IBroker broker,
-            ITradeDetailsAutoCalculatorService tradeCalculatorService,
-            IDataDirectoryService dataDirectoryService)
+        public static BrokerAccount LoadAccount(IBroker broker, string mainDirectoryWithApplicationName)
         {
-            var accountPath = Path.Combine(dataDirectoryService.MainDirectoryWithApplicationName, "BrokerAccounts", $"{broker.Name}_Account.json");
+            var accountPath = Path.Combine(mainDirectoryWithApplicationName, "BrokerAccounts", $"{broker.Name}_Account.json");
 
             if (!File.Exists(accountPath))
             {
@@ -103,11 +96,12 @@ namespace TraderTools.Core.Broker
             return depositWithdrawTotal + openTradesTotal + closedTradesTotal;
         }
 
-        public void SaveAccount()
+        public void SaveAccount(string mainDirectoryWithApplicationName)
         {
             _saveLock.WaitOne();
             var json = JsonConvert.SerializeObject(this);
-            var mainPath = Path.Combine(_dataDirectoryService.MainDirectoryWithApplicationName, "BrokerAccounts");
+
+            var mainPath = Path.Combine(mainDirectoryWithApplicationName, "BrokerAccounts");
 
             var t = Task.Run(() =>
             {

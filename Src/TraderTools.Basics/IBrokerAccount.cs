@@ -20,7 +20,8 @@ namespace TraderTools.Basics
         decimal GetBalance(DateTime? dateTimeUtc = null);
 
         List<DepositWithdrawal> DepositsWithdrawals { get; set; }
-        void SaveAccount();
+
+        void SaveAccount(string mainDirectoryWithApplicationName);
 
         void UpdateBrokerAccount(
             IBroker broker,

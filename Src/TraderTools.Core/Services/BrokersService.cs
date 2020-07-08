@@ -40,7 +40,7 @@ namespace TraderTools.Core.Services
         {
             foreach (var broker in Brokers)
             {
-                var account = BrokerAccount.LoadAccount(broker, tradeCalculatorService, dataDirectoryService);
+                var account = BrokerAccount.LoadAccount(broker, dataDirectoryService.MainDirectoryWithApplicationName);
                 
                 if (account == null)
                 {
