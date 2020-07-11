@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using fxcore2;
 
 namespace TraderTools.Brokers.FXCM
@@ -6,6 +7,7 @@ namespace TraderTools.Brokers.FXCM
     internal class ResponseListener : IO2GResponseListener
     {
         private O2GSession mSession;
+        private readonly Action<O2GResponse> _tableUpdateAction;
         private string mRequestID;
         private O2GResponse mResponse;
         private EventWaitHandle mSyncResponseEvent;
@@ -14,12 +16,13 @@ namespace TraderTools.Brokers.FXCM
         /// ctor
         /// </summary>
         /// <param name="session"></param>
-        public ResponseListener(O2GSession session)
+        public ResponseListener(O2GSession session, Action<O2GResponse> tableUpdateAction = null)
         {
             mRequestID = string.Empty;
             mResponse = null;
             mSyncResponseEvent = new EventWaitHandle(false, EventResetMode.AutoReset);
             mSession = session;
+            _tableUpdateAction = tableUpdateAction;
         }
 
         public string Error { get; set; } = null;
@@ -67,6 +70,7 @@ namespace TraderTools.Brokers.FXCM
 
         public void onTablesUpdates(O2GResponse data)
         {
+            _tableUpdateAction?.Invoke(data);
         }
 
         #endregion
