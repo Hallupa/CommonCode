@@ -13,7 +13,6 @@ namespace TraderTools.Core.UI.ViewModels
     public class TradesResultsViewModel : DependencyObject, INotifyPropertyChanged
     {
         private readonly Func<List<Trade>> _getTradesFunc;
-        private readonly bool _createStrategiesSubResults;
         private string _selectedResultOption = "No grouping";
         private Dispatcher _dispatcher;
         private bool _includeOpenTrades = false;
@@ -33,11 +32,10 @@ namespace TraderTools.Core.UI.ViewModels
             "Strategy"
         };
 
-        public TradesResultsViewModel(Func<List<Trade>> getTradesFunc, bool createStrategiesSubResults = true)
+        public TradesResultsViewModel(Func<List<Trade>> getTradesFunc)
         {
             _dispatcher = Dispatcher.CurrentDispatcher;
             _getTradesFunc = getTradesFunc;
-            _createStrategiesSubResults = createStrategiesSubResults;
         }
 
         public static readonly DependencyProperty ShowSubOptionsProperty = DependencyProperty.Register(
@@ -139,7 +137,7 @@ namespace TraderTools.Core.UI.ViewModels
             var results = new List<TradesResultViewModel>();
             foreach (var group in groupedTrades)
             {
-                var result = new TradesWithStrategiesResultsViewModel()
+                var result = new TradesResultViewModel
                 {
                     Name = group.Key
                 };
@@ -149,32 +147,6 @@ namespace TraderTools.Core.UI.ViewModels
 
                 // Add trades to result
                 result.Trades.AddRange(groupTrades);
-
-                if (_createStrategiesSubResults)
-                {
-                    _dispatcher.Invoke(() =>
-                    {
-                        result.StrategyResults = new TradesResultsViewModel(() => group.ToList(), false);
-                        result.StrategyResults.DisableUpdates = true;
-                        try
-                        {
-
-                            result.StrategyResults.ShowOptions = false;
-                            result.StrategyResults.ShowSubOptions = false;
-                            result.StrategyResults.SelectedResultOption = "Strategy";
-                            result.StrategyResults.AdvStrategyNaming = true;
-                            result.StrategyResults.IncludeOpenTrades = true;
-                            result.StrategyResults.IncludeClosedTrades = true;
-                            result.StrategyResults.ShowIncludeOpenClosedTradesOptions = false;
-                        }
-                        finally
-                        {
-                            result.StrategyResults.DisableUpdates = false;
-                            result.StrategyResults.UpdateResults();
-                        }
-                    });
-                }
-
                 result.UpdateStats();
             }
 

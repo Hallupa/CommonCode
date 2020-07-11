@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using System.Windows.Documents;
 using Hallupa.Library.UI;
 using TinyMessenger;
 using TraderTools.Basics;
@@ -22,6 +24,8 @@ namespace TraderTools.Core.UI.ViewModels
         private decimal _expectancyR;
         private decimal _totalR;
         private string _averageTradeDuration;
+        private int _successTradesCount;
+        private int _failedTradesCount;
 
         public ObservableCollectionEx<Trade> Trades { get; } = new ObservableCollectionEx<Trade>();
 
@@ -41,6 +45,26 @@ namespace TraderTools.Core.UI.ViewModels
             set
             {
                 _tradesCount = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public int SuccessTradesCount
+        {
+            get => _successTradesCount;
+            set
+            {
+                _successTradesCount = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public int FailedTradesCount
+        {
+            get => _failedTradesCount;
+            set
+            {
+                _failedTradesCount = value;
                 OnPropertyChanged();
             }
         }
@@ -151,6 +175,8 @@ namespace TraderTools.Core.UI.ViewModels
             var negativeRMultipleTrades = Trades.Where(t => t.RMultiple != null && t.RMultiple <= 0).ToList();
             var profitableTrades = Trades.Where(t => t.Profit > 0 || t.RMultiple > 0).ToList();
             TradesCount = Trades.Count;
+            SuccessTradesCount = positiveRMultipleTrades.Count;
+            FailedTradesCount = negativeRMultipleTrades.Count;
             Profit = Trades.Sum(t => t.Profit ?? 0);
             PercentSuccessfulTrades = profitableTrades.Count != 0 ? (profitableTrades.Count * 100M) / (decimal)Trades.Count(x => x.Profit != null || x.RMultiple != null) : 0;
             RSum = Trades.Where(t => t.RMultiple != null).Sum(t => t.RMultiple.Value);
@@ -158,7 +184,7 @@ namespace TraderTools.Core.UI.ViewModels
             AvRWinningTrades = positiveRMultipleTrades.Count != 0 ? positiveRMultipleTrades.Where(t => t.RMultiple != null).Sum(t => t.RMultiple.Value) / (decimal)positiveRMultipleTrades.Count : 0;
             AvRLosingTrades = negativeRMultipleTrades.Count != 0 ? negativeRMultipleTrades.Where(t => t.RMultiple != null).Sum(t => t.RMultiple.Value) / (decimal)negativeRMultipleTrades.Count : 0;
             TotalR = Trades.Sum(x => x.RMultiple != null ? x.RMultiple.Value : 0M);
-            RExpectancy = Trades.Count(x => x.RMultiple != null) > 0 ? Trades.Where(t => t.RMultiple != null).Sum(t => t.RMultiple.Value) / Trades.Count(x => x.RMultiple != null) : 0;
+            RExpectancy = TradingCalculator.CalculateExpectancy(Trades.ToList());
 
             var completedTrades = Trades.Where(t => t.CloseDateTime != null && t.EntryDateTime != null).ToList();
             var avDurationMins = completedTrades.Count > 0 ? TimeSpan.FromMinutes(completedTrades.Average(t => (t.CloseDateTime.Value - t.EntryDateTime.Value).TotalMinutes)) : new TimeSpan(0);
