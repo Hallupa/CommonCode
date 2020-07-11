@@ -34,13 +34,11 @@ namespace TraderTools.Core.Services
             }
         }
 
-        public void LoadBrokerAccounts(
-            ITradeDetailsAutoCalculatorService tradeCalculatorService,
-            IDataDirectoryService dataDirectoryService)
+        public void LoadBrokerAccounts(ITradeDetailsAutoCalculatorService tradeCalculatorService, string mainDirectoryWithApplicationName)
         {
             foreach (var broker in Brokers)
             {
-                var account = BrokerAccount.LoadAccount(broker, dataDirectoryService.MainDirectoryWithApplicationName);
+                var account = BrokerAccount.LoadAccount(broker, mainDirectoryWithApplicationName);
                 
                 if (account == null)
                 {

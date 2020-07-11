@@ -120,8 +120,8 @@
     <Compile Include="ViewModels\TradesResultViewModel.cs" />
     <Compile Include="ViewModels\TradeDetailsViewModel.cs" />
     <Compile Include="ViewModels\TradesResultsViewModel.cs" />
-    <Compile Include="ViewModels\TradesWithStrategiesResultsViewModel.cs" />
     <Compile Include="ViewModels\TradeViewModelBase.cs" />
+    <Compile Include="Converters\LimitDecimalPlacesConverter.cs" />
     <Compile Include="Views\TradeDetailsView.xaml.cs">
       <DependentUpon>TradeDetailsView.xaml</DependentUpon>
     </Compile>

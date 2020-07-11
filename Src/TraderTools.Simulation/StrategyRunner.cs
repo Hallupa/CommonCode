@@ -9,7 +9,7 @@ using TraderTools.Basics.Extensions;
 
 namespace TraderTools.Simulation
 {
-    public class StrategyRunner2
+    public class StrategyRunner
     {
         private static readonly ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private readonly IBrokersCandlesService _candleService;
@@ -17,7 +17,7 @@ namespace TraderTools.Simulation
         private readonly IBroker _broker;
         private readonly MarketDetails _market;
 
-        public StrategyRunner2(IBrokersCandlesService candleService, IMarketDetailsService marketDetailsService, IBroker broker, MarketDetails market)
+        public StrategyRunner(IBrokersCandlesService candleService, IMarketDetailsService marketDetailsService, IBroker broker, MarketDetails market)
         {
             _candleService = candleService;
             _marketDetailsService = marketDetailsService;

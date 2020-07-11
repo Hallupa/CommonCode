@@ -221,7 +221,7 @@ namespace TraderTools.Core.Broker
                 return;
             }
 
-            Log.Info($"Updating {broker.Name} account");
+            Log.Debug($"Updating {broker.Name} account");
 
             foreach (var t in Trades)
             {
@@ -245,12 +245,7 @@ namespace TraderTools.Core.Broker
 
             AccountLastUpdated = DateTime.UtcNow;
 
-            foreach (var trade in Trades)
-            {
-                //trade.Initialise();
-            }
-
-            Log.Info($"Completed updating {broker.Name} trades");
+            Log.Debug($"Completed updating {broker.Name} trades");
             _brokerAccountUpdatedSubject.OnNext(new BrokerAccountUpdated(this));
         }
 
@@ -266,12 +261,7 @@ namespace TraderTools.Core.Broker
             Trades.Clear();
             Trades.AddRange(trades);
 
-            foreach (var trade in Trades)
-            {
-                //trade.Initialise();
-            }
-
-            Log.Info($"Completed updating {broker.Name} trades");
+            Log.Debug($"Completed updating {broker.Name} trades");
             _brokerAccountUpdatedSubject.OnNext(new BrokerAccountUpdated(this));
         }
 

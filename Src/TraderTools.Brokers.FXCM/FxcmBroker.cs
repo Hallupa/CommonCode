@@ -132,6 +132,8 @@ namespace TraderTools.Brokers.FXCM
 
         public BrokerKind Kind => BrokerKind.SpreadBet;
 
+        public bool IncludeReportInUpdates { get; set; } = true;
+
         public string Name => "FXCM";
 
         private O2GTableManager GetTableManager()
@@ -176,15 +178,15 @@ namespace TraderTools.Brokers.FXCM
             }
 
             // Get open trades
-            Log.Info("Getting open trades");
+            Log.Debug("Getting open trades");
             updateProgressAction?.Invoke("Getting open trades");
             var updated = GetOpenTrades(account, candlesService, marketsService, tableManager, out var openTrades, addedOrUpdatedTrades);
 
-            Log.Info("Getting recently closed trades");
+            Log.Debug("Getting recently closed trades");
             updateProgressAction?.Invoke("Getting recently closed trades");
             updated = GetClosedTrades(account, candlesService, marketsService, tableManager, addedOrUpdatedTrades) || updated;
 
-            Log.Info("Getting orders");
+            Log.Debug("Getting orders");
             updateProgressAction?.Invoke("Getting orders");
             updated = GetOrders(account, candlesService, marketsService, tableManager, out var orders, addedOrUpdatedTrades) || updated;
 
@@ -194,17 +196,21 @@ namespace TraderTools.Brokers.FXCM
             DateTime? lastUpdateTime = null;
             if (custom.LastUpdateTime.ContainsKey(_user)) lastUpdateTime = custom.LastUpdateTime[_user];
 
-            var reportLines = GetReport(lastUpdateTime);
-            custom.LastUpdateTime[_user] = DateTime.UtcNow;
-            account.CustomJson = JsonConvert.SerializeObject(custom);
+            if (IncludeReportInUpdates)
+            {
+                var reportLines = GetReport(lastUpdateTime);
+                custom.LastUpdateTime[_user] = DateTime.UtcNow;
+                account.CustomJson = JsonConvert.SerializeObject(custom);
 
-            Log.Info("Getting historic trades");
-            updateProgressAction?.Invoke("Getting historic trades"); 
-            updated = GetReportTrades(account, candlesService, marketsService, reportLines, addedOrUpdatedTrades) || updated;
+                Log.Debug("Getting historic trades");
+                updateProgressAction?.Invoke("Getting historic trades");
+                updated = GetReportTrades(account, candlesService, marketsService, reportLines, addedOrUpdatedTrades) ||
+                          updated;
 
-            Log.Info("Getting deposits/withdrawals");
-            updateProgressAction?.Invoke("Updating deposits/withdrawals");
-            UpdateDepositsWithdrawals(account, reportLines);
+                Log.Debug("Getting deposits/withdrawals");
+                updateProgressAction?.Invoke("Updating deposits/withdrawals");
+                UpdateDepositsWithdrawals(account, reportLines);
+            }
 
             // Set any open trades to closed that aren't in the open list
             foreach (var trade in account.Trades.Where(t =>
@@ -365,17 +371,18 @@ namespace TraderTools.Brokers.FXCM
                     trade.Market = tradeRow.Instrument;
                     trade.Broker = "FXCM";
                     trade.Id = tradeRow.TradeID;
+                    trade.OrderId = tradeRow.OpenOrderID;
                     trade.EntryDateTime = DateTime.SpecifyKind(tradeRow.OpenTime, DateTimeKind.Utc);
                     trade.EntryPrice = (decimal)tradeRow.OpenRate;
 
                     if (!tradeRow.Limit.Equals(0D))
                     {
-                        trade.AddLimitPrice(trade.EntryDateTime.Value, (decimal)tradeRow.Limit);
+                        trade.AddLimitPrice(tradeRow.LimitOrderID, trade.EntryDateTime.Value, (decimal)tradeRow.Limit);
                     }
 
                     if (!tradeRow.Stop.Equals(0D))
                     {
-                        trade.AddStopPrice(trade.EntryDateTime.Value, (decimal)tradeRow.Stop);
+                        trade.AddStopPrice(tradeRow.StopOrderID, trade.EntryDateTime.Value, (decimal)tradeRow.Stop);
                     }
 
                     trade.EntryQuantity = tradeRow.Amount;

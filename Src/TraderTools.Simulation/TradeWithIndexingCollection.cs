@@ -163,5 +163,44 @@ namespace TraderTools.Simulation
                 }
             }
         }
+
+        public void AddTrade(Trade newTrade)
+        {
+            if (newTrade.CloseDateTime != null)
+            {
+                AddClosedTrade(newTrade);
+            }
+            else if (newTrade.EntryPrice == null && newTrade.OrderPrice != null)
+            {
+                AddOrderTrade(newTrade);
+            }
+            else if (newTrade.EntryPrice != null)
+            {
+                AddOpenTrade(newTrade);
+            }
+        }
+
+        public void MoveTrades()
+        {
+            foreach (var t in OpenTrades.ToList())
+            {
+                if (t.Trade.CloseDateTime != null)
+                {
+                    MoveOpenToClose(t);
+                }
+            }
+
+            foreach (var t in OrderTradesAsc.ToList())
+            {
+                if (t.Trade.EntryDateTime != null && t.Trade.CloseDateTime == null)
+                {
+                    MoveOrderToOpen(t);
+                }
+                else if (t.Trade.EntryDateTime != null && t.Trade.CloseDateTime != null)
+                {
+                    MoveOrderToClosed(t);
+                }
+            }
+        }
     }
 }

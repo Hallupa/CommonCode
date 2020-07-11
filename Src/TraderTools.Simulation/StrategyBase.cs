@@ -11,8 +11,8 @@ namespace TraderTools.Simulation
 {
     public abstract class StrategyBase
     {
-        public static readonly string[] Majors = { "EUR/USD", "USD/JPY", "GBP/USD", "USD/CHF", "AUD/USD", "USD/CAD", "USD/CAD", "NZD/USD" };
-        public static readonly string[] Minors = { "EUR/CHF", "EUR/GBP", "EUR/JPY", "CHF/JPY", "GBP/CHF", "EUR/AUD", "EUR/CAD", "AUD/CAD", "AUD/CAD", "AUD/JPY", "CAD/JPY", "NZD/JPY", "GBP/CAD", "GBP/NZD", "AUD/NZD", "AUD/CHF", "EUR/NZD", "NZD/CHF", "CAD/CHF", "NZD/CAD" };
+        public static readonly string[] Majors = { "EUR/USD", "USD/JPY", "GBP/USD", "USD/CHF", "AUD/USD", "USD/CAD", "NZD/USD" };
+        public static readonly string[] Minors = { "EUR/CHF", "EUR/GBP", "EUR/JPY", "CHF/JPY", "GBP/CHF", "EUR/AUD", "EUR/CAD", "AUD/CAD", "AUD/JPY", "CAD/JPY", "NZD/JPY", "GBP/CAD", "GBP/NZD", "GBP/AUD", "AUD/NZD", "AUD/CHF", "EUR/NZD", "NZD/CHF", "CAD/CHF", "NZD/CAD" };
         public static readonly string[] MajorIndices = { "US30", "UK100", "NAS100", "GER30", "AUS200", "SPX500" };
 
         private static readonly ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
@@ -68,7 +68,7 @@ namespace TraderTools.Simulation
 
         public TradeWithIndexingCollection Trades { get; private set; }
 
-        internal void UpdateIndicators(List<Timeframe> timeframesCandleAdded)
+        public void UpdateIndicators(List<Timeframe> timeframesCandleAdded)
         {
             foreach (var tf in timeframesCandleAdded)
             {
@@ -166,7 +166,7 @@ namespace TraderTools.Simulation
 
         public MarketDetails Market { get; private set; }
 
-        protected TimeframeLookup<List<Candle>> Candles { get; private set; }
+        public TimeframeLookup<List<Candle>> Candles { get; private set; }
 
         protected void Log(string txt)
         {
