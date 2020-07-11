@@ -569,6 +569,11 @@ namespace TraderTools.Basics
 
         public void AddStopPrice(DateTime date, decimal? price)
         {
+            AddStopPrice(string.Empty, date, price);
+        }
+
+        public void AddStopPrice(string id, DateTime date, decimal? price)
+        {
             if (StopPrices.Count > 0 && StopPrices.Last().Price == price)
             {
                 return;
@@ -582,7 +587,7 @@ namespace TraderTools.Basics
                 StopPrices.RemoveAt(StopPrices.Count - 1);
             }
 
-            StopPrices.Add(new DatePrice(date, price));
+            StopPrices.Add(new DatePrice(id, date, price));
 
             if (StopPrices.Count > 1)
             {
@@ -659,6 +664,11 @@ namespace TraderTools.Basics
 
         public void AddLimitPrice(DateTime date, decimal? price)
         {
+            AddLimitPrice(string.Empty, date, price);
+        }
+
+        public void AddLimitPrice(string id, DateTime date, decimal? price)
+        {
             if (LimitPrices.Count > 0 && LimitPrices.Last().Price == price)
             {
                 return;
@@ -671,7 +681,7 @@ namespace TraderTools.Basics
 
             if (UpdateMode == TradeUpdateMode.Unchanging) throw new ApplicationException("Trade set to untouched mode cannot change it's limit price after being set");
 
-            LimitPrices.Add(new DatePrice(date, price));
+            LimitPrices.Add(new DatePrice(id, date, price));
 
             if (LimitPrices.Count > 1)
             {
