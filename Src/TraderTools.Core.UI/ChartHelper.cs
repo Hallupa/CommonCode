@@ -10,6 +10,7 @@ using Abt.Controls.SciChart.Model.DataSeries;
 using Abt.Controls.SciChart.Visuals.Annotations;
 using Abt.Controls.SciChart.Visuals.RenderableSeries;
 using TraderTools.Basics;
+using TraderTools.Basics.Extensions;
 using TraderTools.Basics.Helpers;
 using TraderTools.Core.UI.Controls;
 
@@ -172,6 +173,8 @@ namespace TraderTools.Core.UI
         {
             // Setup annotations
             if (candles.Count == 0) return;
+            if (trade.EntryDateTime != null && trade.EntryDateTime > candles[candles.Count - 1].CloseTime()) return;
+            if (trade.OrderDateTime != null && trade.OrderDateTime > candles[candles.Count - 1].CloseTime()) return;
 
             var dataSeries = cvm.ChartPaneViewModels[0].ChartSeriesViewModels[0].DataSeries;
             var startTime = trade.StartDateTimeLocal;
