@@ -48,5 +48,11 @@ namespace TraderTools.Indicators
 
             return new SignalAndValue(v, IsFormed);
         }
+
+        public void Reset()
+        {
+            _prevValue = 0;
+            _valueCount = 0;
+        }
     }
 }

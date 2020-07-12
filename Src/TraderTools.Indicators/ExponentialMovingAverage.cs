@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using TraderTools.Basics;
 
 namespace TraderTools.Indicators
@@ -16,10 +15,18 @@ namespace TraderTools.Indicators
             : this(32)
         {
         }
-
+        
         public ExponentialMovingAverage(int length)
         {
             Length = length;
+        }
+
+        /// <summary>
+        /// To reset the indicator status to initial. The method is called each time when initial settings are changed (for example, the length of period).
+        /// </summary>
+        public override void Reset()
+        {
+            base.Reset();
             _multiplier = 2.0F / (Length + 1);
             _prevFinalValue = 0;
         }
