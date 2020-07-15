@@ -5,6 +5,30 @@ namespace TraderTools.Basics
 {
     public static class TradingCalculator
     {
+        public static decimal CalculateMaxDrawdownPercent(decimal startBalance, List<Trade> trades, bool includeIgnored = false)
+        {
+            var balance = startBalance;
+            var high = 0M;
+            var maxDrawdownPercent = 0M;
+
+            foreach (var t in trades.OrderBy(x => x.OrderDateTime ?? x.EntryDateTime))
+            {
+                balance += t.Profit ?? 0M;
+                if (balance > high) high = balance;
+
+                if (balance < high)
+                {
+                    var drawdownPercent = (1 - (balance / high)) * 100M;
+                    if (drawdownPercent > maxDrawdownPercent)
+                    {
+                        maxDrawdownPercent = drawdownPercent;
+                    }
+                }
+            }
+
+            return maxDrawdownPercent;
+        }
+
         public static decimal CalculateExpectancy(List<Trade> ts, bool includeIgnored = false)
         {
             // Trades.Count(x => x.RMultiple != null) > 0 ? Trades.Where(t => t.RMultiple != null).Sum(t => t.RMultiple.Value) / Trades.Count(x => x.RMultiple != null) : 0;

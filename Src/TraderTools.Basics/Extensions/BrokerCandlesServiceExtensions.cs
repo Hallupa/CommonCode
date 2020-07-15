@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using TraderTools.Basics.Helpers;
 
 namespace TraderTools.Basics.Extensions
 {
@@ -169,7 +167,7 @@ namespace TraderTools.Basics.Extensions
         public static decimal GetGBPPerPip(
             this IBrokersCandlesService candleService,
             IMarketDetailsService marketsService,
-            IBroker broker, string market, decimal amount,
+            IBroker broker, string market, decimal lotSize,
             DateTime date, bool updateCandles)
         {
             var marketDetails = marketsService.GetMarketDetails(broker.Name, market);
@@ -223,7 +221,7 @@ namespace TraderTools.Basics.Extensions
 
             }
 
-            return amount * (decimal)marketDetails.ContractMultiplier * (decimal)marketDetails.PointSize * price;
+            return lotSize * (decimal)marketDetails.ContractMultiplier * (decimal)marketDetails.PointSize * price;
         }
 
         public static decimal GetOnePipInDecimals(this IMarketDetailsService marketsService, string broker, string market)
