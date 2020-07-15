@@ -8,12 +8,15 @@
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300">
     <Grid>
+        <Grid.Resources>
+            <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        </Grid.Resources>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="{Binding LogRowHeight}"/>
         </Grid.RowDefinitions>
         
-        <Button Content="Log" Height="30px" Click="ButtonBase_OnClick"/>
+        <Button Content="Log" Height="30px" Click="ButtonBase_OnClick" Visibility="{Binding ShowToggleButton, Converter={StaticResource BoolToVis}}" />
         
         <Grid Grid.Row="1">
             <Grid.RowDefinitions>

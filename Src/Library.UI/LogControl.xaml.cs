@@ -159,6 +159,15 @@ namespace Hallupa.Library.UI
             CollectionViewSource.GetDefaultView(LogListView.ItemsSource).Refresh();
         }
 
+        public static readonly DependencyProperty ShowToggleButtonProperty = DependencyProperty.Register(
+            "ShowToggleButton", typeof(bool), typeof(LogControl), new PropertyMetadata(true));
+
+        public bool ShowToggleButton
+        {
+            get { return (bool) GetValue(ShowToggleButtonProperty); }
+            set { SetValue(ShowToggleButtonProperty, value); }
+        }
+
         private void TimerCallback(object sender, EventArgs eventArgs)
         {
             if (LogControlAppender.LoggingEventCount <= LogItems.Count)
