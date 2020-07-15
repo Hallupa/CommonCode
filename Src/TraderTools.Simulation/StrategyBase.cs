@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.Linq;
 using System.Reflection;
+using Hallupa.Library;
 using log4net;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
@@ -19,6 +21,8 @@ namespace TraderTools.Simulation
         private Timeframe _smallestCandleTimeframe;
         private TimeframeLookup<List<(IIndicator Indicator, IndicatorValues IndicatorValues)>> _indicators = new TimeframeLookup<List<(IIndicator Indicator, IndicatorValues IndicatorValues)>>();
 
+        private decimal _riskEquityPercent = 0.5M;
+
         public DateTime? StartTime { get; private set; }
 
         public DateTime? EndTime { get; private set; }
@@ -34,6 +38,11 @@ namespace TraderTools.Simulation
         {
             if (Initialised) throw new ApplicationException("Cannot set markets after strategy is initialised");
             Markets = markets;
+        }
+
+        public static string[] GetDefaultMarkets()
+        {
+            return Majors.Concat(Minors).Concat(MajorIndices).ToArray();
         }
 
         public string[] Markets { get; private set; }
@@ -55,7 +64,6 @@ namespace TraderTools.Simulation
             var current = Markets != null ? Markets.ToList() : new List<string>();
             SetMarkets(current.Union(MajorIndices).ToArray());
         }
-
         protected void SetTimeframes(params Timeframe[] timeframes)
         {
             if (Initialised) throw new ApplicationException("Cannot set timeframes after strategy is initialised");
@@ -67,6 +75,21 @@ namespace TraderTools.Simulation
         public Timeframe[] Timeframes { get; private set; }
 
         public TradeWithIndexingCollection Trades { get; private set; }
+
+        protected void SetRiskEquityPercent(decimal riskEquityPercent)
+        {
+            RiskEquityPercent = riskEquityPercent;
+        }
+
+        public decimal RiskEquityPercent
+        {
+            get => _riskEquityPercent;
+            private set
+            {
+                if (Initialised) throw new ApplicationException("Cannot set equite risk amount after strategy is initialised");
+                _riskEquityPercent = value;
+            }
+        }
 
         public void UpdateIndicators(List<Timeframe> timeframesCandleAdded)
         {
@@ -117,7 +140,7 @@ namespace TraderTools.Simulation
             var indicator = new AverageTrueRange();
             return AddIndicator(timeframe, indicator);
         }
-        
+
         protected IndicatorValues ADR(Timeframe timeframe)
         {
             var indicator = new AverageDayRange();
@@ -179,18 +202,42 @@ namespace TraderTools.Simulation
 
         protected Trade MarketLong(decimal stop, decimal? limit = null)
         {
-            int? lotSize = 1000;
+            var lotSize = 1;
             var candle = Candles[_smallestCandleTimeframe][Candles[_smallestCandleTimeframe].Count - 1];
             var entryPrice = candle.CloseAsk;
 
             var trade = TradeFactory.CreateMarketEntry(
-                "FXCM", (decimal)entryPrice, candle.CloseTime(), TradeDirection.Long, lotSize.Value, Market.Name, stop, limit,
+                "FXCM", (decimal)entryPrice, candle.CloseTime(), TradeDirection.Long, lotSize, Market.Name, stop, limit,
                 calculateOptions: CalculateOptions.ExcludePipsCalculations);
 
             NewTrades.Add(trade);
 
             return trade;
         }
+
+      /*  private int GetLotSize(string market, decimal maxRiskEquity, DateTime dateTimeUtc, decimal entryOrOrder, decimal stop)
+        {
+            var gbpPerPip = _brokerCandlesService.GetGBPPerPip(
+                    _marketDetailsService,
+                    _brokersService.GetBroker("FXCM"),
+                    market,
+                    1,
+                    dateTimeUtc,
+                    false);
+
+            var stopPips = _marketDetailsService.GetPriceInPips("FXCM", Math.Abs(entryOrOrder - stop), market);
+
+            var lotSize = maxRiskEquity / (gbpPerPip * stopPips);
+
+            var ret = (int)lotSize;
+
+            if (ret <= _marketDetailsService.GetMarketDetails("FXCM", market).MinLotSize)
+            {
+                return 0;
+            }
+
+            return ret;
+        }*/
 
         protected void UpdateStopsInOpenTradesTrailIndicator(IndicatorValues indicatorValues)
         {
@@ -208,7 +255,7 @@ namespace TraderTools.Simulation
 
         protected Trade OrderShort(decimal price, decimal stop, decimal? limit = null, DateTime? expire = null)
         {
-            int? lotSize = 1000;
+            int? lotSize = 1;
             var candle = Candles[_smallestCandleTimeframe][Candles[_smallestCandleTimeframe].Count - 1];
             var trade = TradeFactory.CreateOrder(
                 "FXCM", price, candle, TradeDirection.Short, lotSize.Value, Market.Name, expire, stop,
@@ -226,12 +273,12 @@ namespace TraderTools.Simulation
 
         protected Trade MarketShort(decimal stop, decimal? limit = null)
         {
-            int? lotSize = 1000;
+            var lotSize = 1;
             var candle = Candles[_smallestCandleTimeframe][Candles[_smallestCandleTimeframe].Count - 1];
             var entryPrice = candle.CloseBid;
 
             var trade = TradeFactory.CreateMarketEntry(
-                "FXCM", (decimal)entryPrice, candle.CloseTime(), TradeDirection.Short, lotSize.Value, Market.Name, stop, limit,
+                "FXCM", (decimal)entryPrice, candle.CloseTime(), TradeDirection.Short, lotSize, Market.Name, stop, limit,
                 calculateOptions: CalculateOptions.ExcludePipsCalculations);
 
             NewTrades.Add(trade);

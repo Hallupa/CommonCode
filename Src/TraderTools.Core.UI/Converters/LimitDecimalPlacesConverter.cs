@@ -26,6 +26,11 @@ namespace TraderTools.Core.UI.Converters
                 return Math.Round(dc, DecimalPlaces);
             }
 
+            if (value == null)
+            {
+                return 0M;
+            }
+
             throw new ApplicationException("Error LimitDecimalPlaces");
         }
 

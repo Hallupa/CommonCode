@@ -38,7 +38,7 @@ namespace TraderTools.Simulation
             var trades = new TradeWithIndexingCollection();
             var nextLogTime = DateTime.UtcNow.AddSeconds(logIntervalSeconds);
             var calls = 0;
-
+            
             strategy.SetSimulationParameters(trades, currentCandles, _market);
 
             foreach (var tf in candleTimeframes)
