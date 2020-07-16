@@ -9,10 +9,13 @@
              xmlns:converters1="clr-namespace:Hallupa.Library.UI.Converters;assembly=Hallupa.Library.UI"
              xmlns:chartModifiers="clr-namespace:TraderTools.Core.UI.ChartModifiers"
              xmlns:ui="clr-namespace:Hallupa.Library.UI;assembly=Hallupa.Library.UI"
+             xmlns:viewModels="clr-namespace:TraderTools.Core.UI.ViewModels"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
         <Grid.Resources>
+            <viewModels:CustomDateTimeLabelProvider x:Key="LP"/>
+
             <ui:BindingProxy x:Key="Proxy" Data="{Binding}" />
             <converters1:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
             <Style x:Key="ChartPaneStyle" TargetType="s:SciChartGroupPane">
@@ -125,9 +128,10 @@
 
                                 <s:SciStockChart.XAxisStyle>
                                     <Style TargetType="s:CategoryDateTimeAxis">
+                                        <Setter Property="DrawMajorGridLines" Value="False"/>
+                                        <Setter Property="DrawMinorGridLines" Value="False"/>
+
                                         <Setter Property="DrawMajorBands" Value="False"/>
-                                        <Setter Property="DrawMinorGridLines" Value="True"/>
-                                        <Setter Property="DrawMajorGridLines" Value="True"/>
                                         <Setter Property="AxisAlignment" Value="Default"/>
                                         <Setter Property="VisibleRange" Value="{Binding ParentViewModel.XVisibleRange, Mode=TwoWay}"/>
                                         <Setter Property="GrowBy" Value="0, 0.05"/>
@@ -136,10 +140,13 @@
 
                                 <s:SciStockChart.YAxisStyle>
                                     <Style TargetType="s:NumericAxis">
+                                        <Setter Property="DrawMajorGridLines" Value="False"/>
+                                        <Setter Property="DrawMinorGridLines" Value="False"/>
+
                                         <Setter Property="CursorTextFormatting" Value="0.0000"/>
                                         <Setter Property="TextFormatting" Value="{Binding YAxisTextFormatting}"/>
                                         <Setter Property="AutoRange" Value="Always"/>
-                                        <Setter Property="AxisAlignment" Value="Left"/>
+                                        <Setter Property="AxisAlignment" Value="Right"/>
                                         <Setter Property="MinorsPerMajor" Value="{Binding IsFirstChartPane, Converter={StaticResource MinorsPerMajorConverter}}"/>
                                         <Setter Property="MaxAutoTicks" Value="{Binding IsFirstChartPane, Converter={StaticResource MaxAutoTicksConverter}}"/>
                                         <Setter Property="GrowBy" Value="{Binding IsFirstChartPane, Converter={StaticResource GrowByConverter}}"/>
@@ -193,9 +200,11 @@
 
                                 <s:SciStockChart.XAxisStyle>
                                     <Style TargetType="s:CategoryDateTimeAxis">
-                                        <Setter Property="DrawMajorBands" Value="False"/>
-                                        <Setter Property="DrawMinorGridLines" Value="True"/>
                                         <Setter Property="DrawMajorGridLines" Value="True"/>
+                                        <Setter Property="DrawMinorGridLines" Value="False"/>
+                                        <Setter Property="LabelProvider" Value="{StaticResource LP}"></Setter>
+
+                                        <Setter Property="DrawMajorBands" Value="False"/>
                                         <Setter Property="AxisAlignment" Value="Default"/>
                                         <Setter Property="VisibleRange" Value="{Binding ParentViewModel.XVisibleRange, Mode=TwoWay}"/>
                                         <Setter Property="GrowBy" Value="0, 0.05"/>
@@ -204,10 +213,13 @@
 
                                 <s:SciStockChart.YAxisStyle>
                                     <Style TargetType="s:NumericAxis">
+                                        <Setter Property="DrawMajorGridLines" Value="True"/>
+                                        <Setter Property="DrawMinorGridLines" Value="False"/>
+                                        
                                         <Setter Property="CursorTextFormatting" Value="0.0000"/>
                                         <Setter Property="TextFormatting" Value="{Binding YAxisTextFormatting}"/>
                                         <Setter Property="AutoRange" Value="Always"/>
-                                        <Setter Property="AxisAlignment" Value="Left"/>
+                                        <Setter Property="AxisAlignment" Value="Right"/>
                                         <Setter Property="MinorsPerMajor" Value="{Binding IsFirstChartPane, Converter={StaticResource MinorsPerMajorConverter}}"/>
                                         <Setter Property="MaxAutoTicks" Value="{Binding IsFirstChartPane, Converter={StaticResource MaxAutoTicksConverter}}"/>
                                         <Setter Property="GrowBy" Value="{Binding IsFirstChartPane, Converter={StaticResource GrowByConverter}}"/>
@@ -228,23 +240,19 @@
                                         <s:ZoomExtentsModifier ExecuteOn="MouseDoubleClick" />
                                         <s:TooltipModifier></s:TooltipModifier>
                                         <s:CursorModifier></s:CursorModifier>
+
+                                        <chartModifiers:FilteringLegendModifier x:Name="legendModifier" ShowLegend="True" Orientation="Horizontal" Margin="10"/>
+                                        <s:SeriesSelectionModifier>
+                                            <s:SeriesSelectionModifier.SelectedSeriesStyle>
+                                                <Style TargetType="s:BaseRenderableSeries">
+                                                    <Setter Property="StrokeThickness" Value="3"/>
+                                                </Style>
+                                            </s:SeriesSelectionModifier.SelectedSeriesStyle>
+                                        </s:SeriesSelectionModifier>
                                     </s:ModifierGroup>
                                 </s:SciChartSurface.ChartModifier>
 
                             </s:SciStockChart>
-
-                            <!--<Grid Grid.Row="1" Visibility="{Binding IsLastChartPane, Converter={StaticResource BoolToVisibilityConverter}}">
-
-                                <s:SciStockChart x:Name="PART_ScrollbarChartBackground" Style="{StaticResource OverviewChartStyle}">
-
-                                    <s:SciStockChart.RenderableSeries>
-                                        <s:FastMountainRenderableSeries DataSeries="{Binding Path=ParentViewModel.ChartPaneViewModels[0].ChartSeriesViewModels[0].DataSeries}"/>
-                                    </s:SciStockChart.RenderableSeries>
-
-                                </s:SciStockChart>
-
-                                <s:SciChartScrollbar Margin="{Binding ElementName=PART_ChartPaneView, Path=Padding, Mode=OneWay}" Axis="{Binding ElementName=PART_ChartPaneView, Path=XAxis}" Style="{StaticResource ScrollBarStyle}"/>
-                            </Grid>-->
                         </Grid>
                     </DataTemplate>
                 </s:SciChartGroup.ItemTemplate>

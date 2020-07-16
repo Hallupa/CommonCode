@@ -114,8 +114,10 @@
     <Compile Include="DoubleChartView.xaml.cs">
       <DependentUpon>DoubleChartView.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ChartModifiers\FilteringLegendModifier.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\ChartingService.cs" />
+    <Compile Include="ViewModels\CustomDateTimeLabelProvider.cs" />
     <Compile Include="ViewModels\DoubleChartViewModel.cs" />
     <Compile Include="ViewModels\TradesResultViewModel.cs" />
     <Compile Include="ViewModels\TradeDetailsViewModel.cs" />

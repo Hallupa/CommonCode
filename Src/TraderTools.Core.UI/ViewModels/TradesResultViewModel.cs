@@ -26,6 +26,7 @@ namespace TraderTools.Core.UI.ViewModels
         private string _averageTradeDuration;
         private int _successTradesCount;
         private int _failedTradesCount;
+        private decimal _maxDrawdownPercent;
 
         public ObservableCollectionEx<Trade> Trades { get; } = new ObservableCollectionEx<Trade>();
 
@@ -130,6 +131,16 @@ namespace TraderTools.Core.UI.ViewModels
             }
         }
 
+        public decimal MaxDrawdownPercent
+        {
+            get => _maxDrawdownPercent;
+            set
+            {
+                _maxDrawdownPercent = value;
+                OnPropertyChanged();
+            }
+        }
+
         public string AverageTradeDuration
         {
             get => _averageTradeDuration;
@@ -185,6 +196,7 @@ namespace TraderTools.Core.UI.ViewModels
             AvRLosingTrades = negativeRMultipleTrades.Count != 0 ? negativeRMultipleTrades.Where(t => t.RMultiple != null).Sum(t => t.RMultiple.Value) / (decimal)negativeRMultipleTrades.Count : 0;
             TotalR = Trades.Sum(x => x.RMultiple != null ? x.RMultiple.Value : 0M);
             RExpectancy = TradingCalculator.CalculateExpectancy(Trades.ToList());
+            MaxDrawdownPercent = TradingCalculator.CalculateMaxDrawdownPercent(10000M, Trades.ToList());
 
             var completedTrades = Trades.Where(t => t.CloseDateTime != null && t.EntryDateTime != null).ToList();
             var avDurationMins = completedTrades.Count > 0 ? TimeSpan.FromMinutes(completedTrades.Average(t => (t.CloseDateTime.Value - t.EntryDateTime.Value).TotalMinutes)) : new TimeSpan(0);

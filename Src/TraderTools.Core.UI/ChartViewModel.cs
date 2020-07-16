@@ -2,7 +2,6 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Abt.Controls.SciChart;
-using Abt.Controls.SciChart.Visuals.Axes;
 
 namespace TraderTools.Core.UI
 {
