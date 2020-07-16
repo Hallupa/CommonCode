@@ -22,6 +22,12 @@ namespace TraderTools.Indicators
             _dev = new StandardDeviation(length);
         }
 
+        public void Reset()
+        {
+            _sma.Reset();
+            _dev.Reset();
+        }
+
         public SignalAndValue Process(Candle candle)
         {
             _dev.Process(candle);

@@ -572,6 +572,11 @@ namespace TraderTools.Basics
             AddStopPrice(string.Empty, date, price);
         }
 
+        public void ClearLimitPrices()
+        {
+            LimitPrices.Clear();
+        }
+
         public void AddStopPrice(string id, DateTime date, decimal? price)
         {
             if (StopPrices.Count > 0 && StopPrices.Last().Price == price)

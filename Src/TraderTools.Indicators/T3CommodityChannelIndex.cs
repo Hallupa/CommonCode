@@ -62,5 +62,16 @@ namespace TraderTools.Indicators
 
             return new SignalAndValue(xccir, IsFormed);
         }
+
+        public void Reset()
+        {
+            e1 = float.NaN;
+            e2 = float.NaN;
+            e3 = float.NaN;
+            e4 = float.NaN;
+            e5 = float.NaN;
+            e6 = float.NaN;
+            _cci.Reset();
+        }
     }
 }

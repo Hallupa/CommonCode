@@ -7,6 +7,11 @@ namespace TraderTools.Indicators
     {
         private int _length = 1;
 
+        public virtual void Reset()
+        {
+            Buffer.Clear();
+        }
+
         public virtual bool IsFormed => Buffer.Count >= Length;
 
         public abstract string Name { get; }
@@ -18,9 +23,10 @@ namespace TraderTools.Indicators
         public int Length
         {
             get => _length;
-            protected set
+            set
             {
                 _length = value;
+                Reset();
             }
         }
     }

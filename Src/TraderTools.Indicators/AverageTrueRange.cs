@@ -18,6 +18,13 @@ namespace TraderTools.Indicators
         /// </summary>
         public bool IsFormed { get; set; }
 
+        public void Reset()
+        {
+            IsFormed = false;
+
+            _movingAverage.Reset();
+        }
+
         public string Name => $"ATR{_movingAverage.Length}";
 
         public float GetTrueRange(Candle candle, Candle candlePrev)
