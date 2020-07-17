@@ -111,7 +111,10 @@
     <Compile Include="Converters\EnumToIntConverter.cs" />
     <Compile Include="Converters\CloseStatusToColourConverter.cs" />
     <Compile Include="Converters\ValueToColourConverter.cs" />
-    <Compile Include="DoubleChartView.xaml.cs">
+    <Compile Include="Views\ChartView.xaml.cs">
+      <DependentUpon>ChartView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\DoubleChartView.xaml.cs">
       <DependentUpon>DoubleChartView.xaml</DependentUpon>
     </Compile>
     <Compile Include="ChartModifiers\FilteringLegendModifier.cs" />
@@ -143,7 +146,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="DoubleChartView.xaml">
+    <Page Include="Views\ChartView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\DoubleChartView.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
