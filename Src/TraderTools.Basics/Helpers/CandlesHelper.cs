@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
+using System.Threading;
 using Hallupa.Library;
 using log4net;
 
@@ -25,8 +27,11 @@ namespace TraderTools.Basics.Helpers
             return null;
         }
 
-        public static void UpdateCandles(IBroker broker, IBrokersCandlesService candlesService, IEnumerable<string> markets, IEnumerable<Timeframe> timeframes, int threads = 3)
+        public static void UpdateCandles(IBroker broker, IBrokersCandlesService candlesService,
+            IEnumerable<string> markets, IEnumerable<Timeframe> timeframes, int threads = 3, Action<string> updateProgressAction = null)
         {
+            var completed = 0;
+            var total = 0;
             var producerConsumer =
                 new ProducerConsumer<(string Market, Timeframe Timeframe)>(threads,
                     data =>
@@ -35,6 +40,11 @@ namespace TraderTools.Basics.Helpers
                         candlesService.UpdateCandles(broker, data.Market, data.Timeframe);
                         candlesService.UnloadCandles(data.Market, data.Timeframe, broker);
                         Log.Info($"Updated {data.Timeframe} candles for {data.Market}");
+
+                        Interlocked.Increment(ref completed);
+
+                        updateProgressAction?.Invoke($"Updated {completed}/{total} markets/timeframes");
+
                         return ProducerConsumerActionResult.Success;
                     });
 
@@ -43,9 +53,12 @@ namespace TraderTools.Basics.Helpers
             {
                 foreach (var timeframe in timeframes)
                 {
+                    total++;
                     producerConsumer.Add((market, timeframe));
                 }
             }
+
+            updateProgressAction?.Invoke($"Updating {total} markets/timeframes");
 
             producerConsumer.SetProducerCompleted();
             producerConsumer.Start();

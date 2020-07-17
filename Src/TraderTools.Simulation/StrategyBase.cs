@@ -271,6 +271,24 @@ namespace TraderTools.Simulation
             return OrderShort((decimal)price, (decimal)stop, (decimal?)limit, expire);
         }
 
+        protected Trade OrderLong(decimal price, decimal stop, decimal? limit = null, DateTime? expire = null)
+        {
+            int? lotSize = 1;
+            var candle = Candles[_smallestCandleTimeframe][Candles[_smallestCandleTimeframe].Count - 1];
+            var trade = TradeFactory.CreateOrder(
+                "FXCM", price, candle, TradeDirection.Long, lotSize.Value, Market.Name, expire, stop,
+                limit, CalculateOptions.ExcludePipsCalculations);
+
+            NewTrades.Add(trade);
+
+            return trade;
+        }
+
+        protected Trade OrderLong(float price, float stop, float? limit = null, DateTime? expire = null)
+        {
+            return OrderLong((decimal)price, (decimal)stop, (decimal?)limit, expire);
+        }
+
         protected Trade MarketShort(decimal stop, decimal? limit = null)
         {
             var lotSize = 1;
