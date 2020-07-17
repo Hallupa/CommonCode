@@ -38,15 +38,6 @@ namespace TraderTools.Core.UI.ViewModels
             _getTradesFunc = getTradesFunc;
         }
 
-        public static readonly DependencyProperty ShowSubOptionsProperty = DependencyProperty.Register(
-            "ShowSubOptions", typeof(bool), typeof(TradesResultsViewModel), new PropertyMetadata(true));
-
-        public bool ShowSubOptions
-        {
-            get { return (bool) GetValue(ShowSubOptionsProperty); }
-            set { SetValue(ShowSubOptionsProperty, value); }
-        }
-
         public static readonly DependencyProperty ShowOptionsProperty = DependencyProperty.Register(
             "ShowOptions", typeof(bool), typeof(TradesResultsViewModel), new PropertyMetadata(true));
 
@@ -54,15 +45,6 @@ namespace TraderTools.Core.UI.ViewModels
         {
             get { return (bool) GetValue(ShowOptionsProperty); }
             set { SetValue(ShowOptionsProperty, value); }
-        }
-
-        public static readonly DependencyProperty SubItemsIndexProperty = DependencyProperty.Register(
-            "SubItemsIndex", typeof(int), typeof(TradesResultsViewModel), new PropertyMetadata(0));
-
-        public int SubItemsIndex
-        {
-            get { return (int) GetValue(SubItemsIndexProperty); }
-            set { SetValue(SubItemsIndexProperty, value); }
         }
 
         public bool ShowProfit { get; set; } = false;
