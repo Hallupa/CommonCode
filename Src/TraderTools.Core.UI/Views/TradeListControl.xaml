@@ -37,18 +37,10 @@
             </DataGrid.Resources>
             <DataGrid.ContextMenu>
                 <ContextMenu x:Name="MainContextMenu">
-                    <MenuItem Header="Edit trade" Command="{Binding EditCommand}" x:Name="MainContextMenuEditMenuItem"/>
-                    <MenuItem Header="Delete trade" Command="{Binding DeleteCommand}"
-                              CommandParameter="{Binding PlacementTarget.SelectedItem, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ContextMenu}}}"
-                              x:Name="MainContextMenuDeleteMenuItem"/>
-                    <Separator />
                     <MenuItem Header="Show open trades only" IsCheckable="True" IsChecked="{Binding Data.ShowOpenTradesOnly, Source={StaticResource Proxy}}"/>
                     <MenuItem Header="Show orders only" IsCheckable="True" IsChecked="{Binding Data.ShowOrdersOnly, Source={StaticResource Proxy}}"/>
                 </ContextMenu>
             </DataGrid.ContextMenu>
-            <b:Interaction.Behaviors>
-                <behaviours:DataGridCancelEditBehaviour CancelEditCommand="{Binding CancelEditCommand, Mode=OneWayToSource}"/>
-            </b:Interaction.Behaviors>
 
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Id" Binding="{Binding Id, Mode=OneWay}" IsReadOnly="True" Width="70" />
