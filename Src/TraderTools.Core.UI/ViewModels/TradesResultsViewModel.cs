@@ -106,8 +106,8 @@ namespace TraderTools.Core.UI.ViewModels
             if (DisableUpdates) return;
 
             var trades = _getTradesFunc().Where(t => 
-                (IncludeOpenTrades && t.CloseDateTime == null && t.EntryDateTime != null)
-            || (IncludeClosedTrades && t.CloseDateTime != null)).ToList();
+                (IncludeOpenTrades && t.CloseDateTime == null && t.EntryDateTime != null && !t.Ignore)
+            || (IncludeClosedTrades && t.CloseDateTime != null && !t.Ignore)).ToList();
 
             var groupedTrades = GetGroupedTrades(trades);
             if (groupedTrades == null)

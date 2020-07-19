@@ -57,7 +57,7 @@ namespace TraderTools.Core.UI.ViewModels
             var t = (Trade)obj;
             return ((ShowOpenTrades && t.EntryPrice != null && t.CloseDateTime == null)
                    || (ShowOrders && t.OrderPrice != null && t.EntryPrice == null && t.CloseDateTime == null)
-                   || (ShowClosedTrades && t.CloseDateTime != null));
+                   || (ShowClosedTrades && t.CloseDateTime != null)) && !t.Ignore;
         }
 
         public static readonly DependencyProperty TradeSelectionModeProperty = DependencyProperty.Register(
