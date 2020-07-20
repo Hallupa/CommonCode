@@ -102,8 +102,6 @@
     <Compile Include="Services\MarketsService.cs" />
     <Compile Include="Services\TickDataService.cs" />
     <Compile Include="Services\TradeDetailsAutoCalculatorService.cs" />
-    <Compile Include="Trading\ExpectedTradeAttribute.cs" />
-    <Compile Include="Trading\NotExpectedTradeAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
@@ -129,5 +127,6 @@
       <Version>4.1.5</Version>
     </PackageReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

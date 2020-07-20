@@ -22,6 +22,17 @@ namespace TraderTools.Simulation
             return strategy.Markets;
         }
 
+        public static StrategyBase CreateStrategyInstance(Type strategyType)
+        {
+            var strategy = (StrategyBase)Activator.CreateInstance(strategyType);
+            if (strategy != null && strategy.Markets == null)
+            {
+                strategy.SetMarkets(StrategyBase.GetDefaultMarkets());
+            }
+
+            return strategy;
+        }
+
         public static Type CompileStrategy(string code)
         {
             _classNumber++;

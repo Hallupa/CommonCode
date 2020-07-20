@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using Hallupa.Library;
 using Hallupa.Library.Extensions;
 using log4net;
 using TraderTools.Basics;
@@ -11,7 +13,7 @@ namespace TraderTools.Simulation
 {
     public class StrategyRunner
     {
-        private static readonly ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private readonly IBrokersCandlesService _candleService;
         private readonly IMarketDetailsService _marketDetailsService;
         private readonly IBroker _broker;
@@ -23,6 +25,78 @@ namespace TraderTools.Simulation
             _marketDetailsService = marketDetailsService;
             _broker = broker;
             _market = market;
+        }
+
+        public static List<Trade> Run(
+            Type strategyType, Func<bool> stopFunc,
+            IBrokersCandlesService candlesService, IMarketDetailsService marketDetailsService,
+            IBroker broker, int threads)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            var strategyMarket = new Dictionary<string, StrategyBase>();
+            var completed = 0;
+            var trades = new List<Trade>();
+
+            var producerConsumer = new ProducerConsumer<(Type StrategyType, MarketDetails Market)>(
+                threads, d =>
+            {
+                if (stopFunc?.Invoke() ?? false) return ProducerConsumerActionResult.Stop;
+
+                var strategyTester =
+                    new StrategyRunner(candlesService, marketDetailsService, broker,
+                        d.Market);
+
+                var strategy = StrategyHelper.CreateStrategyInstance(d.StrategyType);
+                strategyMarket[d.Market.Name] = strategy;
+
+                var marketTrades = strategyTester.Run(strategy, stopFunc, strategy.StartTime, strategy.EndTime);
+
+                if (marketTrades != null)
+                {
+                    lock (trades)
+                    {
+                        trades.AddRange(marketTrades);
+                    }
+                    
+                    // _results.AddResult(result);
+
+                    // Adding trades to UI in realtime slows down the UI too much with strategies with many trades
+
+                    completed++;
+                    Log.Info($"Completed {completed}/{strategy.Markets.Length}");
+                }
+
+                return ProducerConsumerActionResult.Success;
+            });
+
+            foreach (var market in StrategyHelper.GetStrategyMarkets(strategyType))
+            {
+                producerConsumer.Add((strategyType, marketDetailsService.GetMarketDetails(broker.Name, market)));
+            }
+
+            producerConsumer.Start();
+            producerConsumer.SetProducerCompleted();
+            producerConsumer.WaitUntilConsumersFinished();
+
+            //var trades = _results.Results.ToList();
+
+            // Set trade profits
+            var balance = 10000M;
+            foreach (var t in trades.OrderBy(z => z.OrderDateTime ?? z.EntryDateTime))
+            {
+                var riskAmount = (strategyMarket[t.Market].RiskEquityPercent / 100M) * balance;
+                var profit = t.RMultiple * riskAmount ?? 0M;
+                t.NetProfitLoss = profit;
+                t.RiskAmount = riskAmount;
+                balance += profit;
+
+                if (balance < 0) balance = 0M;
+            }
+
+            stopwatch.Stop();
+            Log.Info($"Simulation run completed in {stopwatch.Elapsed.TotalSeconds}s");
+
+            return trades;
         }
 
         public List<Trade> Run(StrategyBase strategy, Func<bool> getShouldStopFunc, DateTime? startTime = null, DateTime? endTime = null)
@@ -143,7 +217,7 @@ namespace TraderTools.Simulation
                 }
                 catch (Exception ex)
                 {
-                    _log.Error("Error processing new candles", ex);
+                    Log.Error("Error processing new candles", ex);
                     return null;
                 }
 
@@ -194,14 +268,14 @@ namespace TraderTools.Simulation
                     {
                         if (t.TradeDirection == TradeDirection.Long && t.LimitPrice < t.OrderPrice.Value)
                         {
-                            _log.Error(
+                            Log.Error(
                                 $"Long trade for {t.Market} has limit price below order price. Ignoring trade");
                             newTrades.RemoveAt(i);
                             removed = true;
                         }
                         else if (t.TradeDirection == TradeDirection.Short && t.LimitPrice > t.OrderPrice.Value)
                         {
-                            _log.Error(
+                            Log.Error(
                                 $"Short trade for {t.Market} has limit price above order price. Ignoring trade");
                             newTrades.RemoveAt(i);
                             removed = true;
@@ -212,14 +286,14 @@ namespace TraderTools.Simulation
                     {
                         if (t.TradeDirection == TradeDirection.Long && t.StopPrice > t.OrderPrice.Value)
                         {
-                            _log.Error(
+                            Log.Error(
                                 $"Long trade for {t.Market} has stop price above order price. Ignoring trade");
                             newTrades.RemoveAt(i);
                             removed = true;
                         }
                         else if (t.TradeDirection == TradeDirection.Short && t.StopPrice < t.OrderPrice.Value)
                         {
-                            _log.Error(
+                            Log.Error(
                                 $"Short trade for {t.Market} has stop price below order price. Ignoring trade");
                             newTrades.RemoveAt(i);
                             removed = true;
@@ -231,28 +305,28 @@ namespace TraderTools.Simulation
                         if (t.TradeDirection == TradeDirection.Long && t.OrderType == OrderType.LimitEntry &&
                             t.OrderPrice.Value > (decimal)latestAskPrice)
                         {
-                            _log.Error($"Long trade for {t.Market} has limit entry but order price is above latest price. Ignoring trade");
+                            Log.Error($"Long trade for {t.Market} has limit entry but order price is above latest price. Ignoring trade");
                             newTrades.RemoveAt(i);
                             removed = true;
                         }
                         else if (t.TradeDirection == TradeDirection.Long && t.OrderType == OrderType.StopEntry &&
                                  t.OrderPrice.Value < (decimal)latestAskPrice)
                         {
-                            _log.Error($"Long trade for {t.Market} has stop entry but order price is below latest price. Ignoring trade");
+                            Log.Error($"Long trade for {t.Market} has stop entry but order price is below latest price. Ignoring trade");
                             newTrades.RemoveAt(i);
                             removed = true;
                         }
                         else if (t.TradeDirection == TradeDirection.Short && t.OrderType == OrderType.LimitEntry &&
                                  t.OrderPrice.Value < (decimal)latestBidPrice)
                         {
-                            _log.Error($"Short trade for {t.Market} has limit entry but order price is below latest price. Ignoring trade");
+                            Log.Error($"Short trade for {t.Market} has limit entry but order price is below latest price. Ignoring trade");
                             newTrades.RemoveAt(i);
                             removed = true;
                         }
                         else if (t.TradeDirection == TradeDirection.Short && t.OrderType == OrderType.StopEntry &&
                                  t.OrderPrice.Value > (decimal)latestBidPrice)
                         {
-                            _log.Error($"Short trade for {t.Market} has stop entry but order price is above latest price. Ignoring trade");
+                            Log.Error($"Short trade for {t.Market} has stop entry but order price is above latest price. Ignoring trade");
                             newTrades.RemoveAt(i);
                             removed = true;
                         }
@@ -265,7 +339,7 @@ namespace TraderTools.Simulation
                             marketDetailsService.GetMarketDetails("FXCM", t.Market));
                         if (stopPips <= maxPips)
                         {
-                            _log.Error($"Trade for {t.Market} has stop within {maxPips} pips. Ignoring trade");
+                            Log.Error($"Trade for {t.Market} has stop within {maxPips} pips. Ignoring trade");
                             newTrades.RemoveAt(i);
                             removed = true;
                         }
@@ -277,7 +351,7 @@ namespace TraderTools.Simulation
                             marketDetailsService.GetMarketDetails("FXCM", t.Market));
                         if (limitPips <= maxPips)
                         {
-                            _log.Error($"Trade for {t.Market} has stop within {maxPips} pips. Ignoring trade");
+                            Log.Error($"Trade for {t.Market} has stop within {maxPips} pips. Ignoring trade");
                             newTrades.RemoveAt(i);
                             removed = true;
                         }
@@ -291,14 +365,14 @@ namespace TraderTools.Simulation
                     {
                         if (t.TradeDirection == TradeDirection.Long && t.LimitPrice < t.EntryPrice)
                         {
-                            _log.Error(
+                            Log.Error(
                                 $"Long trade for {t.Market} has limit price below current price. Ignoring trade");
                             newTrades.RemoveAt(i);
                             removed = true;
                         }
                         else if (t.TradeDirection == TradeDirection.Short && t.LimitPrice > t.EntryPrice)
                         {
-                            _log.Error(
+                            Log.Error(
                                 $"Short trade for {t.Market} has limit price above current price. Ignoring trade");
                             newTrades.RemoveAt(i);
                             removed = true;
@@ -309,14 +383,14 @@ namespace TraderTools.Simulation
                     {
                         if (t.TradeDirection == TradeDirection.Long && t.StopPrice > t.EntryPrice)
                         {
-                            _log.Error(
+                            Log.Error(
                                 $"Long trade for {t.Market} has stop price above current price. Ignoring trade");
                             newTrades.RemoveAt(i);
                             removed = true;
                         }
                         else if (t.TradeDirection == TradeDirection.Short && t.StopPrice < t.EntryPrice)
                         {
-                            _log.Error(
+                            Log.Error(
                                 $"Short trade for {t.Market} has stop price below current price. Ignoring trade");
                             newTrades.RemoveAt(i);
                             removed = true;
@@ -356,7 +430,7 @@ namespace TraderTools.Simulation
             var tradesForExpectancy = closedTrades.Where(x => x.RMultiple != null).ToList();
             var expectancy = TradingCalculator.CalculateExpectancy(tradesForExpectancy);
 
-            _log.Info(
+            Log.Info(
                 $"{_market.Name} Up to: {new DateTime(currentDateTimeTicks): dd-MM-yy HH:mm} "// /* {r.PercentComplete:0.00}% */. Running: {r.SecondsRunning}s. "
                 + $"Created: {orderTrades.Count() + closedTrades.Count + trades.OpenTrades.Count()} "
                 + $"Open: {trades.OpenTrades.Count()}. Orders: {orderTrades.Count()} "
