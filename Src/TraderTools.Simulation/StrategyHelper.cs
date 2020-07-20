@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using log4net;
@@ -9,6 +10,18 @@ namespace TraderTools.Simulation
     {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private static int _classNumber = 0;
+
+        public static string[] GetStrategyMarkets(Type strategyType)
+        {
+            var strategy = (StrategyBase)Activator.CreateInstance(strategyType);
+            if (strategy != null && strategy.Markets == null)
+            {
+                return StrategyBase.Majors.Concat(StrategyBase.Minors).Concat(StrategyBase.MajorIndices).ToArray();
+            }
+
+            return strategy.Markets;
+        }
+
         public static Type CompileStrategy(string code)
         {
             _classNumber++;
