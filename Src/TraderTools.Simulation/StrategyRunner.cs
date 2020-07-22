@@ -47,7 +47,11 @@ namespace TraderTools.Simulation
                         d.Market);
 
                 var strategy = StrategyHelper.CreateStrategyInstance(d.StrategyType);
-                strategyMarket[d.Market.Name] = strategy;
+
+                lock (strategyMarket)
+                {
+                    strategyMarket[d.Market.Name] = strategy;
+                }
 
                 var marketTrades = strategyTester.Run(strategy, stopFunc, strategy.StartTime, strategy.EndTime);
 
