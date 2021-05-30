@@ -142,7 +142,7 @@ namespace TraderTools.Core.UI.ViewModels
             Timeframe largeChartTimeframe, List<Candle> largeChartCandles)
         {
             LargeChartTimeframe = largeChartTimeframe;
-            ChartHelper.SetChartViewModelPriceData(largeChartCandles, ChartViewModel, largeChartTimeframe);
+            ChartHelper.SetChartViewModelPriceData(largeChartCandles, ChartViewModel);
 
             if (SelectedMainIndicatorsIndex == (int)MainIndicators.EMA8_EMA25_EMA50)
             {
@@ -163,8 +163,7 @@ namespace TraderTools.Core.UI.ViewModels
                     new SimpleMovingAverage(200), Colors.LightBlue, largeChartTimeframe, largeChartCandles);
             }
 
-            ChartHelper.SetChartViewModelPriceData(smallChartCandles, ChartViewModelSmaller1,
-                smallChartTimeframe);
+            ChartHelper.SetChartViewModelPriceData(smallChartCandles, ChartViewModelSmaller1);
 
             if (SelectedMainIndicatorsIndex == (int)MainIndicators.EMA8_EMA25_EMA50)
             {

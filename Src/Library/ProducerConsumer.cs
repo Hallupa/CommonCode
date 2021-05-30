@@ -12,17 +12,29 @@ namespace Hallupa.Library
         Stop
     }
 
+    public class ConsumerData<T>
+    {
+        public ConsumerData(T data, int consumerIndex)
+        {
+            Data = data;
+            ConsumerIndex = consumerIndex;
+        }
+
+        public T Data { get; }
+        public int ConsumerIndex { get; }
+    }
+
     public class ProducerConsumer<T>
     {
         private readonly int _consumers;
-        private readonly Func<T, ProducerConsumerActionResult> _consumeAction;
+        private readonly Func<ConsumerData<T>, ProducerConsumerActionResult> _consumeAction;
         private readonly Queue<T> _queue;
         private readonly object _consumerWait = new object();
         private bool _producerCompleted;
         private List<Task> _consumerTasks;
         private bool _cancel;
 
-        public ProducerConsumer(int consumers, Func<T, ProducerConsumerActionResult> consumeAction)
+        public ProducerConsumer(int consumers, Func<ConsumerData<T>, ProducerConsumerActionResult> consumeAction)
         {
             _consumers = consumers;
             _consumeAction = consumeAction;
@@ -36,9 +48,10 @@ namespace Hallupa.Library
             _consumerTasks = new List<Task>();
             for (var i = 0; i < _consumers; i++)
             {
+                var consumerIndex = i;
                 _consumerTasks.Add(Task.Run(() =>
                 {
-                    ConsumeItems();
+                    ConsumeItems(consumerIndex);
                 }));
             }
         }
@@ -102,7 +115,7 @@ namespace Hallupa.Library
             Task.WaitAll(_consumerTasks.ToArray());
         }
 
-        private void ConsumeItems()
+        private void ConsumeItems(int consumerIndex)
         {
             while (!_cancel)
             {
@@ -142,7 +155,7 @@ namespace Hallupa.Library
 
                 if (gotItem)
                 {
-                    var ret = _consumeAction(item);
+                    var ret = _consumeAction(new ConsumerData<T>(item, consumerIndex));
                     if (ret == ProducerConsumerActionResult.Stop)
                     {
                         Stop();

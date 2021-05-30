@@ -52,7 +52,7 @@ namespace TraderTools.Core.Services
 
         public void UpdateCandles(IBroker broker, string market, Timeframe timeframe, bool forceUpdate = true, bool saveCandles = true)
         {
-            GetCandles(broker, market, timeframe, true, forceUpdate: forceUpdate, saveCandles: saveCandles);
+            GetCandles(broker, market, timeframe, true, forceUpdate: forceUpdate, saveCandles: saveCandles, cacheData: false);
         }
 
         private Dictionary<(IBroker Broker, string Market, Timeframe Timeframe), object> _lockLookups = new Dictionary<(IBroker Broker, string Market, Timeframe Timeframe), object>();
@@ -196,21 +196,18 @@ namespace TraderTools.Core.Services
 
         private List<Candle> LoadBrokerCandles(IBroker broker, string market, Timeframe timeframe)
         {
-            using (new LogRunTime($"Load and process {broker.Name} {market} {timeframe} candles"))
+            var candlesPath = GetBrokerCandlesPath(broker, market, timeframe);
+
+            if (File.Exists(candlesPath))
             {
-                var candlesPath = GetBrokerCandlesPath(broker, market, timeframe);
+                byte[] data;
 
-                if (File.Exists(candlesPath))
+                using (new LogRunTime($"Loaded {broker.Name} {market} {timeframe} candles data"))
                 {
-                    byte[] data;
-
-                    using (new LogRunTime($"Loaded {broker.Name} {market} {timeframe} candles data"))
-                    {
-                        data = File.ReadAllBytes(candlesPath);
-                    }
-                    
-                    return new List<Candle>(BytesToCandles(data));
+                    data = File.ReadAllBytes(candlesPath);
                 }
+                
+                return new List<Candle>(BytesToCandles(data));
             }
 
             return new List<Candle>();

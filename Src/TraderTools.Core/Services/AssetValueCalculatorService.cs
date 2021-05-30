@@ -120,7 +120,7 @@ namespace TraderTools.Core.Services
             return null;
         }
 
-        public void CalculateUSDTProceeds(List<Trade> trades, Action<string> updateProgress, IBrokersCandlesService candlesService, IBroker broker)
+        /*public void CalculateUSDTProceeds(List<Trade> trades, Action<string> updateProgress, IBrokersCandlesService candlesService, IBroker broker)
         {
             var groupedTrades = trades.GroupBy(x => x.OrderId + " " + x.OrderDateTime.Value.ToString("yyyyMMddHHmm")).ToList();
             var count = 0;
@@ -196,7 +196,7 @@ namespace TraderTools.Core.Services
             producerConsumer.SetProducerCompleted();
             producerConsumer.Start();
             producerConsumer.WaitUntilConsumersFinished();
-        }
+        }*/
 
         public decimal GetCryptoAssetApproxUsdValue(IBrokersCandlesService candleService, IBroker binanceBroker,
             string asset, DateTime date, decimal amount, out bool success, bool updateCandles = false)

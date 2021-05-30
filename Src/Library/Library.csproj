@@ -88,6 +88,7 @@
     <Compile Include="CsvHelper.cs" />
     <Compile Include="DelegateCommand.cs" />
     <Compile Include="Extensions\BinaryReaderExtensions.cs" />
+    <Compile Include="Extensions\ListExtensions.cs" />
     <Compile Include="LatLonHelper.cs" />
     <Compile Include="LogCodeBlockStats.cs" />
     <Compile Include="LogRunTime.cs" />

@@ -98,6 +98,7 @@
     <Compile Include="DepositWithdrawal.cs" />
     <Compile Include="Extensions\BrokerCandlesServiceExtensions.cs" />
     <Compile Include="Extensions\CandleExtensions.cs" />
+    <Compile Include="Extensions\IndicatorExtension.cs" />
     <Compile Include="Extensions\TradeExtensions.cs" />
     <Compile Include="Helpers\CandlesHelper.cs" />
     <Compile Include="Helpers\PipsHelper.cs" />

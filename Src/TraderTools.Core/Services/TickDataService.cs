@@ -90,7 +90,7 @@ namespace TraderTools.Core.Services
             Log.Info("Data saved");
         }
 
-        public List<TickData> GetTickData(string market, IBroker broker, bool updateData)
+        /*public List<TickData> GetTickData(string market, IBroker broker, bool updateData)
         {
             Log.Info($"Getting tick data for {market}");
             var path = Path.Combine(_dataDirectoryService.MainDirectory, "TickData", $"{market.Replace("/", "")}.dat");
@@ -154,9 +154,9 @@ namespace TraderTools.Core.Services
             Log.Info("Got tick data");
 
             return ret;
-        }
+        }*/
 
-        private void DownloadData(string market, IBroker broker, List<TickData> tickDataItems, string path, DateTime start, DateTime end)
+        /*private void DownloadData(string market, IBroker broker, List<TickData> tickDataItems, string path, DateTime start, DateTime end)
         {
             var saveUptoIndex = -1;
             var completed = new List<(bool Completed, int TickDataItemsCount)>();
@@ -199,7 +199,7 @@ namespace TraderTools.Core.Services
             producerConsumer.SetProducerCompleted();
             producerConsumer.WaitUntilConsumersFinished();
             TrySaveData(completed, tickDataItems, path, ref saveUptoIndex);
-        }
+        }*/
 
         public static List<TickData> Deserialize(Stream stream)
         {
