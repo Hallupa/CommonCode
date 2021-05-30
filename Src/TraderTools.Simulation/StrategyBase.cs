@@ -7,100 +7,309 @@ using Hallupa.Library;
 using log4net;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
-using TraderTools.Core.Services;
-using TraderTools.Core.Trading;
+using TraderTools.Indicators;
 
 namespace TraderTools.Simulation
 {
-    public abstract class StrategyBase : IStrategy
+    public abstract class StrategyBase
     {
+        public static readonly string[] Majors = { "EUR/USD", "USD/JPY", "GBP/USD", "USD/CHF", "AUD/USD", "USD/CAD", "NZD/USD" };
+        public static readonly string[] Minors = { "EUR/CHF", "EUR/GBP", "EUR/JPY", "CHF/JPY", "GBP/CHF", "EUR/AUD", "EUR/CAD", "AUD/CAD", "AUD/JPY", "CAD/JPY", "NZD/JPY", "GBP/CAD", "GBP/NZD", "GBP/AUD", "AUD/NZD", "AUD/CHF", "EUR/NZD", "NZD/CHF", "CAD/CHF", "NZD/CAD" };
+        public static readonly string[] MajorIndices = { "US30", "UK100", "NAS100", "GER30", "AUS200", "SPX500" };
+
         private static readonly ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        [Import] protected ITradeDetailsAutoCalculatorService _calculator;
-        [Import] protected IBrokersService _brokersService;
-        [Import] protected IBrokersCandlesService _candlesService;
-        [Import] protected IMarketDetailsService _marketDetailsService;
-        [Import] protected MarketsService _marketsService;
-        [Import] protected ModelPredictorService _predictorService;
-        private IBroker _broker;
-        private IBrokerAccount _account;
+        private Timeframe _smallestCandleTimeframe;
+        private TimeframeLookup<List<(IIndicator Indicator, IndicatorValues IndicatorValues)>> _indicators = new TimeframeLookup<List<(IIndicator Indicator, IndicatorValues IndicatorValues)>>();
 
-        protected StrategyBase()
+        private decimal _riskEquityPercent = 0.5M;
+
+        public DateTime? StartTime { get; private set; }
+
+        public DateTime? EndTime { get; private set; }
+
+        public bool Initialised { get; private set; }
+
+        public void SetInitialised()
         {
-            DependencyContainer.ComposeParts(this);
-
-            _broker = _brokersService.Brokers.First(x => x.Name == "FXCM");
-            _account = _brokersService.AccountsLookup.ContainsKey(_broker) ? _brokersService.AccountsLookup[_broker] : null;
+            Initialised = true;
         }
 
-        public bool UseRiskSize { get; set; } = true;
-
-        public abstract string Name { get; }
-
-        protected int Predict(IModelDetails modelDetails, params float[] xValues)
+        public void SetMarkets(params string[] markets)
         {
-            return _predictorService.Predict(modelDetails, xValues);
+            if (Initialised) throw new ApplicationException("Cannot set markets after strategy is initialised");
+            Markets = markets;
         }
 
-        protected IModelDetails LoadModel(string name)
+        public static string[] GetDefaultMarkets()
         {
-            return _predictorService.LoadModel(name);
+            return Majors.Concat(Minors).Concat(MajorIndices).ToArray();
         }
+
+        public string[] Markets { get; private set; }
+
+        protected void AddMajors()
+        {
+            var current = Markets != null ? Markets.ToList() : new List<string>();
+            SetMarkets(current.Union(Majors).ToArray());
+        }
+
+        protected void AddMinors()
+        {
+            var current = Markets != null ? Markets.ToList() : new List<string>();
+            SetMarkets(current.Union(Minors).ToArray());
+        }
+
+        protected void AddMajorIndices()
+        {
+            var current = Markets != null ? Markets.ToList() : new List<string>();
+            SetMarkets(current.Union(MajorIndices).ToArray());
+        }
+        protected void SetTimeframes(params Timeframe[] timeframes)
+        {
+            if (Initialised) throw new ApplicationException("Cannot set timeframes after strategy is initialised");
+
+            Timeframes = timeframes.OrderBy(x => x).ToArray();
+            _smallestCandleTimeframe = Timeframes.First();
+        }
+
+        public Timeframe[] Timeframes { get; private set; }
+
+        public TradeWithIndexingCollection Trades { get; private set; }
+
+        protected void SetRiskEquityPercent(decimal riskEquityPercent)
+        {
+            RiskEquityPercent = riskEquityPercent;
+        }
+
+        public decimal RiskEquityPercent
+        {
+            get => _riskEquityPercent;
+            private set
+            {
+                if (Initialised) throw new ApplicationException("Cannot set equite risk amount after strategy is initialised");
+                _riskEquityPercent = value;
+            }
+        }
+
+        public void UpdateIndicators(List<Timeframe> timeframesCandleAdded)
+        {
+            foreach (var tf in timeframesCandleAdded)
+            {
+                if (_indicators[tf] == null) continue;
+
+                var addedCandle = Candles[tf].Last();
+                foreach (var x in _indicators[tf])
+                {
+                    var signalAndValue = x.Indicator.Process(addedCandle);
+                    if (signalAndValue.IsFormed)
+                    {
+                        x.IndicatorValues.Values.Add((addedCandle.CloseTimeTicks, signalAndValue.Value));
+                        x.IndicatorValues.Value = signalAndValue.Value;
+                        x.IndicatorValues.HasValue = true;
+                    }
+                    else
+                    {
+                        x.IndicatorValues.Values.Add((addedCandle.CloseTimeTicks, null));
+                        x.IndicatorValues.Value = 0F;
+                        x.IndicatorValues.HasValue = false;
+                    }
+                }
+            }
+        }
+
+        protected IndicatorValues EMA(Timeframe timeframe, int length)
+        {
+            var indicator = new ExponentialMovingAverage(length);
+            return AddIndicator(timeframe, indicator);
+        }
+
+        protected IndicatorValues UpperBollingerBand(Timeframe timeframe, float std = 2.0F)
+        {
+            var indicator = new BollingerBand(std, 20);
+            return AddIndicator(timeframe, indicator);
+        }
+
+        protected IndicatorValues LowerBollingerBand(Timeframe timeframe, float std = -2.0F)
+        {
+            var indicator = new BollingerBand(std, 20);
+            return AddIndicator(timeframe, indicator);
+        }
+
+        protected IndicatorValues ATR(Timeframe timeframe)
+        {
+            var indicator = new AverageTrueRange();
+            return AddIndicator(timeframe, indicator);
+        }
+
+        protected IndicatorValues ADR(Timeframe timeframe)
+        {
+            var indicator = new AverageDayRange();
+            return AddIndicator(timeframe, indicator);
+        }
+
+        protected IndicatorValues RSI(Timeframe timeframe)
+        {
+            var indicator = new RelativeStrengthIndex();
+            return AddIndicator(timeframe, indicator);
+        }
+
+        public void SetStartDate(int year, int month, int day)
+        {
+            if (Initialised) throw new ApplicationException("Cannot set start time after strategy is initialised");
+            StartTime = new DateTime(year, month, day);
+        }
+
+        public void SetEndDate(int year, int month, int day)
+        {
+            if (Initialised) throw new ApplicationException("Cannot set end time after strategy is initialised");
+            EndTime = new DateTime(year, month, day);
+        }
+
+        private IndicatorValues AddIndicator(Timeframe timeframe, IIndicator indicator)
+        {
+            if (Initialised) throw new ApplicationException("Cannot add indicator after strategy is initialised");
+
+            var values = new IndicatorValues();
+            if (_indicators[timeframe] == null) _indicators[timeframe] = new List<(IIndicator Indicator, IndicatorValues IndicatorValues)>();
+            _indicators[timeframe].Add((indicator, values));
+
+            return values;
+
+        }
+
+        public void SetSimulationParameters(
+            TradeWithIndexingCollection trades,
+            TimeframeLookup<List<Candle>> currentCandles,
+            MarketDetails market)
+        {
+            Trades = trades;
+            Candles = currentCandles;
+            Market = market;
+        }
+
+        public MarketDetails Market { get; private set; }
+
+        public TimeframeLookup<List<Candle>> Candles { get; private set; }
 
         protected void Log(string txt)
         {
             _log.Info(txt);
         }
 
-        public abstract List<Trade> CreateNewTrades(
-            MarketDetails market, TimeframeLookup<List<CandleAndIndicators>> candlesLookup, IEnumerable<Trade> existingTrades, ITradeDetailsAutoCalculatorService calculatorService, DateTime currentTime);
+        public List<Trade> NewTrades { get; } = new List<Trade>();
 
-        protected Trade CreateMarketOrder(string market, TradeDirection direction, Candle currentCandle, decimal stop, decimal riskPercent, decimal? limit = null, string comments = "")
+        public abstract void ProcessCandles(List<Timeframe> newCandleTimeframes);
+
+        protected Trade MarketLong(decimal stop, decimal? limit = null)
         {
-            int? lotSize = 1000;
-            var entryPrice = direction == TradeDirection.Long ? currentCandle.CloseAsk : currentCandle.CloseBid;
-
-            if (UseRiskSize)
-            {
-                if (!GetLotSize(market, (decimal)entryPrice, stop, riskPercent, out lotSize)) return null;
-            }
-
-            if (lotSize == null) return null;
+            var lotSize = 1;
+            var candle = Candles[_smallestCandleTimeframe][Candles[_smallestCandleTimeframe].Count - 1];
+            var entryPrice = candle.CloseAsk;
 
             var trade = TradeFactory.CreateMarketEntry(
-                "FXCM", (decimal)entryPrice, currentCandle.CloseTime(), direction, lotSize.Value, market, stop, limit,
-                _calculator, comments: comments, calculateOptions: CalculateOptions.ExcludePipsCalculations);
+                "FXCM", (decimal)entryPrice, candle.CloseTime(), TradeDirection.Long, lotSize, Market.Name, stop, limit,
+                calculateOptions: CalculateOptions.ExcludePipsCalculations);
+
+            NewTrades.Add(trade);
 
             return trade;
         }
 
-        protected Trade CreateOrder(
-            string market, Candle currentCandle, DateTime? expiryDateTime, decimal entryPrice, TradeDirection direction,
-            decimal? limit, decimal stop, decimal riskPercent)
+      /*  private int GetLotSize(string market, decimal maxRiskEquity, DateTime dateTimeUtc, decimal entryOrOrder, decimal stop)
         {
-            int? lotSize = 1000;
+            var gbpPerPip = _brokerCandlesService.GetGBPPerPip(
+                    _marketDetailsService,
+                    _brokersService.GetBroker("FXCM"),
+                    market,
+                    1,
+                    dateTimeUtc,
+                    false);
 
-            if (UseRiskSize)
+            var stopPips = _marketDetailsService.GetPriceInPips("FXCM", Math.Abs(entryOrOrder - stop), market);
+
+            var lotSize = maxRiskEquity / (gbpPerPip * stopPips);
+
+            var ret = (int)lotSize;
+
+            if (ret <= _marketDetailsService.GetMarketDetails("FXCM", market).MinLotSize)
             {
-                if (!GetLotSize(market, entryPrice, stop, riskPercent, out lotSize)) return null;
-                if (lotSize == null) return null;
+                return 0;
             }
 
+            return ret;
+        }*/
+
+        protected void UpdateStopsInOpenTradesTrailIndicator(IndicatorValues indicatorValues)
+        {
+            var candle = Candles[_smallestCandleTimeframe][Candles[_smallestCandleTimeframe].Count - 1];
+            foreach (var trade in Trades.OpenTrades)
+            {
+                StopHelper.TrailIndicatorValues(trade.Trade, candle, indicatorValues);
+            }
+        }
+
+        protected Trade MarketLong(float stop, float? limit = null)
+        {
+            return MarketLong((decimal)stop, (decimal?)limit);
+        }
+
+        protected Trade OrderShort(decimal price, decimal stop, decimal? limit = null, DateTime? expire = null)
+        {
+            int? lotSize = 1;
+            var candle = Candles[_smallestCandleTimeframe][Candles[_smallestCandleTimeframe].Count - 1];
             var trade = TradeFactory.CreateOrder(
-                    "FXCM",
-                    entryPrice,
-                    currentCandle,
-                    direction,
-                    (decimal)lotSize.Value,
-                    market,
-                    expiryDateTime,
-                    stop,
-                    limit,
-                    calculateOptions: CalculateOptions.ExcludePipsCalculations);
+                "FXCM", price, candle, TradeDirection.Short, lotSize.Value, Market.Name, expire, stop,
+                limit, CalculateOptions.ExcludePipsCalculations);
+
+            NewTrades.Add(trade);
 
             return trade;
         }
 
-        private bool GetLotSize(string market, decimal entryPrice, decimal stop, decimal riskPercent, out int? lotSize)
+        protected Trade OrderShort(float price, float stop, float? limit = null, DateTime? expire = null)
+        {
+            return OrderShort((decimal)price, (decimal)stop, (decimal?)limit, expire);
+        }
+
+        protected Trade OrderLong(decimal price, decimal stop, decimal? limit = null, DateTime? expire = null)
+        {
+            int? lotSize = 1;
+            var candle = Candles[_smallestCandleTimeframe][Candles[_smallestCandleTimeframe].Count - 1];
+            var trade = TradeFactory.CreateOrder(
+                "FXCM", price, candle, TradeDirection.Long, lotSize.Value, Market.Name, expire, stop,
+                limit, CalculateOptions.ExcludePipsCalculations);
+
+            NewTrades.Add(trade);
+
+            return trade;
+        }
+
+        protected Trade OrderLong(float price, float stop, float? limit = null, DateTime? expire = null)
+        {
+            return OrderLong((decimal)price, (decimal)stop, (decimal?)limit, expire);
+        }
+
+        protected Trade MarketShort(decimal stop, decimal? limit = null)
+        {
+            var lotSize = 1;
+            var candle = Candles[_smallestCandleTimeframe][Candles[_smallestCandleTimeframe].Count - 1];
+            var entryPrice = candle.CloseBid;
+
+            var trade = TradeFactory.CreateMarketEntry(
+                "FXCM", (decimal)entryPrice, candle.CloseTime(), TradeDirection.Short, lotSize, Market.Name, stop, limit,
+                calculateOptions: CalculateOptions.ExcludePipsCalculations);
+
+            NewTrades.Add(trade);
+
+            return trade;
+        }
+
+        protected Trade MarketShort(float stop, float? limit = null)
+        {
+            return MarketShort((decimal)stop, (decimal?)limit);
+        }
+
+        /*private bool GetLotSize(string market, decimal entryPrice, decimal stop, decimal riskPercent, out int? lotSize)
         {
             lotSize = null;
             var balance = _account.GetBalance();
@@ -131,6 +340,6 @@ namespace TraderTools.Simulation
                     return lotSize - baseUnitSize;
                 }
             }
-        }
+        }*/
     }
 }

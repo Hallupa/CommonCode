@@ -11,11 +11,17 @@ using com.fxcm.report;
 using fxcore2;
 using Hallupa.Library;
 using log4net;
+using Newtonsoft.Json;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
 
 namespace TraderTools.Brokers.FXCM
 {
+    public class CustomJson
+    {
+        public Dictionary<string, DateTime> LastUpdateTime { get; set; } = new Dictionary<string, DateTime>();
+    }
+
     public class FxcmBroker : IDisposable, IBroker
     {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
@@ -126,6 +132,8 @@ namespace TraderTools.Brokers.FXCM
 
         public BrokerKind Kind => BrokerKind.SpreadBet;
 
+        public bool IncludeReportInUpdates { get; set; } = true;
+
         public string Name => "FXCM";
 
         private O2GTableManager GetTableManager()
@@ -153,7 +161,7 @@ namespace TraderTools.Brokers.FXCM
         }
 
         public bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService,
-            IMarketDetailsService marketsService, Action<string> updateProgressAction, DateTime? lastUpdateTime, out List<Trade> addedOrUpdatedTrades, Action<string> f)
+            IMarketDetailsService marketsService, Action<string> updateProgressAction, out List<Trade> addedOrUpdatedTrades)
         {
             var tableManager = GetTableManager();
             addedOrUpdatedTrades = new List<Trade>();
@@ -163,29 +171,46 @@ namespace TraderTools.Brokers.FXCM
                 return false;
             }
 
+            var custom = new CustomJson();
+            if (!string.IsNullOrEmpty(account.CustomJson))
+            {
+                custom = JsonConvert.DeserializeObject<CustomJson>(account.CustomJson);
+            }
+
             // Get open trades
-            Log.Info("Getting open trades");
+            Log.Debug("Getting open trades");
             updateProgressAction?.Invoke("Getting open trades");
             var updated = GetOpenTrades(account, candlesService, marketsService, tableManager, out var openTrades, addedOrUpdatedTrades);
 
-            Log.Info("Getting recently closed trades");
+            Log.Debug("Getting recently closed trades");
             updateProgressAction?.Invoke("Getting recently closed trades");
             updated = GetClosedTrades(account, candlesService, marketsService, tableManager, addedOrUpdatedTrades) || updated;
 
-            Log.Info("Getting orders");
+            Log.Debug("Getting orders");
             updateProgressAction?.Invoke("Getting orders");
             updated = GetOrders(account, candlesService, marketsService, tableManager, out var orders, addedOrUpdatedTrades) || updated;
 
             // Update trades from reports API
             updateProgressAction?.Invoke("Getting report");
-            var reportLines = GetReport(); // Don't use lastUpdateTime because the broker account could have multiple accounts
-            Log.Info("Getting historic trades");
-            updateProgressAction?.Invoke("Getting historic trades"); 
-            updated = GetReportTrades(account, candlesService, marketsService, reportLines, addedOrUpdatedTrades) || updated;
 
-            Log.Info("Getting deposits/withdrawals");
-            updateProgressAction?.Invoke("Updating deposits/withdrawals");
-            UpdateDepositsWithdrawals(account, reportLines);
+            DateTime? lastUpdateTime = null;
+            if (custom.LastUpdateTime.ContainsKey(_user)) lastUpdateTime = custom.LastUpdateTime[_user];
+
+            if (IncludeReportInUpdates)
+            {
+                var reportLines = GetReport(lastUpdateTime);
+                custom.LastUpdateTime[_user] = DateTime.UtcNow;
+                account.CustomJson = JsonConvert.SerializeObject(custom);
+
+                Log.Debug("Getting historic trades");
+                updateProgressAction?.Invoke("Getting historic trades");
+                updated = GetReportTrades(account, candlesService, marketsService, reportLines, addedOrUpdatedTrades) ||
+                          updated;
+
+                Log.Debug("Getting deposits/withdrawals");
+                updateProgressAction?.Invoke("Updating deposits/withdrawals");
+                UpdateDepositsWithdrawals(account, reportLines);
+            }
 
             // Set any open trades to closed that aren't in the open list
             foreach (var trade in account.Trades.Where(t =>
@@ -346,17 +371,18 @@ namespace TraderTools.Brokers.FXCM
                     trade.Market = tradeRow.Instrument;
                     trade.Broker = "FXCM";
                     trade.Id = tradeRow.TradeID;
+                    trade.OrderId = tradeRow.OpenOrderID;
                     trade.EntryDateTime = DateTime.SpecifyKind(tradeRow.OpenTime, DateTimeKind.Utc);
                     trade.EntryPrice = (decimal)tradeRow.OpenRate;
 
                     if (!tradeRow.Limit.Equals(0D))
                     {
-                        trade.AddLimitPrice(trade.EntryDateTime.Value, (decimal)tradeRow.Limit);
+                        trade.AddLimitPrice(tradeRow.LimitOrderID, trade.EntryDateTime.Value, (decimal)tradeRow.Limit);
                     }
 
                     if (!tradeRow.Stop.Equals(0D))
                     {
-                        trade.AddStopPrice(trade.EntryDateTime.Value, (decimal)tradeRow.Stop);
+                        trade.AddStopPrice(tradeRow.StopOrderID, trade.EntryDateTime.Value, (decimal)tradeRow.Stop);
                     }
 
                     trade.EntryQuantity = tradeRow.Amount;

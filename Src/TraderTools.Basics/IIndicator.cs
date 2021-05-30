@@ -1,4 +1,6 @@
-﻿namespace TraderTools.Basics
+﻿using System.Resources;
+
+namespace TraderTools.Basics
 {
     public interface IIndicator
     {

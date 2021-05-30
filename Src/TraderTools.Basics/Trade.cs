@@ -123,6 +123,12 @@ namespace TraderTools.Basics
             }
         }
 
+        public Trade SetStrategies(string value)
+        {
+            Strategies = value;
+            return this;
+        }
+
         public DateTime? EntryDateTime
         {
             get => _entryDateTime;
@@ -134,8 +140,6 @@ namespace TraderTools.Basics
             }
         }
 
-        public Guid UniqueId { get; set; } = Guid.NewGuid();
-
         public string Id { get; set; }
 
         public string Broker { get; set; }
@@ -146,16 +150,23 @@ namespace TraderTools.Basics
 
         public string OrderId { get; set; }
 
+        public bool Ignore { get; set; }
+
         public decimal? EntryPrice
         {
             get => _entryPrice;
             set
             {
                 _entryPrice = value;
-                TradeCalculator.UpdateStopPips(this);
-                TradeCalculator.UpdateInitialStopPips(this);
-                TradeCalculator.UpdateLimitPips(this);
-                TradeCalculator.UpdateInitialLimitPips(this);
+
+                if (!CalculateOptions.HasFlag(CalculateOptions.ExcludePipsCalculations))
+                {
+                    TradeCalculator.UpdateStopPips(this);
+                    TradeCalculator.UpdateInitialStopPips(this);
+                    TradeCalculator.UpdateLimitPips(this);
+                    TradeCalculator.UpdateInitialLimitPips(this);
+                }
+
                 TradeCalculator.UpdateRMultiple(this);
                 OnPropertyChanged();
                 OnPropertyChanged("Status");
@@ -275,6 +286,12 @@ namespace TraderTools.Basics
             }
         }
 
+        public Trade SetChartTimeframe(Timeframe timeframe)
+        {
+            Timeframe = timeframe;
+            return this;
+        }
+
         public TradeDirection? TradeDirection
         {
             get => _tradeDirection;
@@ -340,10 +357,13 @@ namespace TraderTools.Basics
                 _orderPrice = value;
                 OrderPriceFloat = (float?)value;
 
-                TradeCalculator.UpdateStopPips(this);
-                TradeCalculator.UpdateInitialStopPips(this);
-                TradeCalculator.UpdateLimitPips(this);
-                TradeCalculator.UpdateInitialLimitPips(this);
+                if (!CalculateOptions.HasFlag(CalculateOptions.ExcludePipsCalculations))
+                {
+                    TradeCalculator.UpdateStopPips(this);
+                    TradeCalculator.UpdateInitialStopPips(this);
+                    TradeCalculator.UpdateLimitPips(this);
+                    TradeCalculator.UpdateInitialLimitPips(this);
+                }
 
                 OnPropertyChanged();
                 OnPropertyChanged("Status");
@@ -549,6 +569,16 @@ namespace TraderTools.Basics
 
         public void AddStopPrice(DateTime date, decimal? price)
         {
+            AddStopPrice(string.Empty, date, price);
+        }
+
+        public void ClearLimitPrices()
+        {
+            LimitPrices.Clear();
+        }
+
+        public void AddStopPrice(string id, DateTime date, decimal? price)
+        {
             if (StopPrices.Count > 0 && StopPrices.Last().Price == price)
             {
                 return;
@@ -562,7 +592,7 @@ namespace TraderTools.Basics
                 StopPrices.RemoveAt(StopPrices.Count - 1);
             }
 
-            StopPrices.Add(new DatePrice(date, price));
+            StopPrices.Add(new DatePrice(id, date, price));
 
             if (StopPrices.Count > 1)
             {
@@ -570,12 +600,20 @@ namespace TraderTools.Basics
             }
 
             TradeCalculator.UpdateStop(this);
-            TradeCalculator.UpdateStopPips(this);
+
+            if (!CalculateOptions.HasFlag(CalculateOptions.ExcludePipsCalculations))
+            {
+                TradeCalculator.UpdateStopPips(this);
+            }
 
             if (originalStops.Count == 0 || originalStops[0].Price != StopPrices[0].Price)
             {
                 InitialStop = StopPrices[0].Price;
-                TradeCalculator.UpdateInitialStopPips(this);
+
+                if (!CalculateOptions.HasFlag(CalculateOptions.ExcludePipsCalculations))
+                {
+                    TradeCalculator.UpdateInitialStopPips(this);
+                }
             }
         }
 
@@ -631,6 +669,11 @@ namespace TraderTools.Basics
 
         public void AddLimitPrice(DateTime date, decimal? price)
         {
+            AddLimitPrice(string.Empty, date, price);
+        }
+
+        public void AddLimitPrice(string id, DateTime date, decimal? price)
+        {
             if (LimitPrices.Count > 0 && LimitPrices.Last().Price == price)
             {
                 return;
@@ -643,7 +686,7 @@ namespace TraderTools.Basics
 
             if (UpdateMode == TradeUpdateMode.Unchanging) throw new ApplicationException("Trade set to untouched mode cannot change it's limit price after being set");
 
-            LimitPrices.Add(new DatePrice(date, price));
+            LimitPrices.Add(new DatePrice(id, date, price));
 
             if (LimitPrices.Count > 1)
             {
@@ -651,11 +694,15 @@ namespace TraderTools.Basics
             }
 
             TradeCalculator.UpdateLimit(this);
-            TradeCalculator.UpdateLimitPips(this);
 
-            if (LimitPrices.Count == 1)
+            if (!CalculateOptions.HasFlag(CalculateOptions.ExcludePipsCalculations))
             {
-                TradeCalculator.UpdateInitialLimitPips(this);
+                TradeCalculator.UpdateLimitPips(this);
+
+                if (LimitPrices.Count == 1)
+                {
+                    TradeCalculator.UpdateInitialLimitPips(this);
+                }
             }
         }
 

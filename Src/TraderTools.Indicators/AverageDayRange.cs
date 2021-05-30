@@ -14,21 +14,17 @@ namespace TraderTools.Indicators
         /// <summary>
         /// Whether the indicator is set.
         /// </summary>
-        public bool IsFormed { get; set; }
-
-        public string Name => "ADR";
+        public bool IsFormed => MovingAverage.IsFormed;
 
         public void Reset()
         {
-            IsFormed = false;
-
             MovingAverage.Reset();
         }
 
+        public string Name => "ADR";
+
         public SignalAndValue Process(Candle candle)
         {
-            IsFormed = MovingAverage.IsFormed;
-
             return MovingAverage.Process(new Candle
             {
                 CloseBid = candle.HighAsk - candle.LowAsk,

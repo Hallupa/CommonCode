@@ -16,6 +16,7 @@ namespace TraderTools.Indicators
             _loss = new SmoothedMovingAverage();
 
             Length = 15;
+            _loss.Length = _gain.Length = Length;
         }
 
         /// <summary>
@@ -25,14 +26,6 @@ namespace TraderTools.Indicators
 
         public override string Name => "RSI";
 
-        /// <summary>
-        /// To reset the indicator status to initial. The method is called each time when initial settings are changed (for example, the length of period).
-        /// </summary>
-        public override void Reset()
-        {
-            _loss.Length = _gain.Length = Length;
-            base.Reset();
-        }
 
         public override SignalAndValue Process(Candle candle)
         {

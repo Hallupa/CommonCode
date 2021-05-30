@@ -25,20 +25,13 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
         <Label Content="Group results by:" VerticalAlignment="Center" Visibility="{Binding ShowOptions, Converter={StaticResource BoolToVis}}"/>
         <ComboBox Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left" Margin="2" Width="200" ItemsSource="{Binding ResultOptions}" SelectedItem="{Binding SelectedResultOption}" Visibility="{Binding ShowOptions, Converter={StaticResource BoolToVis}}"/>
-        <Label Grid.Column="2" Content="Sub-items:" VerticalAlignment="Center" Visibility="{Binding ShowSubOptions, Converter={StaticResource BoolToVis}}"/>
-        <ComboBox Grid.Row="0" Grid.Column="3" HorizontalAlignment="Left" Margin="2" Width="150"
-                  SelectedIndex="{Binding SubItemsIndex}" Visibility="{Binding ShowSubOptions, Converter={StaticResource BoolToVis}}">
-            <ComboBoxItem Content="Trades"></ComboBoxItem>
-            <ComboBoxItem Content="Strategies"></ComboBoxItem>
-        </ComboBox>
 
-        <StackPanel Orientation="Horizontal" Grid.Row="1" Grid.ColumnSpan="4" Visibility="{Binding ShowIncludeOpenClosedTradesOptions, Converter={StaticResource BoolToVis}}">
+        <StackPanel Orientation="Horizontal" Grid.Row="1" Grid.ColumnSpan="3" Visibility="{Binding ShowIncludeOpenClosedTradesOptions, Converter={StaticResource BoolToVis}}">
             <Label Content="Include in results: "/>
             <CheckBox Content="Open trades" IsChecked="{Binding IncludeOpenTrades}" VerticalContentAlignment="Center" Margin="2"/>
             <CheckBox Content="Closed trades" IsChecked="{Binding IncludeClosedTrades}" VerticalContentAlignment="Center" Margin="2"/>
@@ -46,17 +39,13 @@
 
         <DataGrid Grid.Row="2" Grid.ColumnSpan="4" ScrollViewer.CanContentScroll="False" AutoGenerateColumns="False" ClipboardCopyMode="IncludeHeader"
                   EnableRowVirtualization="True"
-                  ItemsSource="{Binding Results}" CanUserAddRows="False" RowDetailsVisibilityMode="Collapsed" PreviewMouseWheel="UIElement_OnPreviewMouseWheel">
-
-            <DataGrid.RowHeaderTemplate>
-                <DataTemplate>
-                    <Expander Expanded="Expander_Expanded" Collapsed="Expander_Collapsed"/>
-                </DataTemplate>
-            </DataGrid.RowHeaderTemplate>
+                  ItemsSource="{Binding Results}" CanUserAddRows="False" PreviewMouseWheel="UIElement_OnPreviewMouseWheel">
 
             <DataGrid.Columns>
                 <DataGridTextColumn Binding="{Binding Name}" Header="Name" Width="200" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding TradesCount}" Header="# trades" IsReadOnly="True"/>
+                <DataGridTextColumn Binding="{Binding SuccessTradesCount}" Header="# success" IsReadOnly="True"/>
+                <DataGridTextColumn Binding="{Binding FailedTradesCount}" Header="# fail" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding Profit, StringFormat={}£{0:0.0}}" Header="Current profit" IsReadOnly="True" Width="100" Visibility="{Binding ShowProfit, Converter={StaticResource BoolToVis}}"/>
                 <DataGridTextColumn Binding="{Binding PercentSuccessfulTrades, StringFormat={}{0:0.0}%}" Header="Profitable trades" Width="100" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding AvRWinningTrades, StringFormat={}{0:0.000}}" Header="Average win R" Width="140" IsReadOnly="True"/>
@@ -65,15 +54,8 @@
                 <DataGridTextColumn Binding="{Binding TotalR, StringFormat={}{0:0.000}}" Header="Total R" Width="140" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding AverageTradeDuration, StringFormat={}{0:0.000}}" Header="Average completed trade duration" Width="200" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding RSum, StringFormat={}{0:0.000}}" Header="R sum" Width="80" IsReadOnly="True" Visibility="Collapsed"/>
+                <DataGridTextColumn Binding="{Binding MaxDrawdownPercent, StringFormat={}{0:0.00}}" Header="Max drawdown %" Width="110" IsReadOnly="True"/>
             </DataGrid.Columns>
-            <DataGrid.RowDetailsTemplate>
-                <DataTemplate>
-                    <Grid>
-                        <views:TradeListControl DisableMouseWheelScroll="True" Margin="35,15,15,15" Visibility="{Binding Data.SubItemsIndex, Converter={StaticResource ObjToVis}, ConverterParameter={StaticResource Zero}, Mode=OneWay, Source={StaticResource Proxy}}"/>
-                        <views:TradesResultsControl DisableMouseWheelScroll="True" Margin="35,15,15,15" DataContext="{Binding StrategyResults}" Visibility="{Binding Data.SubItemsIndex, Converter={StaticResource ObjToVis}, ConverterParameter={StaticResource One}, Mode=OneWay, Source={StaticResource Proxy}}" />
-                    </Grid>
-                </DataTemplate>
-            </DataGrid.RowDetailsTemplate>
         </DataGrid>
     </Grid>
 </UserControl>

@@ -10,8 +10,11 @@ using Abt.Controls.SciChart.Model.DataSeries;
 using Abt.Controls.SciChart.Visuals.Annotations;
 using Abt.Controls.SciChart.Visuals.RenderableSeries;
 using TraderTools.Basics;
+using TraderTools.Basics.Extensions;
 using TraderTools.Basics.Helpers;
+using TraderTools.Core.UI.ChartModifiers;
 using TraderTools.Core.UI.Controls;
+using TraderTools.Indicators;
 
 namespace TraderTools.Core.UI
 {
@@ -72,19 +75,68 @@ namespace TraderTools.Core.UI
             }
         }
 
-        public static void SetChartViewModelPriceData(IList<Candle> candles, ChartViewModel cvm, Timeframe timeframe)
+        public static void SetChartViewModelIndicatorPaneData(IList<Candle> candles, ChartViewModel cvm, IIndicator indicator)
+        {
+            indicator.Reset();
+            var indicatorDataSeries = new XyDataSeries<DateTime, double>();
+
+            for (var i = 0; i < candles.Count; i++)
+            {
+                var time = new DateTime(candles[i].CloseTimeTicks, DateTimeKind.Utc).ToLocalTime();
+
+                var v = indicator.Process(candles[i]);
+                indicatorDataSeries.Append(time, v.IsFormed ? v.Value : float.NaN);
+            }
+
+            indicatorDataSeries.SeriesName = indicator.Name;
+
+            var indicatorPaneVm = cvm.ChartPaneViewModels.Count > 1 ? cvm.ChartPaneViewModels[1] : null;
+            if (indicatorPaneVm == null)
+            {
+                var indicatorPane = new ChartPaneViewModel(cvm, cvm.ViewportManager)
+                {
+                    IsFirstChartPane = false,
+                    IsLastChartPane = true,
+                    YAxisTextFormatting = "0.0000"
+                };
+
+                indicatorPane.ChartSeriesViewModels.Add(new ChartSeriesViewModel(indicatorDataSeries, new FastLineRenderableSeries
+                {
+                    AntiAliasing = false,
+                    SeriesColor = Colors.DarkBlue,
+                    StrokeThickness = 2
+                }));
+
+                cvm.ChartPaneViewModels.Add(indicatorPane);
+            }
+            else
+            {
+                indicatorPaneVm.ChartSeriesViewModels.Clear();
+                var fastLineRenderableSeries = new FastLineRenderableSeries
+                {
+                    AntiAliasing = false,
+                    SeriesColor = Colors.DarkBlue,
+                    StrokeThickness = 2
+                };
+
+                indicatorPaneVm.ChartSeriesViewModels.Add(new ChartSeriesViewModel(indicatorDataSeries, fastLineRenderableSeries));
+            }
+        }
+
+        public static void SetChartViewModelPriceData(IList<Candle> candles, ChartViewModel cvm)
         {
             var priceDataSeries = new OhlcDataSeries<DateTime, double>();
-            var time = new DateTime(0);
             var xvalues = new List<DateTime>();
             var openValues = new List<double>();
             var highValues = new List<double>();
             var lowValues = new List<double>();
             var closeValues = new List<double>();
 
+            var atr = new AverageTrueRange();
+
             for (var i = 0; i < candles.Count; i++)
             {
-                time = new DateTime(candles[i].CloseTimeTicks, DateTimeKind.Utc).ToLocalTime();
+                var time = new DateTime(candles[i].CloseTimeTicks, DateTimeKind.Utc).ToLocalTime();
 
                 xvalues.Add(time);
                 openValues.Add((double)candles[i].OpenBid);
@@ -94,8 +146,10 @@ namespace TraderTools.Core.UI
             }
 
             priceDataSeries.Append(xvalues, openValues, highValues, lowValues, closeValues);
+            priceDataSeries.SeriesName = "Price";
 
             var pricePaneVm = cvm.ChartPaneViewModels.Count > 0 ? cvm.ChartPaneViewModels[0] : null;
+            var atrPaneVm = cvm.ChartPaneViewModels.Count > 1 ? cvm.ChartPaneViewModels[1] : null;
             if (pricePaneVm == null)
             {
                 pricePaneVm = new ChartPaneViewModel(cvm, cvm.ViewportManager)
@@ -104,13 +158,18 @@ namespace TraderTools.Core.UI
                     IsLastChartPane = false
                 };
 
-                pricePaneVm.ChartSeriesViewModels.Add(new ChartSeriesViewModel(priceDataSeries, new FastCandlestickRenderableSeries { AntiAliasing = false }));
+                var series = new FastCandlestickRenderableSeries { AntiAliasing = false };
+                series.SetValue(FilteringLegendModifier.IncludeSeriesProperty, false);
+                series.SeriesColor = Colors.DarkBlue;
+                pricePaneVm.ChartSeriesViewModels.Add(new ChartSeriesViewModel(priceDataSeries, series));
                 cvm.ChartPaneViewModels.Add(pricePaneVm);
             }
             else
             {
                 pricePaneVm.ChartSeriesViewModels.Clear();
-                pricePaneVm.ChartSeriesViewModels.Add(new ChartSeriesViewModel(priceDataSeries, new FastCandlestickRenderableSeries { AntiAliasing = false }));
+                var renderableSeries = new FastCandlestickRenderableSeries { AntiAliasing = false };
+                renderableSeries.SetValue(FilteringLegendModifier.IncludeSeriesProperty, false);
+                pricePaneVm.ChartSeriesViewModels.Add(new ChartSeriesViewModel(priceDataSeries, renderableSeries));
             }
         }
 
@@ -152,26 +211,32 @@ namespace TraderTools.Core.UI
             }
 
             series.Append(xvalues, yvalues);
+            series.SeriesName = indicator.Name;
 
             return series;
         }
 
-        public static void AddIndicator(ChartPaneViewModel paneViewModel, string market, IIndicator indicator, Color color, Timeframe timeframe, IList<Candle> candles)
+        public static void AddIndicator(ChartPaneViewModel paneViewModel, string market, IIndicator indicator, Color color, Timeframe timeframe, IList<Candle> candles, bool showInLegend = true)
         {
             var series = CreateIndicatorSeries(market, indicator, color, timeframe, candles);
-
-            paneViewModel.ChartSeriesViewModels.Add(new ChartSeriesViewModel(series, new FastLineRenderableSeries
+            var renderableSeries = new FastLineRenderableSeries
             {
                 AntiAliasing = false,
                 SeriesColor = color,
                 StrokeThickness = 2
-            }));
+            };
+
+            renderableSeries.SetValue(FilteringLegendModifier.IncludeSeriesProperty, showInLegend);
+
+            paneViewModel.ChartSeriesViewModels.Add(new ChartSeriesViewModel(series, renderableSeries));
         }
 
         public static void CreateTradeAnnotations(AnnotationCollection annotations, ChartViewModel cvm, TradeAnnotationsToShow annotationsToShow, IList<Candle> candles, Trade trade)
         {
             // Setup annotations
             if (candles.Count == 0) return;
+            if (trade.EntryDateTime != null && trade.EntryDateTime > candles[candles.Count - 1].CloseTime()) return;
+            if (trade.OrderDateTime != null && trade.OrderDateTime > candles[candles.Count - 1].CloseTime()) return;
 
             var dataSeries = cvm.ChartPaneViewModels[0].ChartSeriesViewModels[0].DataSeries;
             var startTime = trade.StartDateTimeLocal;
@@ -235,8 +300,9 @@ namespace TraderTools.Core.UI
                     AddBuySellMarker(oppositeTradeDirection, annotations, trade, trade.CloseDateTimeLocal.Value, trade.ClosePrice.Value, entryCloseMarketSmaller, colour: colour);
 
                     // Add line between buy/sell marker
-                    var brush = new SolidColorBrush(colour) { Opacity = 0.6 };
-                    var annotation = new LineAnnotation {
+                    /*var brush = new SolidColorBrush(colour) { Opacity = 0.6 };
+                    var annotation = new LineAnnotation
+                    {
                         X1 = dataSeries.FindIndex(trade.EntryDateTimeLocal, SearchMode.Nearest),
                         X2 = dataSeries.FindIndex(trade.CloseDateTimeLocal, SearchMode.Nearest),
                         Y1 = trade.EntryPrice.Value,
@@ -246,7 +312,7 @@ namespace TraderTools.Core.UI
                         StrokeDashArray = new DoubleCollection(new[] { 2.0, 2.0 })
                     };
 
-                    annotations.Add(annotation);
+                    annotations.Add(annotation);*/
                 }
             }
 
@@ -261,6 +327,16 @@ namespace TraderTools.Core.UI
                         : new DateTime(candles[candles.Count - 1].CloseTimeTicks, DateTimeKind.Utc), null));
 
                     AddLineAnnotations(stopPrices, cvm.ChartPaneViewModels[0].ChartSeriesViewModels[0].DataSeries, annotations, Colors.Red);
+                }
+
+                // Add dummy series just to add stop to legend
+                if (cvm.ChartPaneViewModels[0].ChartSeriesViewModels.All(x => x.DataSeries.SeriesName != "Stop"))
+                {
+                    var series = new FastLineRenderableSeries() { AntiAliasing = false, SeriesColor = Colors.Red };
+                    series.SetValue(FilteringLegendModifier.IncludeSeriesProperty, true);
+                    var d = new XyDataSeries<DateTime, double>();
+                    d.SeriesName = "Stop";
+                    cvm.ChartPaneViewModels[0].ChartSeriesViewModels.Add(new ChartSeriesViewModel(d, series));
                 }
             }
 
@@ -411,7 +487,7 @@ namespace TraderTools.Core.UI
                             endIndex++;
                         }
 
-                        var brush = new SolidColorBrush(colour) { Opacity = 0.5 };
+                        var brush = new SolidColorBrush(colour) { Opacity = 0.3 };
                         var annotation = new LineAnnotation
                         {
                             X1 = startDate, //startIndex.Value,

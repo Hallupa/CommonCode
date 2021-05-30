@@ -16,7 +16,7 @@ namespace TraderTools.Indicators
 
         public T3CommodityChannelIndex()
         {
-            _cci = new CommodityChannelIndex { Length = 14 };
+            _cci = new CommodityChannelIndex(14);
             _t3Period = 5;
         }
 

@@ -8,8 +8,7 @@ namespace TraderTools.Indicators
     {
         public MeanDeviation()
         {
-            Sma = new SimpleMovingAverage();
-            Length = 5;
+            Sma = new SimpleMovingAverage(5);
         }
 
         public override string Name => "Mean Deviation";
@@ -17,11 +16,6 @@ namespace TraderTools.Indicators
         public SimpleMovingAverage Sma { get; }
 
         public override bool IsFormed => Sma.IsFormed;
-
-        public override void Reset()
-        {
-            Sma.Length = Length;
-        }
 
         public override SignalAndValue Process(Candle candle)
         {

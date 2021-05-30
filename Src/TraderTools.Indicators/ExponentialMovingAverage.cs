@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using TraderTools.Basics;
 
 namespace TraderTools.Indicators
@@ -13,10 +12,10 @@ namespace TraderTools.Indicators
         /// Initializes a new instance of the <see cref="ExponentialMovingAverage"/>.
         /// </summary>
         public ExponentialMovingAverage()
+            : this(32)
         {
-            Length = 32;
         }
-
+        
         public ExponentialMovingAverage(int length)
         {
             Length = length;

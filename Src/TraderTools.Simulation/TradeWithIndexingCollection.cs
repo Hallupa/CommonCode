@@ -17,6 +17,10 @@ namespace TraderTools.Simulation
         private TradeWithIndexing _firstOpen;
         private TradeWithIndexing _firstClosed;
 
+        public bool AnyOrders => _firstOrder != null;
+
+        public bool AnyOpen => _firstOpen != null;
+
         public void AddOpenTrade(Trade t)
         {
             var tradeWithIndexing = new TradeWithIndexing
@@ -156,6 +160,45 @@ namespace TraderTools.Simulation
                     var n = v.Next;
                     yield return v;
                     v = n;
+                }
+            }
+        }
+
+        public void AddTrade(Trade newTrade)
+        {
+            if (newTrade.CloseDateTime != null)
+            {
+                AddClosedTrade(newTrade);
+            }
+            else if (newTrade.EntryPrice == null && newTrade.OrderPrice != null)
+            {
+                AddOrderTrade(newTrade);
+            }
+            else if (newTrade.EntryPrice != null)
+            {
+                AddOpenTrade(newTrade);
+            }
+        }
+
+        public void MoveTrades()
+        {
+            foreach (var t in OpenTrades.ToList())
+            {
+                if (t.Trade.CloseDateTime != null)
+                {
+                    MoveOpenToClose(t);
+                }
+            }
+
+            foreach (var t in OrderTradesAsc.ToList())
+            {
+                if (t.Trade.EntryDateTime != null && t.Trade.CloseDateTime == null)
+                {
+                    MoveOrderToOpen(t);
+                }
+                else if (t.Trade.EntryDateTime != null && t.Trade.CloseDateTime != null)
+                {
+                    MoveOrderToClosed(t);
                 }
             }
         }

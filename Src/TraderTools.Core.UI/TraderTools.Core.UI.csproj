@@ -111,17 +111,22 @@
     <Compile Include="Converters\EnumToIntConverter.cs" />
     <Compile Include="Converters\CloseStatusToColourConverter.cs" />
     <Compile Include="Converters\ValueToColourConverter.cs" />
-    <Compile Include="DoubleChartView.xaml.cs">
+    <Compile Include="Views\ChartView.xaml.cs">
+      <DependentUpon>ChartView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\DoubleChartView.xaml.cs">
       <DependentUpon>DoubleChartView.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ChartModifiers\FilteringLegendModifier.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\ChartingService.cs" />
+    <Compile Include="ViewModels\CustomDateTimeLabelProvider.cs" />
     <Compile Include="ViewModels\DoubleChartViewModel.cs" />
     <Compile Include="ViewModels\TradesResultViewModel.cs" />
     <Compile Include="ViewModels\TradeDetailsViewModel.cs" />
     <Compile Include="ViewModels\TradesResultsViewModel.cs" />
-    <Compile Include="ViewModels\TradesWithStrategiesResultsViewModel.cs" />
-    <Compile Include="ViewModels\TradeViewModelBase.cs" />
+    <Compile Include="ViewModels\TradeListViewModel.cs" />
+    <Compile Include="Converters\LimitDecimalPlacesConverter.cs" />
     <Compile Include="Views\TradeDetailsView.xaml.cs">
       <DependentUpon>TradeDetailsView.xaml</DependentUpon>
     </Compile>
@@ -141,7 +146,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="DoubleChartView.xaml">
+    <Page Include="Views\ChartView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\DoubleChartView.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

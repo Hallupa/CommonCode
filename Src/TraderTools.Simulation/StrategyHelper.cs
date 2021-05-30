@@ -1,17 +1,39 @@
 ﻿using System;
+using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using log4net;
-using TraderTools.Core.Trading;
 
-namespace TraderTools.Strategy
+namespace TraderTools.Simulation
 {
     public static class StrategyHelper
     {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private static int _classNumber = 0;
 
-        public static IStrategy CompileStrategy(string code)
+        public static string[] GetStrategyMarkets(Type strategyType)
+        {
+            var strategy = (StrategyBase)Activator.CreateInstance(strategyType);
+            if (strategy != null && strategy.Markets == null)
+            {
+                return StrategyBase.Majors.Concat(StrategyBase.Minors).Concat(StrategyBase.MajorIndices).ToArray();
+            }
+
+            return strategy.Markets;
+        }
+
+        public static StrategyBase CreateStrategyInstance(Type strategyType)
+        {
+            var strategy = (StrategyBase)Activator.CreateInstance(strategyType);
+            if (strategy != null && strategy.Markets == null)
+            {
+                strategy.SetMarkets(StrategyBase.GetDefaultMarkets());
+            }
+
+            return strategy;
+        }
+
+        public static Type CompileStrategy(string code)
         {
             _classNumber++;
 
@@ -57,8 +79,7 @@ namespace TraderTools.Strategy
                 return null;
             }
 
-            var strategy = (IStrategy)Activator.CreateInstance(t);
-            return strategy;
+            return t;
         }
     }
 }

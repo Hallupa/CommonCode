@@ -13,10 +13,15 @@ namespace TraderTools.Basics
     {
         List<Trade> Trades { get; set; }
 
+        DateTime? AccountLastUpdated { get; set; }
+
+        string CustomJson { get; set; }
+
         decimal GetBalance(DateTime? dateTimeUtc = null);
 
         List<DepositWithdrawal> DepositsWithdrawals { get; set; }
-        void SaveAccount();
+
+        void SaveAccount(string mainDirectoryWithApplicationName);
 
         void UpdateBrokerAccount(
             IBroker broker,

@@ -1,7 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
@@ -38,10 +37,9 @@ namespace TraderTools.Core.Broker
 
         public DateTime? AccountLastUpdated { get; set; }
 
-        public List<Trade> Trades { get; set; } = new List<Trade>();
+        public string CustomJson { get; set; }
 
-        [JsonIgnore]
-        [Import] private IDataDirectoryService _dataDirectoryService;
+        public List<Trade> Trades { get; set; } = new List<Trade>();
 
         private Subject<BrokerAccountUpdated> _brokerAccountUpdatedSubject = new Subject<BrokerAccountUpdated>();
 
@@ -55,12 +53,9 @@ namespace TraderTools.Core.Broker
             DependencyContainer.ComposeParts(this);
         }
 
-        public static BrokerAccount LoadAccount(
-            IBroker broker,
-            ITradeDetailsAutoCalculatorService tradeCalculatorService,
-            IDataDirectoryService dataDirectoryService)
+        public static BrokerAccount LoadAccount(IBroker broker, string mainDirectoryWithApplicationName)
         {
-            var accountPath = Path.Combine(dataDirectoryService.MainDirectoryWithApplicationName, "BrokerAccounts", $"{broker.Name}_Account.json");
+            var accountPath = Path.Combine(mainDirectoryWithApplicationName, "BrokerAccounts", $"{broker.Name}_Account.json");
 
             if (!File.Exists(accountPath))
             {
@@ -101,11 +96,12 @@ namespace TraderTools.Core.Broker
             return depositWithdrawTotal + openTradesTotal + closedTradesTotal;
         }
 
-        public void SaveAccount()
+        public void SaveAccount(string mainDirectoryWithApplicationName)
         {
             _saveLock.WaitOne();
             var json = JsonConvert.SerializeObject(this);
-            var mainPath = Path.Combine(_dataDirectoryService.MainDirectoryWithApplicationName, "BrokerAccounts");
+
+            var mainPath = Path.Combine(mainDirectoryWithApplicationName, "BrokerAccounts");
 
             var t = Task.Run(() =>
             {
@@ -225,7 +221,7 @@ namespace TraderTools.Core.Broker
                 return;
             }
 
-            Log.Info($"Updating {broker.Name} account");
+            Log.Debug($"Updating {broker.Name} account");
 
             foreach (var t in Trades)
             {
@@ -234,7 +230,7 @@ namespace TraderTools.Core.Broker
 
             try
             {
-                broker.UpdateAccount(this, candleService, marketsService, updateProgressAction, AccountLastUpdated, out var addedOrUpdatedTrades);
+                broker.UpdateAccount(this, candleService, marketsService, updateProgressAction, out var addedOrUpdatedTrades);
 
                 foreach (var trade in addedOrUpdatedTrades)
                 {
@@ -249,12 +245,7 @@ namespace TraderTools.Core.Broker
 
             AccountLastUpdated = DateTime.UtcNow;
 
-            foreach (var trade in Trades)
-            {
-                //trade.Initialise();
-            }
-
-            Log.Info($"Completed updating {broker.Name} trades");
+            Log.Debug($"Completed updating {broker.Name} trades");
             _brokerAccountUpdatedSubject.OnNext(new BrokerAccountUpdated(this));
         }
 
@@ -270,12 +261,7 @@ namespace TraderTools.Core.Broker
             Trades.Clear();
             Trades.AddRange(trades);
 
-            foreach (var trade in Trades)
-            {
-                //trade.Initialise();
-            }
-
-            Log.Info($"Completed updating {broker.Name} trades");
+            Log.Debug($"Completed updating {broker.Name} trades");
             _brokerAccountUpdatedSubject.OnNext(new BrokerAccountUpdated(this));
         }
 

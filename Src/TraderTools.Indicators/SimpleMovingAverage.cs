@@ -20,17 +20,25 @@ namespace TraderTools.Indicators
         public override SignalAndValue Process(Candle candle)
         {
             var newValue = candle.CloseBid;
+            return Process(newValue, candle.IsComplete == 1);
+        }
 
-            if (candle.IsComplete == 1)
+        public SignalAndValue Process(float value, bool isComplete)
+        {
+            var buff = Buffer;
+            if (!isComplete)
             {
-                Buffer.Add(newValue);
-
-                if (Buffer.Count > Length)
-                    Buffer.RemoveAt(0);
+                // Take copy
+                buff = Buffer.ToList();
             }
 
+            buff.Add(value);
+
+            if (buff.Count > Length)
+                buff.RemoveAt(0);
+
             SignalAndValue ret;
-            ret = candle.IsComplete == 1 ? new SignalAndValue(Buffer.Sum() / Length, IsFormed) : new SignalAndValue((Buffer.Skip(1).Sum() + newValue) / Length, IsFormed);
+            ret = new SignalAndValue(Buffer.Sum() / Length, IsFormed);
 
             CurrentValue = ret.Value;
             return ret;

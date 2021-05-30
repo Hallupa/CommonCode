@@ -82,27 +82,32 @@ namespace TraderTools.Core.Services
 
             lock (lck)
             {
-                List<Candle> candles;
+                List<Candle> candles = null;
                 lock (_candlesLookup)
                 {
-                    _candlesLookup.TryGetValue((broker, market, timeframe), out candles);
+                    if (_candlesLookup.TryGetValue((broker, market, timeframe), out var existingCandles))
+                    {
+                        candles = existingCandles.ToList();
+                    }
                 }
 
                 if (candles == null || candles.Count == 0)
                 {
-                    candles = LoadBrokerCandles(broker, market, timeframe);
+                    var loadedCandles = LoadBrokerCandles(broker, market, timeframe);
 
-                    if (cacheData && candles != null)
+                    if (cacheData && loadedCandles != null)
                     {
                         lock (_candlesLookup)
                         {
                             // Re-check if candles lookup contains the key as it may have changed
                             if (!_candlesLookup.ContainsKey((broker, market, timeframe)))
                             {
-                                _candlesLookup.Add((broker, market, timeframe), candles);
+                                _candlesLookup.Add((broker, market, timeframe), loadedCandles);
                             }
                         }
                     }
+
+                    candles = loadedCandles.ToList();
                 }
 
                 var returnCandles = !updateCandles;

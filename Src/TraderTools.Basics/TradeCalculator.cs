@@ -47,7 +47,7 @@ namespace TraderTools.Basics
                     var oneR = Math.Abs(trade.EntryPrice.Value - entryStop.Price.Value);
                     if (trade.TradeDirection == TradeDirection.Long)
                     {
-                        trade.RMultiple = (trade.ClosePrice.Value - trade.EntryPrice.Value) / oneR;
+                        trade.RMultiple = oneR != 0 ? (decimal?)(trade.ClosePrice.Value - trade.EntryPrice.Value) / oneR : null;
                     }
                     else if (oneR != 0)
                     {
@@ -118,7 +118,6 @@ namespace TraderTools.Basics
 
         public static void UpdateInitialLimitPips(Trade trade)
         {
-            if (trade.CalculateOptions.HasFlag(CalculateOptions.ExcludePipsCalculations)) return;
             if (trade.EntryPrice == null && trade.OrderPrice == null) return;
 
             var price = trade.EntryPrice ?? trade.OrderPrice.Value;
@@ -139,7 +138,6 @@ namespace TraderTools.Basics
 
         public static void UpdateLimitPips(Trade trade)
         {
-            if (trade.CalculateOptions.HasFlag(CalculateOptions.ExcludePipsCalculations)) return;
             if (trade.EntryPrice == null && trade.OrderPrice == null) return;
 
             var price = trade.EntryPrice ?? trade.OrderPrice.Value;
@@ -175,7 +173,6 @@ namespace TraderTools.Basics
 
         public static void UpdateInitialStopPips(Trade trade)
         {
-            if (trade.CalculateOptions.HasFlag(CalculateOptions.ExcludePipsCalculations)) return;
             if (trade.EntryPrice == null && trade.OrderPrice == null) return;
 
             var price = trade.EntryPrice ?? trade.OrderPrice.Value;
@@ -196,7 +193,6 @@ namespace TraderTools.Basics
 
         public static void UpdateStopPips(Trade trade)
         {
-            if (trade.CalculateOptions.HasFlag(CalculateOptions.ExcludePipsCalculations)) return;
             if (trade.EntryPrice == null && trade.OrderPrice == null) return;
 
             var price = trade.EntryPrice ?? trade.OrderPrice.Value;

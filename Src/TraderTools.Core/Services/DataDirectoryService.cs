@@ -10,13 +10,18 @@ namespace TraderTools.Core.Services
     public class DataDirectoryService : IDataDirectoryService
 
     {
-    private string _mainDirectory;
+    private static string _mainDirectory;
     private string _applicationName = null;
     private string _mainDirectoryWithApplicationName;
 
     public DataDirectoryService()
     {
         _mainDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), @"TraderTools");
+    }
+
+    public static string GetMainDirectoryWithApplicationName(string applicationName)
+    {
+        return Path.Combine(_mainDirectory, applicationName);
     }
 
     public string MainDirectory => _mainDirectory;

@@ -15,6 +15,7 @@ namespace TraderTools.Core.UI
         public event PropertyChangedEventHandler PropertyChanged;
         private double _height = double.NaN;
         private bool _isLastChartPane;
+        private string _yAxisTextFormatting = "0.000";
 
         public ChartPaneViewModel(ChartViewModel parentChartViewModel, IViewportManager viewportManager)
         {
@@ -43,6 +44,12 @@ namespace TraderTools.Core.UI
         public ChartViewModel ParentViewModel { get; }
 
         public bool IsFirstChartPane { get; set; }
+
+        public string YAxisTextFormatting
+        {
+            get => _yAxisTextFormatting;
+            set => _yAxisTextFormatting = value;
+        }
 
         public bool IsLastChartPane
         {

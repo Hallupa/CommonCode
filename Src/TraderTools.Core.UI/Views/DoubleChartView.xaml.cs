@@ -2,7 +2,7 @@
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace TraderTools.Core.UI
+namespace TraderTools.Core.UI.Views
 {
     /// <summary>
     /// Interaction logic for DoubleChartView.xaml

@@ -85,6 +85,8 @@ namespace TraderTools.Core.UI.ChartModifiers
         /// <param name="e"></param>
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            if (ParentSurface.Annotations == null) return;
+
             if (LinkedChartSurface != null) LinkedChartSurface.Annotations.CollectionChanged -= AnnotationsOnCollectionChanged;
             ParentSurface.Annotations.CollectionChanged -= AnnotationsOnCollectionChanged;
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reflection;
+using System.Threading;
 using fxcore2;
 using log4net;
 using TraderTools.Basics;
@@ -11,10 +12,10 @@ namespace TraderTools.Brokers.FXCM
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         public static bool CreateOrder(this FxcmBroker fxcm, string market, double rate, double? rateStop, double? rateLimit,
-            DateTime? expiryDateUtc, decimal amount,
-            TradeDirection direction, IBrokersCandlesService candlesService, IMarketDetailsService marketDetailsService)
+            DateTime? expiryDateUtc, decimal amount, TradeDirection direction, out string orderId)
         {
             var requestFactory = fxcm.Session.getRequestFactory();
+            orderId = string.Empty;
 
             // Get price
             var offer = GetOffer(fxcm.Session, market);
@@ -73,6 +74,13 @@ namespace TraderTools.Brokers.FXCM
                 return false;
             }
 
+            var ret = ProcessOrderRequest(fxcm, request, out orderId);
+
+            return ret;
+        }
+
+        private static bool ProcessRequest(FxcmBroker fxcm, O2GRequest request)
+        {
             var responseListener = new ResponseListener(fxcm.Session);
             fxcm.Session.subscribeResponse(responseListener);
 
@@ -84,7 +92,7 @@ namespace TraderTools.Brokers.FXCM
                 {
                     if (!string.IsNullOrEmpty(responseListener.Error))
                     {
-                        Log.Error($"Unable to create order for {market} - {responseListener.Error}");
+                        Log.Error($"Unable to process request - {responseListener.Error}");
                         return false;
                     }
 
@@ -92,11 +100,72 @@ namespace TraderTools.Brokers.FXCM
                 }
                 else
                 {
-                    Log.Error($"Unable to send order request for market {market}");
+                    Log.Error($"Unable to process request");
                     return false;
                 }
+            }
+            finally
+            {
+                fxcm.Session.unsubscribeResponse(responseListener);
+            }
+        }
 
-                return true;
+        private static bool ProcessOrderRequest(FxcmBroker fxcm, O2GRequest request, out string orderId)
+        {
+            var ret = string.Empty;
+            var waitOrder = new ManualResetEvent(false);
+
+            var responseListener = new ResponseListener(
+                fxcm.Session,
+                data =>
+                {
+                    O2GResponseReaderFactory factory = fxcm.Session.getResponseReaderFactory();
+                    if (factory != null)
+                    {
+                        O2GTablesUpdatesReader reader = factory.createTablesUpdatesReader(data);
+                        for (int ii = 0; ii < reader.Count; ii++)
+                        {
+                            if (reader.getUpdateTable(ii) == O2GTableType.Orders)
+                            {
+                                O2GOrderRow orderRow = reader.getOrderRow(ii);
+                                if (reader.getUpdateType(ii) == O2GTableUpdateType.Insert)
+                                {
+                                    ret = orderRow.OrderID;
+                                    waitOrder.Set();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                });
+            fxcm.Session.subscribeResponse(responseListener);
+
+            try
+            {
+                responseListener.SetRequestID(request.RequestID);
+                fxcm.Session.sendRequest(request);
+                if (responseListener.WaitEvents())
+                {
+                    if (!string.IsNullOrEmpty(responseListener.Error))
+                    {
+                        Log.Error($"Unable to process request - {responseListener.Error}");
+                        orderId = ret;
+                        return false;
+                    }
+
+                    // Get order ID
+                    waitOrder.WaitOne();
+
+                    orderId = ret;
+                    return true;
+                }
+                else
+                {
+                    Log.Error($"Unable to process request");
+                    orderId = ret;
+                    return false;
+                }
             }
             finally
             {
@@ -194,6 +263,104 @@ namespace TraderTools.Brokers.FXCM
             }
 
             return null;
+        }
+
+        public static bool ChangeStop(this FxcmBroker fxcm, string stopOrderId, double rateStop)
+        {
+            if (fxcm.Status != ConnectStatus.Connected)
+            {
+                Log.Error("FXCM not connected");
+
+                return false;
+            }
+
+            O2GRequestFactory requestFactory = fxcm.Session.getRequestFactory();
+            if (requestFactory == null)
+            {
+                throw new Exception("Cannot create request factory");
+            }
+            var account = GetAccount(fxcm.Session);
+            O2GValueMap valuemap = requestFactory.createValueMap();
+            valuemap.setString(O2GRequestParamsEnum.Command, Constants.Commands.EditOrder);
+            valuemap.setString(O2GRequestParamsEnum.OrderType, Constants.Orders.Stop);
+            valuemap.setString(O2GRequestParamsEnum.AccountID, account.AccountID);
+            valuemap.setString(O2GRequestParamsEnum.OrderID, stopOrderId);
+            valuemap.setDouble(O2GRequestParamsEnum.Rate, rateStop);
+
+
+            var request = requestFactory.createOrderRequest(valuemap);
+
+            if (request == null)
+            {
+                Log.Error($"Unable to process request - {requestFactory.getLastError()}");
+                return false;
+            }
+
+            var ret = ProcessRequest(fxcm, request);
+
+            return ret;
+        }
+
+        public static bool CreateMarketOrder(this FxcmBroker fxcm, string instrument, int lotsAmount, TradeDirection direction, out string orderId, double? rateStop = null, double? rateLimit = null)
+        {
+            orderId = string.Empty;
+
+            if (fxcm.Status != ConnectStatus.Connected)
+            {
+                Log.Error("FXCM not connected");
+
+                return false;
+            }
+
+            O2GOfferRow offer = GetOffer(fxcm.Session, instrument);
+            if (offer == null)
+            {
+                throw new Exception(string.Format("The instrument '{0}' is not valid", instrument));
+            }
+
+            O2GRequest request = null;
+            O2GRequestFactory requestFactory = fxcm.Session.getRequestFactory();
+            if (requestFactory == null)
+            {
+                throw new Exception("Cannot create request factory");
+            }
+            var account = GetAccount(fxcm.Session);
+            O2GValueMap valuemap = requestFactory.createValueMap();
+            valuemap.setString(O2GRequestParamsEnum.Command, Constants.Commands.CreateOrder);
+            valuemap.setString(O2GRequestParamsEnum.OrderType, Constants.Orders.TrueMarketOpen);
+            valuemap.setString(O2GRequestParamsEnum.AccountID, account.AccountID);
+            valuemap.setString(O2GRequestParamsEnum.OfferID, offer.OfferID);
+            valuemap.setString(O2GRequestParamsEnum.BuySell, direction == TradeDirection.Long ? "B" : "S");
+
+            if (rateStop != null)
+            {
+                valuemap.setDouble(O2GRequestParamsEnum.RateStop, rateStop.Value);
+            }
+
+            if (rateLimit != null)
+            {
+                valuemap.setDouble(O2GRequestParamsEnum.RateLimit, rateLimit.Value);
+            }
+
+            // Get account
+            var loginRules = fxcm.Session.getLoginRules();
+            var tradingSettingsProvider = loginRules.getTradingSettingsProvider();
+            int iBaseUnitSize = tradingSettingsProvider.getBaseUnitSize(instrument, account);
+            int iAmount = iBaseUnitSize * lotsAmount;
+
+            valuemap.setInt(O2GRequestParamsEnum.Amount, iAmount);
+            valuemap.setString(O2GRequestParamsEnum.CustomID, "TrueMarketOrder");
+            request = requestFactory.createOrderRequest(valuemap);
+
+            if (request == null)
+            {
+                Log.Error($"Unable to process request - {requestFactory.getLastError()}");
+                return false;
+            }
+
+            var ret = ProcessOrderRequest(fxcm, request, out orderId);
+
+            return ret;
         }
     }
 }
