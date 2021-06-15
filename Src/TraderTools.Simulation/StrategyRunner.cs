@@ -15,360 +15,100 @@ namespace TraderTools.Simulation
         private readonly IBrokersCandlesService _candleService;
         private readonly IMarketDetailsService _marketDetailsService;
         private readonly IBroker _broker;
-        private readonly MarketDetails _market;
         private readonly Timeframe _runTimeframe;
         private readonly decimal _transactionFee;
+        private const int LogIntervalSeconds = 5;
 
         public StrategyRunner(
             IBrokersCandlesService candleService,
             IMarketDetailsService marketDetailsService,
             IBroker broker,
-            MarketDetails market,
+            decimal initialBalance,
             Timeframe runTimeframe = Timeframe.M1,
             decimal transactionFee = 0.0M)
         {
             _candleService = candleService;
             _marketDetailsService = marketDetailsService;
             _broker = broker;
-            _market = market;
             _runTimeframe = runTimeframe;
             _transactionFee = transactionFee;
+            InitialBalance = initialBalance;
         }
 
-        public decimal InitialBalance { get; set; } = 10000M;
+        public decimal InitialBalance { get; }
+        public decimal Balance { get; private set; }
 
-        /*public static List<Trade> Run(
-            Type strategyType, Func<bool> stopFunc,
-            IBrokersCandlesService candlesService, IMarketDetailsService marketDetailsService,
-            IBroker broker, int threads)
+        public List<Trade> Run(StrategyBase strategy, Func<bool> getShouldStopFunc = null)
         {
-            var stopwatch = Stopwatch.StartNew();
-            var strategyMarket = new Dictionary<string, StrategyBase>();
-            var completed = 0;
-            var trades = new List<Trade>();
+            if (strategy.Markets == null || strategy.Markets.Length == 0) throw new ArgumentException("Strategy must set markets");
+            if (strategy.Timeframes == null || strategy.Timeframes.Length == 0) throw new ArgumentException("Timesframes must set markets");
 
-            var producerConsumer = new ProducerConsumer<(Type StrategyType, MarketDetails Market)>(
-                threads, d =>
-            {
-                if (stopFunc?.Invoke() ?? false) return ProducerConsumerActionResult.Stop;
-
-                var strategyTester =
-                    new StrategyRunner(candlesService, marketDetailsService, broker,
-                        d.Data.Market);
-
-                var strategy = StrategyHelper.CreateStrategyInstance(d.Data.StrategyType);
-
-                lock (strategyMarket)
-                {
-                    strategyMarket[d.Data.Market.Name] = strategy;
-                }
-
-                var marketTrades = strategyTester.Run(strategy, stopFunc, strategy.StartTime, strategy.EndTime);
-
-                if (marketTrades != null)
-                {
-                    lock (trades)
-                    {
-                        trades.AddRange(marketTrades);
-                    }
-                    
-                    // _results.AddResult(result);
-
-                    // Adding trades to UI in realtime slows down the UI too much with strategies with many trades
-
-                    completed++;
-                    Log.Info($"Completed {completed}/{strategy.Markets.Length}");
-                }
-
-                return ProducerConsumerActionResult.Success;
-            });
-
-            /*foreach (var market in StrategyHelper.GetStrategyMarkets(strategyType))
-            {
-                producerConsumer.Add((strategyType, marketDetailsService.GetMarketDetails(broker.Name, market)));
-            }
-
-            producerConsumer.Start();
-            producerConsumer.SetProducerCompleted();
-            producerConsumer.WaitUntilConsumersFinished();/
-
-            //var trades = _results.Results.ToList();
-
-            // Set trade profits
-            var balance = 10000M;
-            foreach (var t in trades.OrderBy(z => z.OrderDateTime ?? z.EntryDateTime))
-            {
-                var riskAmount = (strategyMarket[t.Market].RiskEquityPercent / 100M) * balance;
-                var profit = t.RMultiple * riskAmount ?? 0M;
-                t.NetProfitLoss = profit;
-                t.RiskAmount = riskAmount;
-                balance += profit;
-
-                if (balance < 0) balance = 0M;
-            }
-
-            stopwatch.Stop();
-            Log.Info($"Simulation run completed in {stopwatch.Elapsed.TotalSeconds}s");
-
-            return trades;
-        }/
-
-        public List<Trade> Run(StrategyBase strategy, Func<bool> getShouldStopFunc, DateTime? startTime = null, DateTime? endTime = null)
-        {
-            var logIntervalSeconds = 5;
-            var candleTimeframes = strategy.Timeframes;
-            var smallestNonRunTimeframe = candleTimeframes.First();
-            var candleTimeframesExcSmallest = candleTimeframes.Where(x => x != smallestNonRunTimeframe).ToList();
-            var runCandles = _candleService.GetCandles(_broker, _market.Name, _runTimeframe, false);
-            var allCandles = GetCandles(candleTimeframes);
-            var timeframeCandleIndexes = new TimeframeLookup<int>();
-            var currentCandles = new TimeframeLookup<List<Candle>>();
+            var runCandles = GetRunCandles(strategy, _runTimeframe);
+            var currentCandles = CreateCurrentCandles(strategy.Markets, strategy.Timeframes);
+            var smallestNonRunTimeframe = strategy.Timeframes.First();
+            var strategyCandles = GetTfOrderedStrategyCandles(strategy);
             var trades = new TradeWithIndexingCollection();
-            var nextLogTime = DateTime.UtcNow.AddSeconds(logIntervalSeconds);
-            var calls = 0;
+            Balance = InitialBalance;
+            var nextLogTime = DateTime.UtcNow.AddSeconds(LogIntervalSeconds);
 
-            strategy.SetSimulationParameters(trades, currentCandles, _market);
-
-            foreach (var tf in candleTimeframes)
-            {
-                currentCandles[tf] = new List<Candle>(10000);
-            }
-            var smallestNonRunTimeframeCount = allCandles[smallestNonRunTimeframe].Count;
-
-            var runCandleIndex = 0;
-
-            Candle smallestNonRunCandle;
-
-            var startTimeTicks = startTime != null ? (long?)startTime.Value.Ticks : null;
-            var endTimeTicks = endTime != null ? (long?)endTime.Value.Ticks : null;
-
+            strategy.SetSimulationParameters(trades, currentCandles);
             strategy.SetInitialised(() => Balance);
 
-            Balance = InitialBalance;
-
-            // Ignore run timeframe candles
-            for (var smallestNonRunTimeframeIndex = 0;
-                smallestNonRunTimeframeIndex < smallestNonRunTimeframeCount;
-                smallestNonRunTimeframeIndex++)
+            while (true)
             {
                 if (getShouldStopFunc != null && getShouldStopFunc()) return null;
 
-                // Progress smallest non-run candle
-                smallestNonRunCandle = allCandles[smallestNonRunTimeframe][smallestNonRunTimeframeIndex];
-                currentCandles[smallestNonRunTimeframe].Add(smallestNonRunCandle);
-                var newCandleTimeframes = new List<Timeframe> { smallestNonRunTimeframe };
+                // Progress strategy candles
+                var addedCandles = ProgressStrategyCandles(
+                    strategyCandles,
+                    currentCandles,
+                    out var currentTime,
+                    out var nextTime);
 
+                if (addedCandles.Count == 0) break;
+
+                // Log progress
                 if (DateTime.UtcNow > nextLogTime)
                 {
-                    LogProgress(trades, smallestNonRunCandle.CloseTimeTicks);
-                    nextLogTime = DateTime.UtcNow.AddSeconds(logIntervalSeconds);
+                    LogProgress(trades, currentTime);
+                    nextLogTime = DateTime.UtcNow.AddSeconds(LogIntervalSeconds);
                 }
 
-                // Progress other timeframes
-                foreach (var tf in candleTimeframesExcSmallest)
+                // Process strategy
+                strategy.UpdateIndicators(addedCandles);
+                strategy.TradesToProcess.Clear();
+                strategy.ProcessCandles(addedCandles);
+
+                foreach (var market in strategy.Markets)
                 {
-                    for (var i = timeframeCandleIndexes[tf]; i < allCandles[tf].Count; i++)
-                    {
-                        var c = allCandles[tf][i];
-                        if (c.CloseTimeTicks <= smallestNonRunCandle.CloseTimeTicks)
-                        {
-                            currentCandles[tf].Add(c);
-                            newCandleTimeframes.Add(tf);
-                            timeframeCandleIndexes[tf] = i + 1;
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
+                    var smallestNonRunCandle = currentCandles[market][smallestNonRunTimeframe][currentCandles[market][smallestNonRunTimeframe].Count - 1];
+                    RemoveInvalidTrades(market, strategy.TradesToProcess, smallestNonRunCandle.CloseBid, smallestNonRunCandle.CloseAsk);
                 }
 
-                // Process candles if any trades are open or and orders
-                if ((trades.AnyOpen || trades.AnyOrders) && runCandleIndex < runCandles.Count)
-                {
-                    runCandleIndex = TryFillOrdersAndTryCloseOpenTrades(
-                        runCandles, runCandleIndex, smallestNonRunTimeframeIndex, allCandles, smallestNonRunTimeframe, smallestNonRunCandle, trades, ref calls);
-                }
+                ProcessTradesUpdatedOrAddedByStrategy(strategy.TradesToProcess, trades);
 
-                // Process new completed candles in strategy
-                try
+                if (trades.AnyOpenWithStopOrLimit || trades.AnyOrders)
                 {
-                    strategy.UpdateIndicators(newCandleTimeframes);
-                    strategy.TradesToProcess.Clear();
-
-                    if (startTimeTicks == null || (smallestNonRunCandle.CloseTimeTicks >= startTimeTicks && smallestNonRunCandle.CloseTimeTicks <= endTimeTicks))
-                    {
-                        strategy.ProcessCandles(newCandleTimeframes);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.Error("Error processing new candles", ex);
-                    return null;
-                }
-
-                RemoveInvalidTrades(strategy.TradesToProcess, smallestNonRunCandle.CloseBid, smallestNonRunCandle.CloseAsk);
-
-                // Process trades
-                foreach (var t in strategy.TradesToProcess)
-                {
-                    if (t.CloseDateTime != null)
-                    {
-                        trades.AddClosedTrade(t);
-                        UpdateCloseTradeProfit(t);
-                    }
-                    else if (t.EntryDateTime == null && t.OrderDateTime != null)
-                    {
-                        trades.AddOrderTrade(t);
-                    }
-                    else if (t.EntryDateTime != null)
-                    {
-                        trades.AddOpenTrade(t);
-                        UpdateNewOpenTradeAmount(t);
-                    }
+                    ProgressRunCandles(runCandles, currentTime, nextTime, trades);
                 }
             }
 
-            LogProgress(trades, allCandles[smallestNonRunTimeframe][allCandles[smallestNonRunTimeframe].Count - 1].CloseTimeTicks);
 
             var ret = trades.AllTrades.Select(x => x.Trade).ToList();
 
-            // Set trade profits
-            /*var balance = InitialBalance;
-            foreach (var t in ret.OrderBy(z => z.OrderDateTime ?? z.EntryDateTime))
-            {
-                var fees = 0M;
-                var riskAmount = (strategy.RiskEquityPercent / 100M) * balance;
-
-                if (_transactionFee >= 0.0M)
-                {
-                    riskAmount = riskAmount / (1.0M + _transactionFee);
-                    fees += riskAmount * _transactionFee;
-                }
-
-                if (t.EntryQuantity == 0M)
-                {
-                    t.EntryQuantity = riskAmount / t.EntryPrice.Value;
-                }
-
-                var profit = 0M;
-
-                if (t.RMultiple != null)
-                {
-                    profit = t.RMultiple.Value * riskAmount;
-                }
-                else if (t.EntryPrice != null && t.ClosePrice != null)
-                {
-                    profit = (t.ClosePrice.Value / t.EntryPrice.Value) * riskAmount - riskAmount;
-                }
-
-                if (_transactionFee >= 0.0M)
-                {
-                    var amount = riskAmount + profit;
-                    fees += amount * _transactionFee;
-                }
-
-                t.NetProfitLoss = profit - fees;
-                t.RiskAmount = riskAmount;
-                balance += profit - fees;
-
-                if (balance < 0) balance = 0M;
-            }*/
-
-            foreach (var t in ret)
-            {
-                TradeCalculator.UpdateInitialStopPips(t);
-                TradeCalculator.UpdateInitialLimitPips(t);
-                TradeCalculator.UpdateRMultiple(t);
-            }
+            CompleteTradeDetails(ret);
 
             return ret;
         }
 
-        private void UpdateNewOpenTradeAmount(Trade t)
-        {
-            var amount = t.EntryQuantity;
-            var cost = (t.EntryQuantity.Value * t.EntryPrice.Value) + (_transactionFee * (t.EntryQuantity.Value * t.EntryPrice.Value));
-            var fee = _transactionFee * (t.EntryQuantity * t.EntryPrice);
-
-            if (cost > Balance)
-            {
-                cost = Balance;
-                fee = cost - (cost / (1M + _transactionFee));
-                amount = (cost - fee) / t.EntryPrice.Value;
-            }
-
-            t.RiskAmount = cost;
-            t.RiskPercentOfBalance = t.RiskAmount != 0 ? Balance / t.RiskAmount : 0;
-            t.EntryQuantity = amount;
-
-            Balance -= cost;
-        }
-
-        private void UpdateCloseTradeProfit(Trade t)
-        {
-            var sellReturn = t.EntryQuantity.Value * t.ClosePrice.Value;
-            var fee = sellReturn * _transactionFee;
-            var profit = sellReturn - t.RiskAmount.Value - fee;
-
-            t.NetProfitLoss = profit;
-            Balance += sellReturn - fee;
-        }
-
-        public decimal Balance { get; private set; }
-
-        private int TryFillOrdersAndTryCloseOpenTrades(List<Candle> runCandles, int runCandleIndex,
-            int smallestNonRunTimeframeIndex, TimeframeLookup<List<Candle>> allCandles, Timeframe smallestNonRunTimeframe,
-            Candle smallestNonRunCandle, TradeWithIndexingCollection trades, ref int calls)
-        {
-            // Include run candles
-            var nextIndex = runCandles.BinarySearchGetItem(
-                i => runCandles[i].CloseTimeTicks,
-                runCandleIndex,
-                smallestNonRunTimeframeIndex > 0
-                    ? allCandles[smallestNonRunTimeframe][smallestNonRunTimeframeIndex - 1].CloseTimeTicks
-                    : smallestNonRunCandle.OpenTimeTicks,
-                BinarySearchMethod.NextHigherValue);
-
-            if (nextIndex != -1 && runCandles[nextIndex].CloseTimeTicks <= runCandles[runCandleIndex].CloseTimeTicks)
-            {
-                throw new ApplicationException("Run candles are not running in order");
-            }
-
-            if (nextIndex != -1 && runCandles[nextIndex].CloseTimeTicks <= smallestNonRunCandle.CloseTimeTicks)
-            {
-                runCandleIndex = nextIndex;
-
-                for (var i = runCandleIndex; i < runCandles.Count; i++)
-                {
-                    var runCandle = runCandles[i];
-                    if (runCandle.CloseTimeTicks > smallestNonRunCandle.CloseTimeTicks) break;
-
-                    runCandleIndex = i;
-                    if (!trades.AnyOpen && !trades.AnyOrders) break;
-
-                    if (trades.AnyOrders && Balance >= 0M)
-                    {
-                        FillOrders(trades, runCandle);
-                    }
-
-                    if (trades.AnyOpen)
-                    {
-                        TryCloseOpenTrades(trades, runCandle);
-                        calls++;
-                    }
-                }
-            }
-
-            return runCandleIndex;
-        }
-
-        private void RemoveInvalidTrades(List<Trade> newTrades, float latestBidPrice, float latestAskPrice)
+        private void RemoveInvalidTrades(string market, List<Trade> newTrades, float latestBidPrice, float latestAskPrice)
         {
             // Validate trades
             for (var i = newTrades.Count - 1; i >= 0; i--)
             {
                 var t = newTrades[i];
+                if (t.Market != market) continue;
+
                 var removed = false;
                 if (t.OrderPrice != null)
                 {
@@ -508,24 +248,148 @@ namespace TraderTools.Simulation
             }
         }
 
-
-        private void TryCloseOpenTrades(TradeWithIndexingCollection trades, Candle runCandle)
+        private void ProcessTradesUpdatedOrAddedByStrategy(
+            List<Trade> tradesToProcess,
+            TradeWithIndexingCollection trades)
         {
-            if (!trades.AnyOpen) return;
-
-            foreach (var t in trades.OpenTrades)
+            // Process trades
+            foreach (var t in tradesToProcess)
             {
-                if (t.Trade.EntryDateTime != null && runCandle.OpenTimeTicks >= t.Trade.EntryDateTime.Value.Ticks)
+                if (t.CloseDateTime != null)
                 {
-                    t.Trade.SimulateTrade(runCandle, out _);
+                    // Update balance (Trade within Trades in StrategyBase)
+                    UpdateBalanceAndClosedTradeProfit(t);
                 }
-
-                if (t.Trade.CloseDateTime != null)
+                else if (t.EntryDateTime == null && t.OrderDateTime != null)
                 {
-                    trades.MoveOpenToClose(t);
-                    UpdateCloseTradeProfit(t.Trade);
+                    trades.AddOrderTrade(t);
+                }
+                else if (t.EntryDateTime != null)
+                {
+                    trades.AddOpenTrade(t);
+                    UpdateNewOpenTradeAmount(t);
                 }
             }
+        }
+
+        private void ProgressRunCandles(
+            List<CandlesWithIndex> runCandles,
+            long currentTime,
+            long nextTime,
+            TradeWithIndexingCollection trades)
+        {
+            var tradesToProcess = new SortedList<long, TradeWithIndexing>();
+            foreach (var c in runCandles)
+            {
+                var startIndex = c.Candles.BinarySearchGetItem(
+                    i => c.Candles[i].CloseTimeTicks,
+                    c.NextIndex,
+                    currentTime,
+                    BinarySearchMethod.NextHigherValue);
+
+                if (startIndex == -1) continue;
+
+                for (var i = startIndex; i < c.Candles.Count; i++)
+                {
+                    var candle = c.Candles[i];
+                    if (candle.CloseTimeTicks > nextTime) break;
+                    c.NextIndex = i + 1;
+
+                    // Try to close open trades
+                    foreach (var t in trades
+                        .OpenTrades
+                        .Where(z => z.Trade.Market == c.Market))
+                    {
+                        t.Trade.SimulateTrade(candle, out var updated);
+                        if (t.Trade.ClosePrice != null) tradesToProcess.Add(candle.CloseTimeTicks, t);
+                    }
+
+                    // Try to fill orders
+                    foreach (var t in trades
+                        .OrderTradesAsc
+                        .Where(z => z.Trade.Market == c.Market))
+                    {
+                        if (t.Trade.OrderDateTime != null && candle.CloseTimeTicks < t.Trade.OrderDateTime.Value.Ticks)
+                        {
+                            continue;
+                        }
+
+                        t.Trade.SimulateTrade(candle, out _);
+
+                        if (t.Trade.EntryDateTime != null) tradesToProcess.Add(candle.CloseTimeTicks, t);
+                        else if (t.Trade.CloseDateTime != null)
+                        {
+                            // Order was closed without filling it
+                            trades.MoveOrderToClosed(t);
+                        }
+                    }
+                }
+            }
+
+            foreach (var t in tradesToProcess)
+            {
+                if (t.Value.Trade.CloseDateTime != null)
+                {
+                    // Processed closed open trade
+                    trades.MoveOpenToClose(t.Value);
+                    UpdateBalanceAndClosedTradeProfit(t.Value.Trade);
+                }
+                else
+                {
+                    // Process filled order
+                    trades.MoveOrderToOpen(t.Value);
+                    UpdateNewOpenTradeAmount(t.Value.Trade);
+                }
+            }
+        }
+
+        private void UpdateBalanceAndClosedTradeProfit(Trade t)
+        {
+            var sellReturn = t.EntryQuantity.Value * t.ClosePrice.Value;
+            var fee = sellReturn * _transactionFee;
+            var profit = sellReturn - t.RiskAmount.Value - fee;
+
+            t.NetProfitLoss = profit;
+            Balance += sellReturn - fee;
+        }
+
+        private void UpdateNewOpenTradeAmount(Trade t)
+        {
+            var amount = t.EntryQuantity;
+            var cost = (t.EntryQuantity.Value * t.EntryPrice.Value) + (_transactionFee * (t.EntryQuantity.Value * t.EntryPrice.Value));
+            var fee = _transactionFee * (t.EntryQuantity * t.EntryPrice);
+
+            if (cost > Balance)
+            {
+                cost = Balance;
+                fee = cost - (cost / (1M + _transactionFee));
+                amount = (cost - fee) / t.EntryPrice.Value;
+            }
+
+            t.RiskAmount = cost;
+            t.RiskPercentOfBalance = t.RiskAmount != 0 ? Balance / t.RiskAmount : 0;
+            t.EntryQuantity = amount;
+
+            Balance -= cost;
+        }
+
+        private Dictionary<string, TimeframeLookup<List<Candle>>> CreateCurrentCandles(string[] markets, Timeframe[] timeframes)
+        {
+            var ret = new Dictionary<string, TimeframeLookup<List<Candle>>>();
+
+            foreach (var m in markets)
+            {
+                var lookup = new TimeframeLookup<List<Candle>>();
+
+                foreach (var t in timeframes)
+                {
+                    lookup.Add(t, new List<Candle>(100000));
+                }
+
+                ret.Add(m, lookup);
+            }
+
+            return ret;
         }
 
         private void LogProgress(TradeWithIndexingCollection trades, long currentDateTimeTicks)
@@ -540,7 +404,7 @@ namespace TraderTools.Simulation
             var expectancy = TradingCalculator.CalculateExpectancy(tradesForExpectancy);
 
             Log.Info(
-                $"{_market.Name} Up to: {new DateTime(currentDateTimeTicks): dd-MM-yy HH:mm} "// /* {r.PercentComplete:0.00}% /. Running: {r.SecondsRunning}s. "
+                $"Up to: {new DateTime(currentDateTimeTicks): dd-MM-yy HH:mm} "// /* {r.PercentComplete:0.00}% /. Running: {r.SecondsRunning}s. "
                 + $"Created: {orderTrades.Count() + closedTrades.Count + trades.OpenTrades.Count()} "
                 + $"Open: {trades.OpenTrades.Count()}. Orders: {orderTrades.Count()} "
                 + $"Closed: {closedTrades.Count} (Hit stop: {closedTrades.Count(x => x.CloseReason == TradeCloseReason.HitStop)} "
@@ -550,42 +414,107 @@ namespace TraderTools.Simulation
                 + $"Expectancy: {expectancy:0.00}");
         }
 
-        private void FillOrders(TradeWithIndexingCollection trades, Candle runCandle)
+
+        private List<AddedCandleTimeframe> ProgressStrategyCandles(
+            List<CandlesWithIndex> tfOrderedStrategyCandles,
+            Dictionary<string, TimeframeLookup<List<Candle>>> currentCandles,
+            out long currentTimeTicks,
+            out long nextTimeTicks)
         {
-            foreach (var order in trades.OrderTradesAsc)
+            var ret = new List<AddedCandleTimeframe>();
+            currentTimeTicks = long.MaxValue;
+            nextTimeTicks = long.MaxValue;
+
+            if (tfOrderedStrategyCandles[0].NextIndex >= tfOrderedStrategyCandles[0].Candles.Count) return ret;
+
+            // Assumes timeframes are multiples of each other e.g. 30 min, 1 hr, 4 hr, 1d, 1w
+            currentTimeTicks = tfOrderedStrategyCandles[0].Candles[tfOrderedStrategyCandles[0].NextIndex].CloseTimeTicks;
+
+            if (tfOrderedStrategyCandles[0].NextIndex + 1 < tfOrderedStrategyCandles[0].Candles.Count)
             {
-                var candleCloseTimeTicks = runCandle.CloseTimeTicks;
-
-                if (order.Trade.OrderDateTime != null && candleCloseTimeTicks < order.Trade.OrderDateTime.Value.Ticks)
-                {
-                    break;
-                }
-
-                order.Trade.SimulateTrade(runCandle, out _);
-
-                if (order.Trade.EntryDateTime != null)
-                {
-                    trades.MoveOrderToOpen(order);
-                    UpdateNewOpenTradeAmount(order.Trade);
-                }
-                else if (order.Trade.CloseDateTime != null)
-                {
-                    trades.MoveOrderToClosed(order);
-                }
+                nextTimeTicks = tfOrderedStrategyCandles[0].Candles[tfOrderedStrategyCandles[0].NextIndex + 1].CloseTimeTicks;
             }
-        }
 
-        private TimeframeLookup<List<Candle>> GetCandles(IEnumerable<Timeframe> timeframes)
-        {
-            var ret = new TimeframeLookup<List<Candle>>();
 
-            foreach (var tf in timeframes)
+            foreach (var c in tfOrderedStrategyCandles)
             {
-                var candles = _candleService.GetCandles(_broker, _market.Name, tf, false);
-                ret[tf] = candles;
+                for (var i = c.NextIndex; i < c.Candles.Count; i++)
+                {
+                    var closeTimeTicks = c.Candles[i].CloseTimeTicks;
+                    if (closeTimeTicks > currentTimeTicks) continue;
+
+                    ret.Add(new AddedCandleTimeframe(c.Market, c.Timeframe));
+                    currentCandles[c.Market][c.Timeframe].Add(c.Candles[i]);
+                    c.NextIndex = i + 1;
+                }
             }
 
             return ret;
         }
+
+        private void CompleteTradeDetails(List<Trade> trades)
+        {
+            foreach (var t in trades)
+            {
+                TradeCalculator.UpdateInitialStopPips(t);
+                TradeCalculator.UpdateInitialLimitPips(t);
+                TradeCalculator.UpdateRMultiple(t);
+            }
+        }
+
+        private List<CandlesWithIndex> GetRunCandles(StrategyBase strategy, Timeframe runTimeframe)
+        {
+            var ret = new List<CandlesWithIndex>();
+            foreach (var m in strategy.Markets)
+            {
+                ret.Add(new CandlesWithIndex(m, runTimeframe, _candleService.GetCandles(
+                    _broker, m, runTimeframe, false)));
+            }
+
+            return ret;
+        }
+
+        private List<CandlesWithIndex> GetTfOrderedStrategyCandles(StrategyBase strategy)
+        {
+            var ret = new List<CandlesWithIndex>();
+            foreach (var tf in strategy.Timeframes.OrderBy(x => x))
+            {
+                foreach (var m in strategy.Markets)
+                {
+                    ret.Add(new CandlesWithIndex(m, tf, _candleService.GetCandles(
+                        _broker, m, tf, false)));
+                }
+            }
+
+            return ret;
+        }
+
+        private class CandlesWithIndex
+        {
+            public CandlesWithIndex(string market, Timeframe timeframe, List<Candle> candles)
+            {
+                Market = market;
+                Timeframe = timeframe;
+                Candles = candles;
+            }
+
+            public string Market { get; }
+            public Timeframe Timeframe { get; }
+            public List<Candle> Candles { get; }
+            public int NextIndex { get; set; } = 0;
+        }
     }
+
+    public class AddedCandleTimeframe
+    {
+        public AddedCandleTimeframe(string market, Timeframe timeframe)
+        {
+            Market = market;
+            Timeframe = timeframe;
+        }
+
+        public string Market { get; }
+        public Timeframe Timeframe { get; }
+    }
+
 }

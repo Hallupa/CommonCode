@@ -17,7 +17,7 @@ namespace TraderTools.Test
         [TestMethod]
         public void TestBuyThenCloseTrade()
         {
-            var runner = new StrategyRunnerV2(_fakeBrokersCandlesService, _fakeMarketDetailsService, _broker, 10000M);
+            var runner = new StrategyRunner(_fakeBrokersCandlesService, _fakeMarketDetailsService, _broker, 10000M);
             var strategy = new StrategyBuyThenClose();
             var trades = runner.Run(strategy);
 
@@ -34,7 +34,7 @@ namespace TraderTools.Test
         [TestMethod]
         public void TestBuyWithIndicator()
         {
-            var runner = new StrategyRunnerV2(_fakeBrokersCandlesService, _fakeMarketDetailsService, _broker, 10000M);
+            var runner = new StrategyRunner(_fakeBrokersCandlesService, _fakeMarketDetailsService, _broker, 10000M);
             var strategy = new StrategyBuyWithIndicator();
             var trades = runner.Run(strategy);
 
@@ -49,7 +49,7 @@ namespace TraderTools.Test
         [TestMethod]
         public void TestBuyThenCloseTradeWithTransactionFee()
         {
-            var runner = new StrategyRunnerV2(_fakeBrokersCandlesService, _fakeMarketDetailsService, _broker, 10000M, transactionFee: 0.01M);
+            var runner = new StrategyRunner(_fakeBrokersCandlesService, _fakeMarketDetailsService, _broker, 10000M, transactionFee: 0.01M);
             var strategy = new StrategyBuyThenClose();
             var trades = runner.Run(strategy);
 
@@ -77,7 +77,7 @@ namespace TraderTools.Test
         [TestMethod]
         public void TestBuyWithStopTrade()
         {
-            var runner = new StrategyRunnerV2(_fakeBrokersCandlesService, _fakeMarketDetailsService, _broker, 10000M);
+            var runner = new StrategyRunner(_fakeBrokersCandlesService, _fakeMarketDetailsService, _broker, 10000M);
             var strategy = new StrategyBuyWithStop();
             var trades = runner.Run(strategy);
 
@@ -95,7 +95,7 @@ namespace TraderTools.Test
         [TestMethod]
         public void TestBuyWithLimit()
         {
-            var runner = new StrategyRunnerV2(_fakeBrokersCandlesService, _fakeMarketDetailsService, _broker, 10000M);
+            var runner = new StrategyRunner(_fakeBrokersCandlesService, _fakeMarketDetailsService, _broker, 10000M);
             var strategy = new StrategyBuyWithLimit();
             var trades = runner.Run(strategy);
 
@@ -115,7 +115,7 @@ namespace TraderTools.Test
         [TestMethod]
         public void TestBuyWithOrder()
         {
-            var runner = new StrategyRunnerV2(_fakeBrokersCandlesService, _fakeMarketDetailsService, _broker, 10000M);
+            var runner = new StrategyRunner(_fakeBrokersCandlesService, _fakeMarketDetailsService, _broker, 10000M);
             var strategy = new StrategyBuyWithOrder();
             var trades = runner.Run(strategy);
 
@@ -133,7 +133,7 @@ namespace TraderTools.Test
         [TestMethod]
         public void TestExpiredOrder()
         {
-            var runner = new StrategyRunnerV2(_fakeBrokersCandlesService, _fakeMarketDetailsService, _broker, 10000M);
+            var runner = new StrategyRunner(_fakeBrokersCandlesService, _fakeMarketDetailsService, _broker, 10000M);
             var strategy = new StrategyBuyWithExpiredOrder(3000);
             var trades = runner.Run(strategy);
 
@@ -151,7 +151,7 @@ namespace TraderTools.Test
         [TestMethod]
         public void TestBuyCloseTwoMarkets()
         {
-            var runner = new StrategyRunnerV2(_fakeBrokersCandlesService, _fakeMarketDetailsService, _broker, 10000M);
+            var runner = new StrategyRunner(_fakeBrokersCandlesService, _fakeMarketDetailsService, _broker, 10000M);
             var strategy = new StrategyBuyCloseTwoMarkets();
             var trades = runner.Run(strategy);
 
