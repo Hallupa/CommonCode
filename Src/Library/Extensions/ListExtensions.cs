@@ -8,7 +8,8 @@ namespace Hallupa.Library.Extensions
     {
         NextHigherValue,
         PrevLowerValue,
-        PrevLowerValueOrValue
+        PrevLowerValueOrValue,
+        Value
     }
 
     public static class ListExtensions
@@ -70,7 +71,7 @@ namespace Hallupa.Library.Extensions
                     }
                 }
 
-                if (method == BinarySearchMethod.PrevLowerValueOrValue)
+                if (method == BinarySearchMethod.PrevLowerValueOrValue || method == BinarySearchMethod.Value)
                 {
                     if (getValue(midIndex).CompareTo(value) > 0)
                     {
@@ -108,6 +109,16 @@ namespace Hallupa.Library.Extensions
                 for (var i = highIndex; i >= lowIndex; i--)
                 {
                     if (getValue(i).CompareTo(value) <= 0)
+                    {
+                        return i;
+                    }
+                }
+            }
+            else if (method == BinarySearchMethod.Value)
+            {
+                for (var i = highIndex; i >= lowIndex; i--)
+                {
+                    if (getValue(i).CompareTo(value) == 0)
                     {
                         return i;
                     }

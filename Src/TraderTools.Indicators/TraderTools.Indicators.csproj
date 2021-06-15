@@ -98,6 +98,7 @@
     <Compile Include="RelativeStrengthIndex.cs" />
     <Compile Include="SmoothedMovingAverage.cs" />
     <Compile Include="StandardDeviation.cs" />
+    <Compile Include="StochasticRelativeStrengthIndex.cs" />
     <Compile Include="T3CommodityChannelIndex.cs" />
     <Compile Include="TrueRange.cs" />
     <Compile Include="WilderMovingAverage.cs" />

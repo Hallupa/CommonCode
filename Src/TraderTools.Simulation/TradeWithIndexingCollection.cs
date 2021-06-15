@@ -21,6 +21,24 @@ namespace TraderTools.Simulation
 
         public bool AnyOpen => _firstOpen != null;
 
+        public bool AnyOpenWithStopOrLimit
+        {
+            get
+            {
+                if (!AnyOpen) return false;
+
+                foreach (var t in OpenTrades)
+                {
+                    if (t.Trade.StopPrice != null || t.Trade.LimitPrice != null)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
         public void AddOpenTrade(Trade t)
         {
             var tradeWithIndexing = new TradeWithIndexing

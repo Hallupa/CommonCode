@@ -122,7 +122,7 @@ namespace TraderTools.Basics.Extensions
             {
                 if (openTrade.TradeDirection.Value == TradeDirection.Long && candleBidLow <= openTrade.StopPriceFloat.Value)
                 {
-                    var stopPrice = Math.Min((decimal) candleBidHigh, openTrade.StopPrice.Value);
+                    var stopPrice = Math.Min((decimal)candleBidHigh, openTrade.StopPrice.Value);
                     openTrade.SetClose(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), stopPrice,
                         TradeCloseReason.HitStop);
                     updated = true;
@@ -130,7 +130,7 @@ namespace TraderTools.Basics.Extensions
                 }
                 else if (openTrade.TradeDirection.Value == TradeDirection.Short && candleAskHigh >= openTrade.StopPriceFloat.Value)
                 {
-                    var stopPrice = Math.Max((decimal) candleAskLow, openTrade.StopPrice.Value);
+                    var stopPrice = Math.Max((decimal)candleAskLow, openTrade.StopPrice.Value);
                     openTrade.SetClose(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), stopPrice,
                         TradeCloseReason.HitStop);
                     updated = true;
@@ -142,7 +142,7 @@ namespace TraderTools.Basics.Extensions
             {
                 if (openTrade.TradeDirection.Value == TradeDirection.Long && candleBidHigh >= openTrade.LimitPriceFloat.Value)
                 {
-                    var limitPrice = Math.Max((decimal) candleBidLow, openTrade.LimitPrice.Value);
+                    var limitPrice = Math.Max((decimal)candleBidLow, openTrade.LimitPrice.Value);
                     openTrade.SetClose(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), limitPrice,
                         TradeCloseReason.HitLimit);
                     updated = true;
@@ -150,7 +150,7 @@ namespace TraderTools.Basics.Extensions
                 }
                 else if (openTrade.TradeDirection.Value == TradeDirection.Short && candleAskLow <= openTrade.LimitPriceFloat.Value)
                 {
-                    var limitPrice = Math.Min((decimal) candleAskHigh, openTrade.LimitPrice.Value);
+                    var limitPrice = Math.Min((decimal)candleAskHigh, openTrade.LimitPrice.Value);
                     openTrade.SetClose(new DateTime(candleCloseTimeTicks, DateTimeKind.Utc), limitPrice,
                         TradeCloseReason.HitLimit);
                     updated = true;

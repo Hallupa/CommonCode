@@ -8,6 +8,7 @@ using Binance.Net.Objects.Spot;
 using CryptoExchange.Net.Authentication;
 using CryptoExchange.Net.ExchangeInterfaces;
 using CryptoExchange.Net.Objects;
+using Hallupa.Library.Extensions;
 using log4net;
 using TraderTools.Basics;
 
@@ -23,22 +24,37 @@ namespace TraderTools.Brokers.Binance
         private List<string> _symbols;
 
         public bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService,
-            Action<string> updateProgressAction, DateTime? lastUpdateTime, out List<Trade> addedOrUpdatedTrades)
+            Action<string> updateProgressAction, out List<Trade> addedOrUpdatedTrades)
         {
             throw new NotImplementedException();
         }
 
         public bool UpdateCandles(List<Candle> candles, string market, Timeframe timeframe, DateTime start, Action<string> progressUpdate)
         {
+            // Remove any duplicates
+            var foundCandles = new HashSet<long>();
+            for(var i = 0; i < candles.Count; i++)
+            {
+                var c = candles[i];
+
+                if (foundCandles.Contains(c.OpenTimeTicks))
+                {
+                    candles.RemoveAt(i);
+                    i--;
+                }
+
+                foundCandles.Add(c.OpenTimeTicks);
+            }
+
             while (true)
             {
                 var retries = 3;
                 WebCallResult<IEnumerable<ICommonKline>> binanceCandles = null;
                 while (retries >= 0)
                 {
-                    binanceCandles = ((IExchangeClient) _client).GetKlinesAsync(
+                    binanceCandles = ((IExchangeClient)_client).GetKlinesAsync(
                         market,
-                        TimeSpan.FromSeconds((int) timeframe),
+                        TimeSpan.FromSeconds((int)timeframe),
                         start,
                         DateTime.UtcNow,
                         1000).Result;
@@ -63,7 +79,19 @@ namespace TraderTools.Brokers.Binance
 
                 foreach (var b in binanceCandles.Data)
                 {
-                    candles.Add(CreateCandle(b, timeframe));
+                    var c = CreateCandle(b, timeframe);
+
+                    if (!foundCandles.Contains(c.OpenTimeTicks))
+                    {
+                        candles.Add(c);
+                        foundCandles.Add(c.OpenTimeTicks);
+                    }
+                    else
+                    {
+                        var index = candles.BinarySearchGetItem(l => candles[l].OpenTimeTicks, 0, c.OpenTimeTicks, BinarySearchMethod.Value);
+                        candles.RemoveAt(index);
+                        candles.Insert(index, c);
+                    }
                 }
 
                 if (!binanceCandles.Data.Any()) break;
@@ -127,7 +155,12 @@ namespace TraderTools.Brokers.Binance
                 LowBid = (float)kline.CommonLow,
                 OpenTimeTicks = kline.CommonOpenTime.Ticks,
                 OpenBid = (float)kline.CommonOpen,
-                Volume = (float)kline.CommonVolume
+                Volume = (float)kline.CommonVolume,
+                CloseAsk = (float)kline.CommonClose,
+                HighAsk = (float)kline.CommonHigh,
+                LowAsk = (float)kline.CommonLow,
+                OpenAsk = (float)kline.CommonOpen,
+
                 //TradeCount = kline.TradeCount
             };
         }

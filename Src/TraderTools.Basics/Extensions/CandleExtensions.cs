@@ -37,43 +37,49 @@ namespace TraderTools.Basics.Extensions
             return new DateTime(candle.CloseTimeTicks, DateTimeKind.Utc);
         }
 
+        public static void AddHeikinAshiCandles(this List<Candle> existingHeikinAshiCandles, IEnumerable<Candle> newNormalCandles)
+        {
+            foreach (var c in newNormalCandles)
+            {
+                existingHeikinAshiCandles.AddHeikinAshiCandle(c);
+            }
+        }
+
+        public static void AddHeikinAshiCandle(this List<Candle> existingHeikinAshiCandles, Candle newNormalCandle)
+        {
+            var closeAsk = (float)(1.0 / 4.0) * (newNormalCandle.OpenAsk + newNormalCandle.HighAsk + newNormalCandle.LowAsk + newNormalCandle.CloseAsk);
+            var closeBid = (float)(1.0 / 4.0) * (newNormalCandle.OpenBid + newNormalCandle.HighBid + newNormalCandle.LowBid + newNormalCandle.CloseBid);
+            var openAsk = existingHeikinAshiCandles.Count > 0
+                ? (float)(1.0 / 2.0) * (existingHeikinAshiCandles[existingHeikinAshiCandles.Count - 1].OpenAsk + existingHeikinAshiCandles[existingHeikinAshiCandles.Count - 1].CloseAsk)
+                : (float)(1.0 / 2.0) * (newNormalCandle.OpenAsk + newNormalCandle.CloseAsk);
+            var openBid = existingHeikinAshiCandles.Count > 0
+                ? (float)(1.0 / 2.0) * (existingHeikinAshiCandles[existingHeikinAshiCandles.Count - 1].OpenBid + existingHeikinAshiCandles[existingHeikinAshiCandles.Count - 1].CloseBid)
+                : (float)(1.0 / 2.0) * (newNormalCandle.OpenBid + newNormalCandle.CloseBid);
+            var highAsk = Math.Max(newNormalCandle.HighAsk, Math.Max(closeAsk, openAsk));
+            var highBid = Math.Max(newNormalCandle.HighBid, Math.Max(closeBid, openBid));
+            var lowAsk = Math.Max(newNormalCandle.LowAsk, Math.Max(openAsk, closeAsk));
+            var lowBid = Math.Max(newNormalCandle.LowBid, Math.Max(openBid, closeBid));
+
+            existingHeikinAshiCandles.Add(new Candle
+            {
+                CloseAsk = closeAsk,
+                CloseBid = closeBid,
+                OpenAsk = openAsk,
+                OpenBid = openBid,
+                HighAsk = highAsk,
+                HighBid = highBid,
+                LowAsk = lowAsk,
+                LowBid = lowBid,
+                OpenTimeTicks = newNormalCandle.OpenTimeTicks,
+                CloseTimeTicks = newNormalCandle.CloseTimeTicks,
+                IsComplete = newNormalCandle.IsComplete
+            });
+        }
+
         public static List<Candle> CreateHeikinAshiCandles(this List<Candle> candles)
         {
             var hk = new List<Candle>();
-
-            for (var i = 0; i < candles.Count; i++)
-            {
-                var c = candles[i];
-
-                var closeAsk = (float)(1.0 / 4.0) * (c.OpenAsk + c.HighAsk + c.LowAsk + c.CloseAsk);
-                var closeBid = (float)(1.0 / 4.0) * (c.OpenBid + c.HighBid + c.LowBid + c.CloseBid);
-                var openAsk = i > 0
-                    ? (float) (1.0 / 2.0) * (hk[i - 1].OpenAsk + hk[i - 1].CloseAsk)
-                    : (float) (1.0 / 2.0) * (c.OpenAsk + c.CloseAsk);
-                var openBid = i > 0
-                    ? (float)(1.0 / 2.0) * (hk[i - 1].OpenBid + hk[i - 1].CloseBid)
-                    : (float)(1.0 / 2.0) * (c.OpenBid + c.CloseBid);
-                var highAsk = Math.Max(c.HighAsk, Math.Max(closeAsk, openAsk));
-                var highBid = Math.Max(c.HighBid, Math.Max(closeBid, openBid));
-                var lowAsk = Math.Max(c.LowAsk, Math.Max(openAsk, closeAsk));
-                var lowBid = Math.Max(c.LowBid, Math.Max(openBid, closeBid));
-
-
-                hk.Add(new Candle
-                {
-                    CloseAsk = closeAsk,
-                    CloseBid = closeBid,
-                    OpenAsk = openAsk,
-                    OpenBid = openBid,
-                    HighAsk = highAsk,
-                    HighBid = highBid,
-                    LowAsk = lowAsk,
-                    LowBid = lowBid,
-                    OpenTimeTicks = c.OpenTimeTicks,
-                    CloseTimeTicks = c.CloseTimeTicks,
-                    IsComplete = c.IsComplete
-                });
-            }
+            hk.AddHeikinAshiCandles(candles);
 
             return hk;
         }

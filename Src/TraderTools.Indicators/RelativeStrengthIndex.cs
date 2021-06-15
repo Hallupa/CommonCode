@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using TraderTools.Basics;
+﻿using TraderTools.Basics;
 
 namespace TraderTools.Indicators
 {
@@ -15,7 +14,7 @@ namespace TraderTools.Indicators
             _gain = new SmoothedMovingAverage();
             _loss = new SmoothedMovingAverage();
 
-            Length = 15;
+            Length = 14;
             _loss.Length = _gain.Length = Length;
         }
 

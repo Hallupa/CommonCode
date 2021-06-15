@@ -34,12 +34,12 @@ namespace TraderTools.Basics.Helpers
             var total = 0;
             var producerConsumer =
                 new ProducerConsumer<(string Market, Timeframe Timeframe)>(threads,
-                    data =>
+                    d =>
                     {
-                        Log.Info($"Updating {data.Timeframe} candles for {data.Market}");
-                        candlesService.UpdateCandles(broker, data.Market, data.Timeframe);
-                        candlesService.UnloadCandles(data.Market, data.Timeframe, broker);
-                        Log.Info($"Updated {data.Timeframe} candles for {data.Market}");
+                        Log.Info($"Updating {d.Data.Timeframe} candles for {d.Data.Market}");
+                        candlesService.UpdateCandles(broker, d.Data.Market, d.Data.Timeframe);
+                        candlesService.UnloadCandles(d.Data.Market, d.Data.Timeframe, broker);
+                        Log.Info($"Updated {d.Data.Timeframe} candles for {d.Data.Market}");
 
                         Interlocked.Increment(ref completed);
 
