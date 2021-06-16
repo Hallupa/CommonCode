@@ -91,7 +91,9 @@
     <Compile Include="Balance.cs" />
     <Compile Include="Broker\BrokerAccount.cs" />
     <Compile Include="Extensions\BrokerExtensions.cs" />
+    <Compile Include="Extensions\BrokersCandlesServiceExtensions.cs" />
     <Compile Include="Helpers\AccountValueHelper.cs" />
+    <Compile Include="Helpers\DerivedMarketCandles.cs" />
     <Compile Include="Services\AssetValueCalculatorService.cs" />
     <Compile Include="Helpers\CryptoTransactionsUSDTCalculator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
