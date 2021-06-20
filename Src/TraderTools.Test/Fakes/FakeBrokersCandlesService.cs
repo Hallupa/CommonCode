@@ -33,7 +33,7 @@ namespace TraderTools.Test.Fakes
                 {
                     CloseAsk = price + 30F,
                     CloseBid = price + 30F - 10F,
-                    CloseTimeTicks = dateTicks + 1000,
+                    CloseTimeTicks = dateTicks + 500,
                     OpenTimeTicks = dateTicks,
                     HighAsk = price + 50F,
                     HighBid = price + 50F - 10F,

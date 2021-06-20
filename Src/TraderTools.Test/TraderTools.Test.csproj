@@ -59,6 +59,7 @@
     <Compile Include="Strategies\StrategyBuyWithLimit.cs" />
     <Compile Include="Strategies\StrategyBuyWithStop.cs" />
     <Compile Include="Strategies\StrategyBuyThenClose.cs" />
+    <Compile Include="Strategies\StrategyTotalValue.cs" />
     <Compile Include="StrategyRunnerTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

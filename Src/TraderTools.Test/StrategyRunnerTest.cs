@@ -166,5 +166,31 @@ namespace TraderTools.Test
             Assert.IsFalse(strategy.Trades.AnyOrders);
             Assert.AreEqual(2, strategy.Trades.ClosedTrades.Count());
         }
+
+        [TestMethod]
+        public void TestTotalValue()
+        {
+            var runner = new StrategyRunner(_fakeBrokersCandlesService, _fakeMarketDetailsService, _broker, 10000M, transactionFee: 0.001M);
+            var s = new StrategyTotalValue();
+            var trades = runner.Run(s);
+
+            var trade1Cost = (s.Trade1.EntryPrice.Value * s.Trade1.EntryQuantity) + (s.Trade1.EntryPrice.Value * s.Trade1.EntryQuantity) * 0.001M;
+            var trade2Cost = (s.Trade2.EntryPrice.Value * s.Trade2.EntryQuantity) + (s.Trade2.EntryPrice.Value * s.Trade2.EntryQuantity) * 0.001M;
+            Func<decimal, decimal> trade1Value = p => (s.Trade1.EntryQuantity.Value * p) - (s.Trade1.EntryQuantity.Value * p) * 0.001M;
+            Func<decimal, decimal> trade2Value = p => (s.Trade2.EntryQuantity.Value * p) - (s.Trade2.EntryQuantity.Value * p) * 0.001M;
+
+            Assert.AreEqual(2, trades.Count);
+
+            Assert.AreEqual(10000M, s.TotalValuesBeforeTrades[3500]);
+            Assert.AreEqual(10000M - trade1Cost + trade1Value(3020M), s.TotalValuesAfterTrades[3500]);
+
+            var price = 4020M;
+            Assert.AreEqual(10000M - trade1Cost + trade1Value(price), s.TotalValuesBeforeTrades[4500]);
+            Assert.AreEqual(10000M - trade1Cost + trade1Value(price) - trade2Cost + trade2Value(price), s.TotalValuesAfterTrades[4500]);
+
+            price = 7020M;
+            Assert.AreEqual(10000M - trade1Cost + trade1Value(price) - trade2Cost + trade2Value(price), s.TotalValuesBeforeTrades[7500]);
+            Assert.AreEqual(10000M - trade1Cost + trade1Value(price) - trade2Cost + trade2Value(price), s.TotalValuesAfterTrades[7500]);
+        }
     }
 }

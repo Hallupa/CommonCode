@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using TraderTools.Basics;
 
 namespace TraderTools.Simulation
 {
@@ -21,6 +22,22 @@ namespace TraderTools.Simulation
         }
 
         public bool HasValue { get; set; }
+
+        public void AddValue(SignalAndValue signalAndValue, Candle candle)
+        {
+            if (signalAndValue.IsFormed)
+            {
+                Values.Add((candle.CloseTimeTicks, signalAndValue.Value));
+                Value = signalAndValue.Value;
+                HasValue = true;
+            }
+            else
+            {
+                Values.Add((candle.CloseTimeTicks, null));
+                Value = 0F;
+                HasValue = false;
+            }
+        }
 
         public float? this[int i] => Values[i].Value;
 

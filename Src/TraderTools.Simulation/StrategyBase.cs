@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.Linq;
 using System.Reflection;
-using Hallupa.Library;
 using log4net;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
@@ -20,6 +18,7 @@ namespace TraderTools.Simulation
         private static readonly ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private Timeframe _smallestCandleTimeframe;
         private Func<decimal> _getBalanceFunc;
+        private Func<decimal> _getTotalValueFunc;
         private Dictionary<string, TimeframeLookup<List<(IIndicator Indicator, IndicatorValues IndicatorValues)>>> _indicators 
             = new Dictionary<string, TimeframeLookup<List<(IIndicator Indicator, IndicatorValues IndicatorValues)>>>();
         public DateTime? StartTime { get; private set; }
@@ -29,11 +28,18 @@ namespace TraderTools.Simulation
         public bool Initialised { get; private set; }
 
         public decimal Balance => _getBalanceFunc();
+        public decimal TotalValue => _getTotalValueFunc();
+        private Action<TradeWithIndexing, Trade, Candle> _tradeUpdatedAction;
 
-        public void SetInitialised(Func<decimal> getBalanceFunc)
+        public void SetInitialised(
+            Func<decimal> getBalanceFunc,
+            Func<decimal> getTotalValueFunc,
+            Action<TradeWithIndexing, Trade, Candle> tradeUpdatedAction)
         {
             Initialised = true;
             _getBalanceFunc = getBalanceFunc;
+            _getTotalValueFunc = getTotalValueFunc;
+            _tradeUpdatedAction = tradeUpdatedAction;
         }
 
         public void SetMarkets(params string[] markets)
@@ -88,18 +94,7 @@ namespace TraderTools.Simulation
                 foreach (var x in _indicators[c.Market][c.Timeframe])
                 {
                     var signalAndValue = x.Indicator.Process(addedCandle);
-                    if (signalAndValue.IsFormed)
-                    {
-                        x.IndicatorValues.Values.Add((addedCandle.CloseTimeTicks, signalAndValue.Value));
-                        x.IndicatorValues.Value = signalAndValue.Value;
-                        x.IndicatorValues.HasValue = true;
-                    }
-                    else
-                    {
-                        x.IndicatorValues.Values.Add((addedCandle.CloseTimeTicks, null));
-                        x.IndicatorValues.Value = 0F;
-                        x.IndicatorValues.HasValue = false;
-                    }
+                    x.IndicatorValues.AddValue(signalAndValue, addedCandle);
                 }
             }
         }
@@ -192,8 +187,6 @@ namespace TraderTools.Simulation
             _log.Info(txt);
         }
 
-        public List<Trade> TradesToProcess { get; } = new List<Trade>();
-
         public abstract void ProcessCandles(List<AddedCandleTimeframe> addedCandleTimeframes);
 
         protected Trade MarketLong(string market, decimal amount, decimal? stop = null, decimal? limit = null)
@@ -205,9 +198,30 @@ namespace TraderTools.Simulation
                 "FXCM", (decimal)entryPrice, candle.CloseTime(), TradeDirection.Long, amount, market, stop, limit,
                 calculateOptions: CalculateOptions.ExcludePipsCalculations);
 
-            TradesToProcess.Add(trade);
+            _tradeUpdatedAction(null, trade, candle);
 
             return trade;
+        }
+
+        protected void CloseTrade(Trade t)
+        {
+            foreach (var indexedTrade in Trades.OpenTrades)
+            {
+                if (indexedTrade.Trade == t)
+                {
+                    CloseTrade(indexedTrade);
+                    return;
+                }
+            }
+
+            foreach (var indexedTrade in Trades.OrderTradesAsc)
+            {
+                if (indexedTrade.Trade == t)
+                {
+                    CloseTrade(indexedTrade);
+                    return;
+                }
+            }
         }
 
         protected void CloseTrade(TradeWithIndexing t)
@@ -217,16 +231,7 @@ namespace TraderTools.Simulation
                 var candle = Candles[t.Trade.Market][_smallestCandleTimeframe][Candles[t.Trade.Market][_smallestCandleTimeframe].Count - 1];
                 t.Trade.SetClose(new DateTime(candle.CloseTimeTicks, DateTimeKind.Utc), (decimal)candle.CloseBid, TradeCloseReason.ManualClose);
 
-                if (t.Trade.EntryPrice != null)
-                {
-                    Trades.MoveOpenToClose(t);
-                }
-                else if (t.Trade.OrderPrice != null)
-                {
-                    Trades.MoveOrderToClosed(t);
-                }
-
-                TradesToProcess.Add(t.Trade);
+                _tradeUpdatedAction(t, t.Trade, candle);
             }
         }
 
@@ -276,7 +281,7 @@ namespace TraderTools.Simulation
                 "FXCM", price, candle, TradeDirection.Short, lotSize.Value, market, expire, stop,
                 limit, CalculateOptions.ExcludePipsCalculations);
 
-            TradesToProcess.Add(trade);
+            _tradeUpdatedAction(null, trade, candle);
 
             return trade;
         }
@@ -293,7 +298,7 @@ namespace TraderTools.Simulation
                 "FXCM", price, candle, TradeDirection.Long, amount, market, expire, stop,
                 limit, CalculateOptions.ExcludePipsCalculations);
 
-            TradesToProcess.Add(trade);
+            _tradeUpdatedAction(null, trade, candle);
 
             return trade;
         }
@@ -312,7 +317,7 @@ namespace TraderTools.Simulation
                 "FXCM", (decimal)entryPrice, candle.CloseTime(), TradeDirection.Short, amount, market, stop, limit,
                 calculateOptions: CalculateOptions.ExcludePipsCalculations);
 
-            TradesToProcess.Add(trade);
+            _tradeUpdatedAction(null, trade, candle);
 
             return trade;
         }

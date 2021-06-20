@@ -8,6 +8,11 @@ namespace TraderTools.Test.Fakes
     {
         public string Name { get; }
 
+        public List<string> GetSymbols()
+        {
+            throw new NotImplementedException();
+        }
+
         public bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService,
             Action<string> updateProgressAction, out List<Trade> addedOrUpdatedTrades)
         {

@@ -154,7 +154,7 @@ namespace TraderTools.Basics.Extensions
         {
             var pipInDecimals = marketsService.GetOnePipInDecimals(brokerName, market);
 
-            return price / pipInDecimals;
+            return pipInDecimals != 0M ? price / pipInDecimals : 0;
         }
 
         public static decimal GetPriceFromPips(this IMarketDetailsService marketsService, string brokerName, decimal pips, string market)
@@ -226,6 +226,8 @@ namespace TraderTools.Basics.Extensions
 
         public static decimal GetOnePipInDecimals(this IMarketDetailsService marketsService, string broker, string market)
         {
+            if (marketsService == null) return 0M;
+
             var marketDetails = marketsService.GetMarketDetails(broker, market);
 
             return marketDetails.PointSize.Value;

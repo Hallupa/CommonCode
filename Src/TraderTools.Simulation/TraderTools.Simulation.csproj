@@ -105,7 +105,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="log4net">
-      <Version>2.0.10</Version>
+      <Version>2.0.12</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.CodeAnalysis">
       <Version>3.6.0</Version>
