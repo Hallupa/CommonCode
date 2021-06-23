@@ -51,7 +51,6 @@
   <ItemGroup>
     <Compile Include="Fakes\FakeBroker.cs" />
     <Compile Include="Fakes\FakeBrokersCandlesService.cs" />
-    <Compile Include="Fakes\FakeMarketDetailsService.cs" />
     <Compile Include="Strategies\StrategyBuyCloseTwoMarkets.cs" />
     <Compile Include="Strategies\StrategyBuyWithIndicator.cs" />
     <Compile Include="Strategies\StrategyBuyWithExpiredOrder.cs" />

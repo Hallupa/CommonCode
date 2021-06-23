@@ -9,11 +9,15 @@ namespace TraderTools.Core.Extensions
     {
         public static List<Candle> GetDerivedCandles(this IBrokersCandlesService candlesService,
             IBroker broker, string firstSymbol, string secondSymbol, Timeframe timeframe,
-            bool updateCandles = false, DateTime? minOpenTimeUtc = null, DateTime? maxCloseTimeUtc = null)
+            bool updateCandles = false, DateTime? minOpenTimeUtc = null, DateTime? maxCloseTimeUtc = null,
+            bool forceCreateDerived = false)
         {
             var pair = $"{firstSymbol}{secondSymbol}";
-            var candles = candlesService.GetCandles(broker, pair, timeframe, false);
-            if (candles != null && candles.Count > 0) return candles;
+            if (!forceCreateDerived)
+            {
+                var candles = candlesService.GetCandles(broker, pair, timeframe, false, minOpenTimeUtc: minOpenTimeUtc, maxCloseTimeUtc: maxCloseTimeUtc);
+                if (candles != null && candles.Count > 0) return candles;
+            }
 
             var calculatedMarketCandles = new DerivedMarketCandles(broker, candlesService);
 
@@ -28,10 +32,15 @@ namespace TraderTools.Core.Extensions
 
         public static List<Candle> GetDerivedCandles(this IBrokersCandlesService candlesService,
             IBroker broker, string pair, Timeframe timeframe,
-            bool updateCandles = false, DateTime? minOpenTimeUtc = null, DateTime? maxCloseTimeUtc = null)
+            bool updateCandles = false, DateTime? minOpenTimeUtc = null, DateTime? maxCloseTimeUtc = null,
+            bool forceCreateDerived = false)
         {
-            var candles = candlesService.GetCandles(broker, pair, timeframe, false);
-            if (candles != null && candles.Count > 0) return candles;
+            if (!forceCreateDerived)
+            {
+                var candles = candlesService.GetCandles(broker, pair, timeframe, false, minOpenTimeUtc: minOpenTimeUtc,
+                    maxCloseTimeUtc: maxCloseTimeUtc);
+                if (candles != null && candles.Count > 0) return candles;
+            }
 
             var calculatedMarketCandles = new DerivedMarketCandles(broker, candlesService);
 

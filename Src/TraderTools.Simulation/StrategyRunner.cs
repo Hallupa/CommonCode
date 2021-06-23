@@ -6,6 +6,7 @@ using Hallupa.Library.Extensions;
 using log4net;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
+using TraderTools.Core.Extensions;
 
 namespace TraderTools.Simulation
 {
@@ -13,7 +14,6 @@ namespace TraderTools.Simulation
     {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private readonly IBrokersCandlesService _candleService;
-        private readonly IMarketDetailsService _marketDetailsService;
         private readonly IBroker _broker;
         private readonly Timeframe _runTimeframe;
         private readonly decimal _transactionFee;
@@ -21,14 +21,12 @@ namespace TraderTools.Simulation
 
         public StrategyRunner(
             IBrokersCandlesService candleService,
-            IMarketDetailsService marketDetailsService,
             IBroker broker,
             decimal initialBalance,
             Timeframe runTimeframe = Timeframe.M1,
             decimal transactionFee = 0.0M)
         {
             _candleService = candleService;
-            _marketDetailsService = marketDetailsService;
             _broker = broker;
             _runTimeframe = runTimeframe;
             _transactionFee = transactionFee;
@@ -39,15 +37,19 @@ namespace TraderTools.Simulation
         public decimal Balance { get; private set; }
         public decimal CurrentValue { get; private set; }
 
-        public List<Trade> Run(StrategyBase strategy, Func<bool> getShouldStopFunc = null)
+        public List<Trade> Run(
+            StrategyBase strategy,
+            Func<bool> getShouldStopFunc = null,
+            DateTime? startTime = null,
+            DateTime? endTime = null)
         {
             if (strategy.Markets == null || strategy.Markets.Length == 0) throw new ArgumentException("Strategy must set markets");
             if (strategy.Timeframes == null || strategy.Timeframes.Length == 0) throw new ArgumentException("Timesframes must set markets");
 
-            var runCandles = GetRunCandles(strategy, _runTimeframe);
+            var runCandles = GetRunCandles(strategy, _runTimeframe, startTime, endTime);
             var currentCandles = CreateCurrentCandles(strategy.Markets, strategy.Timeframes);
             var smallestNonRunTimeframe = strategy.Timeframes.First();
-            var strategyCandles = GetTfOrderedStrategyCandles(strategy);
+            var strategyCandles = GetTfOrderedStrategyCandles(strategy, startTime, endTime);
             var trades = new TradeWithIndexingCollection();
             Balance = InitialBalance;
             CurrentValue = Balance;
@@ -81,10 +83,6 @@ namespace TraderTools.Simulation
                         if (date == 0)
                         {
                             date = currentCandles[m][t][currentCandles[m][t].Count - 1].OpenTimeTicks;
-                        }
-                        else if (Math.Abs(date - currentCandles[m][t][currentCandles[m][t].Count - 1].OpenTimeTicks) > 200000)
-                        {
-
                         }
                     }
                 }
@@ -525,27 +523,30 @@ namespace TraderTools.Simulation
             }
         }
 
-        private List<CandlesWithIndex> GetRunCandles(StrategyBase strategy, Timeframe runTimeframe)
+        private List<CandlesWithIndex> GetRunCandles(StrategyBase strategy, Timeframe runTimeframe, DateTime? startTime = null, DateTime? endTime = null)
         {
             var ret = new List<CandlesWithIndex>();
             foreach (var m in strategy.Markets)
             {
-                ret.Add(new CandlesWithIndex(m, runTimeframe, _candleService.GetCandles(
-                    _broker, m, runTimeframe, false)));
+                var candles = _candleService.GetDerivedCandles(_broker, m, runTimeframe, false, minOpenTimeUtc: startTime, maxCloseTimeUtc: endTime, forceCreateDerived: true);
+                if (candles.Count == 0) throw new ApplicationException($"No candles found for {m}");
+
+                ret.Add(new CandlesWithIndex(m, runTimeframe, candles));
             }
 
             return ret;
         }
 
-        private List<CandlesWithIndex> GetTfOrderedStrategyCandles(StrategyBase strategy)
+        private List<CandlesWithIndex> GetTfOrderedStrategyCandles(StrategyBase strategy, DateTime? startTime = null, DateTime? endTime = null)
         {
             var ret = new List<CandlesWithIndex>();
             foreach (var tf in strategy.Timeframes.OrderBy(x => x))
             {
                 foreach (var m in strategy.Markets)
                 {
-                    ret.Add(new CandlesWithIndex(m, tf, _candleService.GetCandles(
-                        _broker, m, tf, false)));
+                    var candles = _candleService.GetDerivedCandles(_broker, m, tf, false, minOpenTimeUtc: startTime, maxCloseTimeUtc: endTime);
+                    if (candles.Count == 0) throw new ApplicationException($"No candles found for {m}");
+                    ret.Add(new CandlesWithIndex(m, tf, candles));
                 }
             }
 

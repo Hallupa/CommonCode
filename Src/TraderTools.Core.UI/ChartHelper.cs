@@ -123,7 +123,7 @@ namespace TraderTools.Core.UI
             }
         }
 
-        public static void SetChartViewModelPriceData(IList<Candle> candles, ChartViewModel cvm)
+        public static void SetChartViewModelPriceData(IList<Candle> candles, ChartViewModel cvm, string seriesName = "Price")
         {
             var priceDataSeries = new OhlcDataSeries<DateTime, double>();
             var xvalues = new List<DateTime>();
@@ -146,7 +146,7 @@ namespace TraderTools.Core.UI
             }
 
             priceDataSeries.Append(xvalues, openValues, highValues, lowValues, closeValues);
-            priceDataSeries.SeriesName = "Price";
+            priceDataSeries.SeriesName = seriesName;
 
             var pricePaneVm = cvm.ChartPaneViewModels.Count > 0 ? cvm.ChartPaneViewModels[0] : null;
             var atrPaneVm = cvm.ChartPaneViewModels.Count > 1 ? cvm.ChartPaneViewModels[1] : null;
@@ -387,7 +387,7 @@ namespace TraderTools.Core.UI
             }
         }
 
-        private static void AddBuySellMarker(
+        public static void AddBuySellMarker(
             TradeDirection direction, AnnotationCollection annotations, Trade trade,
             DateTime timeLocal, decimal price, bool makeSmaller, bool isFilled = true, Color? colour = null)
         {
@@ -564,7 +564,7 @@ namespace TraderTools.Core.UI
                 min = 0;
             }
 
-            SetChartXVisibleRange(cvm, min, max);
+            SetChartXVisibleRange(cvm, startCandle.Value.OpenTime(), endCandle.CloseTime());
 
             var miny = double.NaN;
             var maxy = double.NaN;
@@ -580,19 +580,18 @@ namespace TraderTools.Core.UI
             if (trade.StopPrice != null && trade.StopPrice > (decimal)maxy) maxy = (double)trade.StopPrice;
         }
 
-        public static void SetChartXVisibleRange(ChartViewModel cvm, int min, int max)
+        public static void SetChartXVisibleRange(ChartViewModel cvm, DateTime min, DateTime max)
         {
-            if (min <= cvm.XVisibleRange.Max)
+            if (min <= (DateTime)cvm.XVisibleRange.DataRange.Max)
             {
-                cvm.XVisibleRange.Min = min;
-                cvm.XVisibleRange.Max = max;
+                cvm.XVisibleRange.DataRange.Min = min;
+                cvm.XVisibleRange.DataRange.Max = max;
             }
             else
             {
-                cvm.XVisibleRange.Max = max;
-                cvm.XVisibleRange.Min = min;
+                cvm.XVisibleRange.DataRange.Max = max;
+                cvm.XVisibleRange.DataRange.Min = min;
             }
-
         }
     }
 }

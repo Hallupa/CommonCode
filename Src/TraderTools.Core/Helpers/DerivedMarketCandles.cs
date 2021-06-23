@@ -105,6 +105,28 @@ namespace TraderTools.Core.Helpers
                 }
             }
 
+            if (string.IsNullOrEmpty(firstSymbol))
+            {
+                // Try reverse
+                firstSymbol = string.Empty;
+                secondSymbol = string.Empty;
+                for (var l = 5;
+                    l >= 3;
+                    l--) // Go backwards because e.g. LUNABTC - for some reason there already is a LUNBTC in the symbols
+                {
+                    if (allSymbols.Contains($"{pair.Substring(pair.Length - l, l)}BTC")
+                        || allSymbols.Contains($"{pair.Substring(pair.Length - l, l)}BNB")
+                        || allSymbols.Contains($"{pair.Substring(pair.Length - l, l)}USDT"))
+                    {
+                        firstSymbol = pair.Substring(0, pair.Length - l);
+                        secondSymbol = pair.Substring(firstSymbol.Length, pair.Length - firstSymbol.Length);
+                        break;
+                    }
+                }
+            }
+
+            if (string.IsNullOrEmpty(firstSymbol)) throw new ApplicationException($"Unable to find market {pair}");
+
             return CreateCandlesSeries(firstSymbol, secondSymbol, timeframe, updateCandles, minOpenTimeUtc, maxCloseTimeUtc);
         }
 
@@ -113,6 +135,15 @@ namespace TraderTools.Core.Helpers
             bool updateCandles, DateTime? minOpenTimeUtc = null, DateTime? maxCloseTimeUtc = null)
         {
             var candles = new List<Candle>();
+
+            var swap = false;
+            if (firstSymbol == "USDT")
+            {
+                var t = firstSymbol;
+                firstSymbol = secondSymbol;
+                secondSymbol = t;
+                swap = true;
+            }
 
             // Get candles for each symbol with matching 2nd asset pair
             var c1c2 = GetSymbolsMatchingAssets(firstSymbol, secondSymbol, updateCandles, minOpenTimeUtc, maxCloseTimeUtc);
@@ -130,6 +161,12 @@ namespace TraderTools.Core.Helpers
                 d < DateTime.Now.Ticks;
                 d += TimeSpan.FromSeconds((int)timeframe).Ticks)
             {
+                if (new DateTime(d) > new DateTime(2020, 1, 1))
+                {
+
+                }
+
+
                 var e = d + TimeSpan.FromSeconds((int)timeframe).Ticks;
                 var c1IndexStart = c1.BinarySearchGetItem(i => c1[i].CloseTimeTicks, c1Prev, d,
                     BinarySearchMethod.NextHigherValue);
@@ -138,7 +175,9 @@ namespace TraderTools.Core.Helpers
 
                 c1Prev = c1IndexStart != -1 ? c1IndexStart : 0;
 
-                if (c1IndexStart == -1 || c1IndexEnd == -1) break;
+                if (c1IndexStart == -1 && c1IndexEnd == -1) break;
+                if (c1IndexStart != -1 && c1IndexEnd == -1) continue;
+                if (c1IndexStart == -1 && c1IndexEnd != -1) continue;
 
                 float h = -1, l = -1, o = -1, c = -1;
 
@@ -156,14 +195,14 @@ namespace TraderTools.Core.Helpers
                     if (l == -1 || value < l) l = value;
                 }
 
-                if (h != -1)
+                if (!h.Equals(-1))
                 {
                     candles.Add(new Candle
                     {
-                        OpenBid = o,
-                        CloseBid = c,
-                        HighBid = h,
-                        LowBid = l,
+                        OpenBid = !swap ? o : 1 / o,
+                        CloseBid = !swap ? c : 1 /c,
+                        HighBid = !swap ? h : 1/h,
+                        LowBid = !swap ? l : 1/l,
                         OpenTimeTicks = d,
                         CloseTimeTicks = d + TimeSpan.FromSeconds((int)timeframe).Ticks,
                         IsComplete = 1
