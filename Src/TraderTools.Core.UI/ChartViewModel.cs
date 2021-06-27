@@ -10,8 +10,10 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using Abt.Controls.SciChart;
 using Abt.Controls.SciChart.Visuals.Annotations;
+using Abt.Controls.SciChart.Visuals.Axes;
 using Hallupa.Library;
 using TraderTools.Basics;
+using TraderTools.Basics.Extensions;
 using TraderTools.Core.UI.ChartModifiers;
 using TraderTools.Core.UI.Services;
 using TraderTools.Indicators;
@@ -25,7 +27,7 @@ namespace TraderTools.Core.UI
         public event PropertyChangedEventHandler PropertyChanged;
         private Dispatcher _dispatcher;
         private Timeframe _chartTimeframe = Timeframe.H2;
-        private IndexRange _xAxisVisibleRange;
+        private DateRange _xAxisVisibleRange;
 
         public ChartViewModel()
         {
@@ -43,7 +45,7 @@ namespace TraderTools.Core.UI
 
             ChartTimeframe = Timeframe.H2;
 
-            XVisibleRange = new IndexRange();
+            XVisibleRange = new DateRange();
         }
 
         /// <summary>
@@ -74,8 +76,13 @@ namespace TraderTools.Core.UI
         public Action ChartTimeframeChangedAction { get; set; }
 
         public static readonly DependencyProperty SelectedChartTimeframeIndexProperty = DependencyProperty.Register(
-            "SelectedChartTimeframeIndex", typeof(int), typeof(ChartViewModel), new PropertyMetadata(default(int)));
-        
+            "SelectedChartTimeframeIndex", typeof(int), typeof(ChartViewModel), new PropertyMetadata(0, SelectedChartTimeframeIndexPropertyChangedCallback));
+
+        private static void SelectedChartTimeframeIndexPropertyChangedCallback(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            ((ChartViewModel)d).PropertyChanged(d, new PropertyChangedEventArgs("SelectedChartTimeframeIndex"));
+        }
+
         public int SelectedChartTimeframeIndex
         {
             get => (int)GetValue(SelectedChartTimeframeIndexProperty);
@@ -95,7 +102,7 @@ namespace TraderTools.Core.UI
         ///<summary>
         /// Shared XAxis VisibleRange for all charts
         ///</summary>
-        public IndexRange XVisibleRange
+        public DateRange XVisibleRange
         {
             get { return _xAxisVisibleRange; }
             set
@@ -152,6 +159,7 @@ namespace TraderTools.Core.UI
             ChartTimeframe = chartTimeframe;
             ChartHelper.SetChartViewModelPriceData(chartCandles, this);
             ChartHelper.SetChartViewModelIndicatorPaneData(chartCandles, this, new AverageTrueRange());
+            //ChartHelper.SetChartViewModelIndicatorPaneData(chartCandles, this, new StochasticRelativeStrengthIndex());
 
             if (ChartPaneViewModels[0].TradeAnnotations == null)
             {
@@ -198,7 +206,8 @@ namespace TraderTools.Core.UI
         public void ShowTrade(
             Trade trade, Timeframe chartTimeframe, bool updateCandles = false,
             Action<string> updateProgressAction = null,
-            List<(IIndicator Indicator, Color Color, bool ShowInLegend)> indicators = null)
+            List<(IIndicator Indicator, Color Color, bool ShowInLegend)> indicators = null,
+            bool useHeikenAshi = false)
         {
             var broker = _brokers.Brokers.First(b => b.Name == trade.Broker);
             
@@ -214,6 +223,11 @@ namespace TraderTools.Core.UI
             }
 
             var chartCandles = BrokerCandles.GetCandles(broker, trade.Market, chartTimeframe, updateCandles, cacheData: false, minOpenTimeUtc: start, maxCloseTimeUtc: end, progressUpdate: updateProgressAction);
+
+            if (useHeikenAshi)
+            {
+                chartCandles = chartCandles.CreateHeikinAshiCandles();
+            }
 
             ChartTimeframe = chartTimeframe;
 

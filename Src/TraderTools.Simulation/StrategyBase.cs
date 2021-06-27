@@ -25,7 +25,11 @@ namespace TraderTools.Simulation
 
         public DateTime? EndTime { get; private set; }
 
+        public decimal Commission { get; private set; }
+
         public bool Initialised { get; private set; }
+
+        public string Broker { get; private set; } = "FXCM";
 
         public decimal Balance => _getBalanceFunc();
         public decimal TotalValue => _getTotalValueFunc();
@@ -46,6 +50,18 @@ namespace TraderTools.Simulation
         {
             if (Initialised) throw new ApplicationException("Cannot set markets after strategy is initialised");
             Markets = markets;
+        }
+
+        public void SetBroker(string name)
+        {
+            if (Initialised) throw new ApplicationException("Cannot set broker after strategy is initialised");
+            Broker = name;
+        }
+
+        public void SetCommission(decimal amount)
+        {
+            if (Initialised) throw new ApplicationException("Cannot set commission after strategy is initialised");
+            Commission = amount;
         }
 
         public static string[] GetDefaultMarkets()
@@ -195,7 +211,7 @@ namespace TraderTools.Simulation
             var entryPrice = candle.CloseAsk != 0 ? candle.CloseAsk : candle.CloseBid; // Take the ask price unless it is unavailable
 
             var trade = TradeFactory.CreateMarketEntry(
-                "FXCM", (decimal)entryPrice, candle.CloseTime(), TradeDirection.Long, amount, market, stop, limit,
+                Broker, (decimal)entryPrice, candle.CloseTime(), TradeDirection.Long, amount, market, stop, limit,
                 calculateOptions: CalculateOptions.ExcludePipsCalculations);
 
             _tradeUpdatedAction(null, trade, candle);
@@ -239,19 +255,19 @@ namespace TraderTools.Simulation
           {
               var gbpPerPip = _brokerCandlesService.GetGBPPerPip(
                       _marketDetailsService,
-                      _brokersService.GetBroker("FXCM"),
+                      _brokersService.GetBroker(Broker),
                       market,
                       1,
                       dateTimeUtc,
                       false);
   
-              var stopPips = _marketDetailsService.GetPriceInPips("FXCM", Math.Abs(entryOrOrder - stop), market);
+              var stopPips = _marketDetailsService.GetPriceInPips(Broker, Math.Abs(entryOrOrder - stop), market);
   
               var lotSize = maxRiskEquity / (gbpPerPip * stopPips);
   
               var ret = (int)lotSize;
   
-              if (ret <= _marketDetailsService.GetMarketDetails("FXCM", market).MinLotSize)
+              if (ret <= _marketDetailsService.GetMarketDetails(Broker, market).MinLotSize)
               {
                   return 0;
               }
@@ -278,7 +294,7 @@ namespace TraderTools.Simulation
             int? lotSize = 1;
             var candle = Candles[market][_smallestCandleTimeframe][Candles[market][_smallestCandleTimeframe].Count - 1];
             var trade = TradeFactory.CreateOrder(
-                "FXCM", price, candle, TradeDirection.Short, lotSize.Value, market, expire, stop,
+                Broker, price, candle, TradeDirection.Short, lotSize.Value, market, expire, stop,
                 limit, CalculateOptions.ExcludePipsCalculations);
 
             _tradeUpdatedAction(null, trade, candle);
@@ -295,7 +311,7 @@ namespace TraderTools.Simulation
         {
             var candle = Candles[market][_smallestCandleTimeframe][Candles[market][_smallestCandleTimeframe].Count - 1];
             var trade = TradeFactory.CreateOrder(
-                "FXCM", price, candle, TradeDirection.Long, amount, market, expire, stop,
+                Broker, price, candle, TradeDirection.Long, amount, market, expire, stop,
                 limit, CalculateOptions.ExcludePipsCalculations);
 
             _tradeUpdatedAction(null, trade, candle);
@@ -314,7 +330,7 @@ namespace TraderTools.Simulation
             var entryPrice = candle.CloseBid != 0 ? candle.CloseBid : candle.CloseAsk; // Take the bid price unless it is unavailable
 
             var trade = TradeFactory.CreateMarketEntry(
-                "FXCM", (decimal)entryPrice, candle.CloseTime(), TradeDirection.Short, amount, market, stop, limit,
+                Broker, (decimal)entryPrice, candle.CloseTime(), TradeDirection.Short, amount, market, stop, limit,
                 calculateOptions: CalculateOptions.ExcludePipsCalculations);
 
             _tradeUpdatedAction(null, trade, candle);

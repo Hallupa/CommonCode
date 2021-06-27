@@ -57,8 +57,8 @@ namespace TraderTools.Basics.Extensions
                 : (float)(1.0 / 2.0) * (newNormalCandle.OpenBid + newNormalCandle.CloseBid);
             var highAsk = Math.Max(newNormalCandle.HighAsk, Math.Max(closeAsk, openAsk));
             var highBid = Math.Max(newNormalCandle.HighBid, Math.Max(closeBid, openBid));
-            var lowAsk = Math.Max(newNormalCandle.LowAsk, Math.Max(openAsk, closeAsk));
-            var lowBid = Math.Max(newNormalCandle.LowBid, Math.Max(openBid, closeBid));
+            var lowAsk = Math.Min(newNormalCandle.LowAsk, Math.Min(openAsk, closeAsk));
+            var lowBid = Math.Min(newNormalCandle.LowBid, Math.Min(openBid, closeBid));
 
             existingHeikinAshiCandles.Add(new Candle
             {

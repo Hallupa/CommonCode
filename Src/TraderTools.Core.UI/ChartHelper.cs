@@ -80,11 +80,11 @@ namespace TraderTools.Core.UI
             indicator.Reset();
             var indicatorDataSeries = new XyDataSeries<DateTime, double>();
 
-            for (var i = 0; i < candles.Count; i++)
+            foreach (var c in candles.OrderBy(x => new DateTime(x.CloseTimeTicks, DateTimeKind.Utc).ToLocalTime()))
             {
-                var time = new DateTime(candles[i].CloseTimeTicks, DateTimeKind.Utc).ToLocalTime();
+                var time = new DateTime(c.CloseTimeTicks, DateTimeKind.Utc).ToLocalTime();
 
-                var v = indicator.Process(candles[i]);
+                var v = indicator.Process(c);
                 indicatorDataSeries.Append(time, v.IsFormed ? v.Value : float.NaN);
             }
 
@@ -134,15 +134,15 @@ namespace TraderTools.Core.UI
 
             var atr = new AverageTrueRange();
 
-            for (var i = 0; i < candles.Count; i++)
+            foreach (var c in candles.OrderBy(x => new DateTime(x.CloseTimeTicks, DateTimeKind.Utc).ToLocalTime()))
             {
-                var time = new DateTime(candles[i].CloseTimeTicks, DateTimeKind.Utc).ToLocalTime();
+                var time = new DateTime(c.CloseTimeTicks, DateTimeKind.Utc).ToLocalTime();
 
                 xvalues.Add(time);
-                openValues.Add((double)candles[i].OpenBid);
-                highValues.Add((double)candles[i].HighBid);
-                lowValues.Add((double)candles[i].LowBid);
-                closeValues.Add((double)candles[i].CloseBid);
+                openValues.Add((double)c.OpenBid);
+                highValues.Add((double)c.HighBid);
+                lowValues.Add((double)c.LowBid);
+                closeValues.Add((double)c.CloseBid);
             }
 
             priceDataSeries.Append(xvalues, openValues, highValues, lowValues, closeValues);
@@ -181,7 +181,7 @@ namespace TraderTools.Core.UI
             var xvalues = new List<DateTime>();
             var yvalues = new List<double>();
 
-            foreach (var candle in candles)
+            foreach (var candle in candles.OrderBy(x => new DateTime(x.OpenTimeTicks, DateTimeKind.Utc).ToLocalTime()))
             {
                 var signalAndValue = indicator.Process(candle);
 
@@ -556,16 +556,20 @@ namespace TraderTools.Core.UI
 
             var candlesAfterTrade = (int)(candlesBeforeTrade * 0.1);
 
-            var min = candles.IndexOf(startCandle.Value) - candlesBeforeTrade;
-            var max = candles.IndexOf(endCandle) + candlesAfterTrade;
-
-            if (min < 0)
+            if (startCandle != null)
             {
-                min = 0;
+                var min = startCandle.Value.OpenTime() - TimeSpan.FromSeconds(candlesBeforeTrade * (int) timeframe); //candles.IndexOf(startCandle.Value) - candlesBeforeTrade;
+                var max = endCandle.CloseTime() + TimeSpan.FromSeconds(candlesAfterTrade * (int) timeframe); //candles.IndexOf(endCandle) + candlesAfterTrade;
+
+                /*if (min < 0)
+                {
+                    min = 0;
+                }*/
+
+                SetChartXVisibleRange(cvm, min, max);
             }
 
-            SetChartXVisibleRange(cvm, startCandle.Value.OpenTime(), endCandle.CloseTime());
-
+            /*
             var miny = double.NaN;
             var maxy = double.NaN;
             for (var i = min; i < candles.Count; i++)
@@ -577,20 +581,20 @@ namespace TraderTools.Core.UI
             if (trade.LimitPrice != null && trade.LimitPrice < (decimal)miny) miny = (double)trade.LimitPrice;
             if (trade.LimitPrice != null && trade.LimitPrice > (decimal)maxy) maxy = (double)trade.LimitPrice;
             if (trade.StopPrice != null && trade.StopPrice < (decimal)miny) miny = (double)trade.StopPrice;
-            if (trade.StopPrice != null && trade.StopPrice > (decimal)maxy) maxy = (double)trade.StopPrice;
+            if (trade.StopPrice != null && trade.StopPrice > (decimal)maxy) maxy = (double)trade.StopPrice;*/
         }
 
         public static void SetChartXVisibleRange(ChartViewModel cvm, DateTime min, DateTime max)
         {
-            if (min <= (DateTime)cvm.XVisibleRange.DataRange.Max)
+            if (min <= (DateTime)cvm.XVisibleRange.Max)
             {
-                cvm.XVisibleRange.DataRange.Min = min;
-                cvm.XVisibleRange.DataRange.Max = max;
+                cvm.XVisibleRange.Min = min;
+                cvm.XVisibleRange.Max = max;
             }
             else
             {
-                cvm.XVisibleRange.DataRange.Max = max;
-                cvm.XVisibleRange.DataRange.Min = min;
+                cvm.XVisibleRange.Max = max;
+                cvm.XVisibleRange.Min = min;
             }
         }
     }

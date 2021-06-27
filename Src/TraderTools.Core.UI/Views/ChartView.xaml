@@ -34,7 +34,7 @@
                 <Setter Property="IsRubberBandZoomEnabled" Value="False"/>
                 <Setter Property="XAxisStyle">
                     <Setter.Value>
-                        <Style TargetType="s:CategoryDateTimeAxis">
+                        <Style TargetType="s:DateTimeAxis">
                             <Setter Property="AutoRange" Value="Always"/>
                             <Setter Property="Visibility" Value="Collapsed"/>
                             <Setter Property="DrawMajorGridLines" Value="False"/>
@@ -123,8 +123,12 @@
                                          ViewportManager="{Binding ViewportManager}" SeriesSource="{Binding ChartSeriesViewModels}" ClipModifierSurface="True"
                                          Annotations="{Binding TradeAnnotations}" s:ThemeManager.Theme="Chrome">
 
+                                <s:SciChartSurface.XAxis>
+                                    <s:DateTimeAxis VisibleRange="{Binding ParentViewModel.XVisibleRange, Mode=TwoWay}" />
+                                </s:SciChartSurface.XAxis>
+
                                 <s:SciStockChart.XAxisStyle>
-                                    <Style TargetType="s:CategoryDateTimeAxis">
+                                    <Style TargetType="s:DateTimeAxis">
                                         <Setter Property="DrawMajorGridLines" Value="True"/>
                                         <Setter Property="DrawMinorGridLines" Value="False"/>
                                         <Setter Property="LabelProvider" Value="{StaticResource LP}"></Setter>

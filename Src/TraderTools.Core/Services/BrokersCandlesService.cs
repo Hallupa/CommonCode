@@ -19,6 +19,11 @@ namespace TraderTools.Core.Services
         public string BrokerName { get; set; }
         public string Market { get; set; }
         public Timeframe Timeframe { get; set; }
+
+        public override int GetHashCode()
+        {
+            return BrokerName.GetHashCode() ^ Market.GetHashCode() ^ Timeframe.GetHashCode();
+        }
     }
 
     [Export(typeof(IBrokersCandlesService))]
@@ -139,6 +144,40 @@ namespace TraderTools.Core.Services
                     {
                         if (saveCandles)
                         {
+                            if (candles.Any(c => c.HighAsk.Equals(0.0F) && !c.HighBid.Equals(0.0F)))
+                            {
+                                var newCandles = new List<Candle>();
+                                foreach (var c in candles)
+                                {
+                                    if (c.HighAsk.Equals(0.0F))
+                                    {
+                                        var candle = new Candle
+                                        {
+                                            CloseAsk = c.CloseBid,
+                                            CloseBid = c.CloseBid,
+                                            HighAsk = c.HighBid,
+                                            HighBid = c.HighBid,
+                                            LowAsk = c.LowBid,
+                                            LowBid = c.LowBid,
+                                            CloseTimeTicks = c.CloseTimeTicks,
+                                            IsComplete = c.IsComplete,
+                                            OpenAsk = c.OpenBid,
+                                            OpenBid = c.OpenBid,
+                                            OpenTimeTicks = c.OpenTimeTicks,
+                                            Volume = c.Volume
+                                        };
+                                        newCandles.Add(candle);
+                                    }
+                                    else
+                                    {
+                                        newCandles.Add(c);
+                                    }
+                                }
+
+                                candles.Clear();
+                                candles.AddRange(newCandles);
+                            }
+
                             SaveCandles(candles, broker, market, timeframe);
                         }
 
@@ -199,6 +238,7 @@ namespace TraderTools.Core.Services
             return ret;
         }
 
+        private const bool DoOrderChecking = true;
         private List<Candle> LoadBrokerCandles(IBroker broker, string market, Timeframe timeframe)
         {
             var candlesPath = GetBrokerCandlesPath(broker, market, timeframe);
@@ -212,7 +252,23 @@ namespace TraderTools.Core.Services
                     data = File.ReadAllBytes(candlesPath);
                 }
                 
-                return new List<Candle>(BytesToCandles(data));
+                var ret = new List<Candle>(BytesToCandles(data));
+
+                if (DoOrderChecking)
+                {
+                    var current = ret[0];
+                    foreach (var c in ret)
+                    {
+                        if (c.OpenTimeTicks < current.OpenTimeTicks || c.CloseTimeTicks < current.CloseTimeTicks)
+                        {
+                            throw new ApplicationException("Candles are not in order");
+                        }
+
+                        current = c;
+                    }
+                }
+
+                return ret;
             }
 
             return new List<Candle>();
