@@ -67,7 +67,11 @@ namespace TraderTools.Core.UI
                 if (_chartTimeframe == value) return;
 
                 _chartTimeframe = value;
-                SelectedChartTimeframeIndex = ChartTimeframeOptions.IndexOf(value);
+
+                if (SelectedChartTimeframeIndex != ChartTimeframeOptions.IndexOf(value))
+                {
+                    SelectedChartTimeframeIndex = ChartTimeframeOptions.IndexOf(value);
+                }
 
                 ChartTimeframeChangedAction?.Invoke();
             }
@@ -80,7 +84,9 @@ namespace TraderTools.Core.UI
 
         private static void SelectedChartTimeframeIndexPropertyChangedCallback(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            ((ChartViewModel)d).PropertyChanged(d, new PropertyChangedEventArgs("SelectedChartTimeframeIndex"));
+            var cvm = ((ChartViewModel) d);
+            cvm.PropertyChanged(d, new PropertyChangedEventArgs("SelectedChartTimeframeIndex"));
+            cvm.ChartTimeframe = cvm.ChartTimeframeOptions[cvm.SelectedChartTimeframeIndex];
         }
 
         public int SelectedChartTimeframeIndex
@@ -158,8 +164,8 @@ namespace TraderTools.Core.UI
         {
             ChartTimeframe = chartTimeframe;
             ChartHelper.SetChartViewModelPriceData(chartCandles, this);
-            ChartHelper.SetChartViewModelIndicatorPaneData(chartCandles, this, new AverageTrueRange());
-            //ChartHelper.SetChartViewModelIndicatorPaneData(chartCandles, this, new StochasticRelativeStrengthIndex());
+            //ChartHelper.SetChartViewModelIndicatorPaneData(chartCandles, this, new AverageTrueRange());
+            ChartHelper.SetChartViewModelIndicatorPaneData(chartCandles, this, new StochasticRelativeStrengthIndex());
 
             if (ChartPaneViewModels[0].TradeAnnotations == null)
             {
@@ -191,7 +197,7 @@ namespace TraderTools.Core.UI
                 var id = 1;
                 foreach (var line in t.ChartLines)
                 {
-                    var addedLine = ChartHelper.CreateChartLineAnnotation(ChartPaneViewModels[0].ChartSeriesViewModels[0].DataSeries, line.DateTimeUTC1.ToLocalTime(), line.Price1, line.DateTimeUTC2, line.Price2);
+                    var addedLine = ChartHelper.CreateChartLineAnnotation(ChartPaneViewModels[0].ChartSeriesViewModels[0].DataSeries, line.DateTimeUTC1, line.Price1, line.DateTimeUTC2, line.Price2);
                     addedLine.Tag = "Added_" + id;
                     addedLine.StrokeThickness = AddLinesModifier.StrokeThickness;
                     addedLine.Opacity = AddLinesModifier.Opacity;

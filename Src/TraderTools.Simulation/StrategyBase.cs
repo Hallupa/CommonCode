@@ -169,7 +169,7 @@ namespace TraderTools.Simulation
             EndTime = new DateTime(year, month, day);
         }
 
-        private IndicatorValues AddIndicator(string market, Timeframe timeframe, IIndicator indicator)
+        public IndicatorValues AddIndicator(string market, Timeframe timeframe, IIndicator indicator)
         {
             if (Initialised) throw new ApplicationException("Cannot add indicator after strategy is initialised");
 

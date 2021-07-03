@@ -80,9 +80,9 @@ namespace TraderTools.Core.UI
             indicator.Reset();
             var indicatorDataSeries = new XyDataSeries<DateTime, double>();
 
-            foreach (var c in candles.OrderBy(x => new DateTime(x.CloseTimeTicks, DateTimeKind.Utc).ToLocalTime()))
+            foreach (var c in candles)
             {
-                var time = new DateTime(c.CloseTimeTicks, DateTimeKind.Utc).ToLocalTime();
+                var time = new DateTime(c.CloseTimeTicks, DateTimeKind.Utc);
 
                 var v = indicator.Process(c);
                 indicatorDataSeries.Append(time, v.IsFormed ? v.Value : float.NaN);
@@ -134,9 +134,9 @@ namespace TraderTools.Core.UI
 
             var atr = new AverageTrueRange();
 
-            foreach (var c in candles.OrderBy(x => new DateTime(x.CloseTimeTicks, DateTimeKind.Utc).ToLocalTime()))
+            foreach (var c in candles)
             {
-                var time = new DateTime(c.CloseTimeTicks, DateTimeKind.Utc).ToLocalTime();
+                var time = new DateTime(c.CloseTimeTicks, DateTimeKind.Utc);
 
                 xvalues.Add(time);
                 openValues.Add((double)c.OpenBid);
@@ -173,35 +173,22 @@ namespace TraderTools.Core.UI
             }
         }
 
-        private static Dictionary<long, DateTime> _utcTicksToLocalTimeLookup = new Dictionary<long, DateTime>();
-
         public static IDataSeries CreateIndicatorSeries(string market, IIndicator indicator, Color color, Timeframe timeframe, IList<Candle> candles)
         {
             var series = new XyDataSeries<DateTime, double>();
             var xvalues = new List<DateTime>();
             var yvalues = new List<double>();
 
-            foreach (var candle in candles.OrderBy(x => new DateTime(x.OpenTimeTicks, DateTimeKind.Utc).ToLocalTime()))
+            foreach (var candle in candles)
             {
                 var signalAndValue = indicator.Process(candle);
 
-                DateTime time;
-                lock (_utcTicksToLocalTimeLookup)
-                {
-                    if (!_utcTicksToLocalTimeLookup.TryGetValue(candle.OpenTimeTicks, out time))
-                    {
-                        time = new DateTime(candle.OpenTimeTicks, DateTimeKind.Utc).ToLocalTime();
-                        _utcTicksToLocalTimeLookup[candle.OpenTimeTicks] = time;
-                    }
-                }
+                DateTime time = new DateTime(candle.OpenTimeTicks, DateTimeKind.Utc);
 
                 if (indicator.IsFormed)
                 {
-                    lock (_utcTicksToLocalTimeLookup)
-                    {
-                        xvalues.Add(time);
-                        yvalues.Add((double)signalAndValue.Value);
-                    }
+                    xvalues.Add(time);
+                    yvalues.Add((double)signalAndValue.Value);
                 }
                 else
                 {
@@ -389,7 +376,14 @@ namespace TraderTools.Core.UI
 
         public static void AddBuySellMarker(
             TradeDirection direction, AnnotationCollection annotations, Trade trade,
-            DateTime timeLocal, decimal price, bool makeSmaller, bool isFilled = true, Color? colour = null)
+            DateTime time, decimal price, bool makeSmaller, bool isFilled = true, Color? colour = null)
+        {
+            annotations.Add(CreateBuySellMarker(direction, trade, time, price, makeSmaller, isFilled, colour));
+        }
+
+        public static AnnotationBase CreateBuySellMarker(
+            TradeDirection direction, Trade trade,
+            DateTime time, decimal price, bool makeSmaller, bool isFilled = true, Color? colour = null)
         {
             var buyMarker = new BuyMarkerAnnotation();
             var sellMarker = new SellMarkerAnnotation();
@@ -414,10 +408,10 @@ namespace TraderTools.Core.UI
             buyMarker.Opacity = makeSmaller ? 0.6 : 0.8;
             sellMarker.StrokeBrush = brush;
             sellMarker.Opacity = makeSmaller ? 0.6 : 0.8;
-            annotation.X1 = timeLocal;
+            annotation.X1 = time;
             annotation.BorderThickness = new Thickness(20);
             annotation.Y1 = (double)price;
-            annotations.Add(annotation);
+            return annotation;
         }
 
         public static void AddHorizontalLine(decimal price, DateTime start, DateTime end, IDataSeries dataSeries,
@@ -480,7 +474,7 @@ namespace TraderTools.Core.UI
                     // Price changed
                     if (currentPrice != null && startIndex != null)
                     {
-                        var endIndex = series.FindIndex(p.Date.ToLocalTime(), SearchMode.Nearest);
+                        var endIndex = series.FindIndex(p.Date, SearchMode.Nearest);
 
                         if (endIndex == startIndex.Value)
                         {
@@ -491,7 +485,7 @@ namespace TraderTools.Core.UI
                         var annotation = new LineAnnotation
                         {
                             X1 = startDate, //startIndex.Value,
-                            X2 = p.Date.ToLocalTime(), //endIndex,
+                            X2 = p.Date, //endIndex,
                             Y1 = currentPrice.Value,
                             Y2 = currentPrice.Value,
                             Stroke = brush
@@ -500,8 +494,8 @@ namespace TraderTools.Core.UI
                         annotations.Add(annotation);
                     }
 
-                    startIndex = series.FindIndex(p.Date.ToLocalTime(), SearchMode.Nearest);
-                    startDate = p.Date.ToLocalTime();
+                    startIndex = series.FindIndex(p.Date, SearchMode.Nearest);
+                    startDate = p.Date;
                     currentPrice = p.Price;
                 }
             }
