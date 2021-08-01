@@ -59,11 +59,11 @@ namespace TraderTools.Simulation
 
             var a = CSharpLanguage.CreateAssemblyDefinition(
                 alteredCode,
-                "TraderTools.Basics.dll",
-                "TraderTools.Core.dll",
-                "TraderTools.Simulation.dll",
+                "Hallupa.TraderTools.Basics.dll",
+                "Hallupa.TraderTools.Core.dll",
+                "Hallupa.TraderTools.Simulation.dll",
                 "Hallupa.Library.dll",
-                "TraderTools.Indicators.dll",
+                "Hallupa.TraderTools.Indicators.dll",
                 "Hallupa.Library.dll");
 
             if (a == null)

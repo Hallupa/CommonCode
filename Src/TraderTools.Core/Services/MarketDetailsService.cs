@@ -45,7 +45,7 @@ namespace TraderTools.Core.Services
         }
 
 
-            public void AddMarketDetails(MarketDetails marketDetails)
+        public void AddMarketDetails(MarketDetails marketDetails)
         {
             lock (_marketDetailsList)
             {

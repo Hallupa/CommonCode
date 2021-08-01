@@ -33,7 +33,7 @@ namespace TraderTools.Brokers.Binance
         {
             // Remove any duplicates
             var foundCandles = new HashSet<long>();
-            for(var i = 0; i < candles.Count; i++)
+            for (var i = 0; i < candles.Count; i++)
             {
                 var c = candles[i];
 
@@ -111,7 +111,9 @@ namespace TraderTools.Brokers.Binance
         {
             if (_symbols != null) return _symbols;
 
-            return (_symbols = ((IExchangeClient)_client).GetSymbolsAsync().Result.Data.Select(x => x.CommonName).ToList());
+            var result = ((IExchangeClient)_client).GetSymbolsAsync().Result;
+
+            return (_symbols = result.Data.Select(x => x.CommonName).ToList());
         }
 
         public BinanceBroker(string apiKey, string secretKey)
@@ -121,9 +123,9 @@ namespace TraderTools.Brokers.Binance
 
             _client = new BinanceClient(new BinanceClientOptions
             {
-                ApiCredentials = new ApiCredentials(_apiKey, _secretKey)
+                ApiCredentials = new ApiCredentials(_apiKey, _secretKey),
+                //LogVerbosity = LogVerbosity.Debug
             });
-            //_client.Ping();
         }
 
         public ConnectStatus Status => ConnectStatus.Connected;

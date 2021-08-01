@@ -1,42 +1,46 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using log4net;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Host;
 
 namespace TraderTools.Simulation
 {
-    public class CSharpLanguage : ILanguageService
+    public class CSharpLanguage
     {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         public static Assembly CreateAssemblyDefinition(string code, params string[] references)
         {
-            var netDirectory = @"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\";
+
+            var systemRefLocation = typeof(object).GetTypeInfo().Assembly.Location;
+            var coreDir = Directory.GetParent(systemRefLocation);
 
             var metadataReferences = new List<MetadataReference>
             {
-                MetadataReference.CreateFromFile(Path.Combine(netDirectory, "mscorlib.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(netDirectory, "System.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(netDirectory, "System.Xml.Linq.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(netDirectory, "System.Data.DataSetExtensions.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(netDirectory, "Microsoft.CSharp.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(netDirectory, "System.Data.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(netDirectory, "System.Net.Http.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(netDirectory, "System.Xml.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(netDirectory, "System.Core.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(netDirectory, "Facades", "netstandard.dll"))
+                MetadataReference.CreateFromFile(typeof(object).GetTypeInfo().Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(Uri).GetTypeInfo().Assembly.Location),
+                MetadataReference.CreateFromFile(coreDir.FullName + Path.DirectorySeparatorChar + "mscorlib.dll"),
+                MetadataReference.CreateFromFile(coreDir.FullName + Path.DirectorySeparatorChar + "System.Runtime.dll"),
+                MetadataReference.CreateFromFile(typeof(System.Linq.Enumerable).GetTypeInfo().Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(System.Xml.XmlAttribute).GetTypeInfo().Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(Enum).GetTypeInfo().Assembly.Location),
+                MetadataReference.CreateFromFile(Path.Combine(coreDir.FullName, "System.Collections.dll")),
+                MetadataReference.CreateFromFile(Path.Combine(coreDir.FullName, "netstandard.dll"))
             };
+            
 
             metadataReferences.AddRange(references.Select(r => MetadataReference.CreateFromFile(r)));
 
-            //var sourceLanguage = new CSharpLanguage();
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
 
-            Compilation compilation = CreateLibraryCompilation(assemblyName: "InMemoryAssembly", enableOptimisations: false, references: metadataReferences.ToArray())
+            Compilation compilation = CreateLibraryCompilation(
+                    assemblyName: "InMemoryAssembly",
+                    enableOptimisations: false, references:
+                    metadataReferences.ToArray())
                 .AddSyntaxTrees(syntaxTree);
 
             var stream = new MemoryStream();

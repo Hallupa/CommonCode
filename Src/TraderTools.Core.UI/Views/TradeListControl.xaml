@@ -3,13 +3,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:ui="clr-namespace:Hallupa.Library.UI;assembly=Hallupa.Library.UI"
              xmlns:views="clr-namespace:TraderTools.Core.UI.Views"
-             xmlns:converters="clr-namespace:Hallupa.Library.UI.Converters;assembly=Hallupa.Library.UI"
              xmlns:converters1="clr-namespace:TraderTools.Core.UI.Converters"
-             xmlns:tokenEditor="clr-namespace:Hallupa.Library.UI.TokenEditor;assembly=Hallupa.Library.UI"
-             xmlns:behaviours="clr-namespace:Hallupa.Library.UI.Behaviours;assembly=Hallupa.Library.UI"
              xmlns:b="http://schemas.microsoft.com/xaml/behaviors"
+             xmlns:ui="clr-namespace:Hallupa.Library.UI;assembly=Hallupa.Library.UI"
+             xmlns:converters="clr-namespace:Hallupa.Library.UI.Converters;assembly=Hallupa.Library.UI"
+             xmlns:tokenEditor="clr-namespace:Hallupa.Library.UI.TokenEditor;assembly=Hallupa.Library.UI"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>

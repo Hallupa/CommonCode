@@ -5,7 +5,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Threading;
-using Hallupa.Library.UI;
+using Hallupa.Library;
 using TraderTools.Basics;
 
 namespace TraderTools.Core.UI.ViewModels

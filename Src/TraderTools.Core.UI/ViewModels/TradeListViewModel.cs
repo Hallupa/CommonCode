@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using Hallupa.Library.UI;
+using Hallupa.Library;
 using TraderTools.Basics;
 using TraderTools.Core.UI.Views;
 

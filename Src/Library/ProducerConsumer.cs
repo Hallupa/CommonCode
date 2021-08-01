@@ -43,6 +43,17 @@ namespace Hallupa.Library
 
         public bool IsCanceled => _cancel;
 
+        public int QueueLength
+        {
+            get
+            {
+                lock (_queue)
+                {
+                    return _queue.Count;
+                }
+            }
+        }
+
         public void Start()
         {
             _consumerTasks = new List<Task>();

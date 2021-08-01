@@ -8,7 +8,6 @@ using System.Reactive.Subjects;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 using Hallupa.Library;
 using log4net;
 using TraderTools.Basics;
@@ -240,7 +239,6 @@ namespace TraderTools.Core.Broker
             catch (Exception ex)
             {
                 Log.Error("Unable to update account", ex);
-                MessageBox.Show($"Unable to update account - {ex.Message}", "Unable to update account", MessageBoxButtons.OK);
             }
 
             AccountLastUpdated = DateTime.UtcNow;

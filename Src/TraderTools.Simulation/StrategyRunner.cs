@@ -61,9 +61,12 @@ namespace TraderTools.Simulation
             var currentBidPrices = new Dictionary<string, float>();
             var currentAskPrices = new Dictionary<string, float>();
 
+            long currentTimeBeforeProgress = 0;
+
             while (true)
             {
                 if (getShouldStopFunc != null && getShouldStopFunc()) return null;
+
 
                 // Progress strategy candles
                 var addedCandles = ProgressStrategyCandles(
@@ -104,6 +107,11 @@ namespace TraderTools.Simulation
                     nextLogTime = DateTime.UtcNow.AddSeconds(LogIntervalSeconds);
                 }
 
+                if (currentTimeBeforeProgress > currentTime)
+                {
+                    throw new ApplicationException("StrategyRunner processing time out of order");
+                }
+
                 // Update value
                 CurrentValue = Balance;
                 foreach (var t in trades.OpenTrades)
@@ -129,6 +137,8 @@ namespace TraderTools.Simulation
                 {
                     ProgressRunCandles(runCandles, currentTime, nextTime, trades, strategy);
                 }
+
+                currentTimeBeforeProgress = currentTime;
             }
 
 

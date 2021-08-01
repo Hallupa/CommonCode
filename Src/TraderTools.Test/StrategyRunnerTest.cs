@@ -48,7 +48,7 @@ namespace TraderTools.Test
         [TestMethod]
         public void TestBuyThenCloseTradeWithTransactionFee()
         {
-            var runner = new StrategyRunner(_fakeBrokersCandlesService, _broker, 10000M, transactionFee: 0.01M);
+            var runner = new StrategyRunner(_fakeBrokersCandlesService, _broker, 10000M);
             var strategy = new StrategyBuyThenClose();
             var trades = runner.Run(strategy);
 
@@ -169,7 +169,7 @@ namespace TraderTools.Test
         [TestMethod]
         public void TestTotalValue()
         {
-            var runner = new StrategyRunner(_fakeBrokersCandlesService, _broker, 10000M, transactionFee: 0.001M);
+            var runner = new StrategyRunner(_fakeBrokersCandlesService, _broker, 10000M);
             var s = new StrategyTotalValue();
             var trades = runner.Run(s);
 

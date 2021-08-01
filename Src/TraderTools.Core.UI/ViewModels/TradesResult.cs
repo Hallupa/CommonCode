@@ -17,7 +17,7 @@ namespace TraderTools.Core.UI.ViewModels
         private decimal _avPositiveRFor20Candles;
         private decimal _expectancyR;
 
-        public ObservableCollection<TradeDetails> Trades { get; } = new ObservableCollection<TradeDetails>();
+        public ObservableCollection<Trade> Trades { get; } = new ObservableCollection<Trade>();
 
         public string Name
         {

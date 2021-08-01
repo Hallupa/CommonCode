@@ -5,11 +5,12 @@ namespace TraderTools.Indicators
 {
     public class AverageTrueRange : IIndicator
     {
-        public AverageTrueRange()
+        public AverageTrueRange(int length = 14)
         {
+            _movingAverage = new SimpleMovingAverage(length);
         }
 
-        private SimpleMovingAverage _movingAverage = new SimpleMovingAverage(14);
+        private SimpleMovingAverage _movingAverage;
         private Candle _prevCandle;
 
 

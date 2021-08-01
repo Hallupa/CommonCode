@@ -7,8 +7,6 @@ using System.Windows;
 using Hallupa.Library;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
-using TraderTools.Core.Broker;
-using TraderTools.Core.Services;
 
 namespace TraderTools.Core.UI.ViewModels
 {
@@ -85,13 +83,13 @@ namespace TraderTools.Core.UI.ViewModels
             LimitPrices.Clear();
             foreach (var limitPrice in Trade.LimitPrices)
             {
-                LimitPrices.Add(new DatePrice(limitPrice.Date.ToLocalTime(), limitPrice.Price));
+                LimitPrices.Add(new DatePrice(limitPrice.Date, limitPrice.Price));
             }
 
             StopPrices.Clear();
             foreach (var stopPrice in Trade.StopPrices)
             {
-                StopPrices.Add(new DatePrice(stopPrice.Date.ToLocalTime(), stopPrice.Price));
+                StopPrices.Add(new DatePrice(stopPrice.Date, stopPrice.Price));
             }
         }
 
