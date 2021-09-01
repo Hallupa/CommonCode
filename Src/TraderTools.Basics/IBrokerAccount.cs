@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Hallupa.TraderTools.Basics;
 
 namespace TraderTools.Basics
 {
@@ -16,8 +17,6 @@ namespace TraderTools.Basics
         DateTime? AccountLastUpdated { get; set; }
 
         string CustomJson { get; set; }
-
-        decimal GetBalance(DateTime? dateTimeUtc = null);
 
         List<DepositWithdrawal> DepositsWithdrawals { get; set; }
 

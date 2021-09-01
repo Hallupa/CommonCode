@@ -3,40 +3,16 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using log4net;
+using TraderTools.Simulation;
 
-namespace TraderTools.Simulation
+namespace Hallupa.TraderTools.Simulation
 {
     public static class StrategyHelper
     {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        private static int _classNumber = 0;
 
-        public static string[] GetStrategyMarkets(Type strategyType)
+        public static Type CompileStrategy(string code, string csPath)
         {
-            var strategy = (StrategyBase)Activator.CreateInstance(strategyType);
-            if (strategy != null && strategy.Markets == null)
-            {
-                return StrategyBase.Majors.Concat(StrategyBase.Minors).Concat(StrategyBase.MajorIndices).ToArray();
-            }
-
-            return strategy.Markets;
-        }
-
-        public static StrategyBase CreateStrategyInstance(Type strategyType)
-        {
-            var strategy = (StrategyBase)Activator.CreateInstance(strategyType);
-            if (strategy != null && strategy.Markets == null)
-            {
-                strategy.SetMarkets(StrategyBase.GetDefaultMarkets());
-            }
-
-            return strategy;
-        }
-
-        public static Type CompileStrategy(string code)
-        {
-            _classNumber++;
-
             var namespaceRegex = new Regex(@"namespace [a-zA-Z\.\r\n ]*{");
             var match = namespaceRegex.Match(code);
             if (match.Success)
@@ -52,19 +28,16 @@ namespace TraderTools.Simulation
             match = classNameRegex.Match(code);
             var className = match.Groups[1].Captures[0].Value;
 
-            var alteredCode = code
-                .Replace($"class {className}", "class Test" + _classNumber)
-                .Replace($"public {className}", "public Test" + _classNumber)
-                .Replace($"private {className}", "public Test" + _classNumber);
-
             var a = CSharpLanguage.CreateAssemblyDefinition(
-                alteredCode,
+                code,
+                csPath,
                 "Hallupa.TraderTools.Basics.dll",
                 "Hallupa.TraderTools.Core.dll",
                 "Hallupa.TraderTools.Simulation.dll",
                 "Hallupa.Library.dll",
                 "Hallupa.TraderTools.Indicators.dll",
-                "Hallupa.Library.dll");
+                "Hallupa.Library.dll",
+                "log4net.dll");
 
             if (a == null)
             {
@@ -72,7 +45,7 @@ namespace TraderTools.Simulation
                 return null;
             }
 
-            var t = a.GetType("Test" + _classNumber);
+            var t = a.DefinedTypes.First(x => x.Name == className);
             if (t == null)
             {
                 Log.Error("Unable to create class 'Test'");

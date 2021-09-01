@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Hallupa.TraderTools.Basics;
 
 namespace TraderTools.Basics
 {
@@ -21,7 +22,7 @@ namespace TraderTools.Basics
     public interface IBroker
     {
         string Name { get; }
-
+        Dictionary<string, AssetBalance> GetBalance(DateTime? dateTimeUtc = null);
         List<string> GetSymbols();
         bool UpdateAccount(IBrokerAccount account, IBrokersCandlesService candlesService, IMarketDetailsService marketsService, Action<string> updateProgressAction, out List<Trade> addedOrUpdatedTrades);
         bool UpdateCandles(List<Candle> candles, string market, Timeframe timeframe, DateTime start, Action<string> progressUpdate);

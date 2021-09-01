@@ -41,6 +41,15 @@ namespace TraderTools.Simulation
 
         public float? this[int i] => Values[i].Value;
 
+        public bool IsFormed
+        {
+            get
+            {
+                if (Values.Count == 0) return false;
+                return Values[^1].Value != null;
+            }
+        }
+
         public int Count => Values.Count;
     }
 }

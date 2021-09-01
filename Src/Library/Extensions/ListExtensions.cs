@@ -7,6 +7,7 @@ namespace Hallupa.Library.Extensions
     public enum BinarySearchMethod
     {
         NextHigherValue,
+        NextHigherValueOrValue,
         PrevLowerValue,
         PrevLowerValueOrValue,
         Value
@@ -82,6 +83,18 @@ namespace Hallupa.Library.Extensions
                         lowIndex = midIndex;
                     }
                 }
+
+                if (method == BinarySearchMethod.NextHigherValueOrValue)
+                {
+                    if (getValue(midIndex).CompareTo(value) < 0)
+                    {
+                        lowIndex = midIndex + 1;
+                    }
+                    else
+                    {
+                        highIndex = midIndex;
+                    }
+                }
             }
 
             if (method == BinarySearchMethod.NextHigherValue)
@@ -109,6 +122,16 @@ namespace Hallupa.Library.Extensions
                 for (var i = highIndex; i >= lowIndex; i--)
                 {
                     if (getValue(i).CompareTo(value) <= 0)
+                    {
+                        return i;
+                    }
+                }
+            }
+            else if (method == BinarySearchMethod.NextHigherValueOrValue)
+            {
+                for (var i = lowIndex; i <= highIndex; i++)
+                {
+                    if (getValue(i).CompareTo(value) >= 0)
                     {
                         return i;
                     }

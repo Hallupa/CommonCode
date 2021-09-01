@@ -32,6 +32,7 @@ namespace Hallupa.Library.UI
         private CollectionView _loggingView;
         private bool _lvLoaded;
         private DispatcherTimer _timer;
+        private int _expandedHeight = 300;
         private const int MaxItems = 10000;
 
         public LogControl()
@@ -164,7 +165,7 @@ namespace Hallupa.Library.UI
 
         public bool ShowToggleButton
         {
-            get { return (bool) GetValue(ShowToggleButtonProperty); }
+            get { return (bool)GetValue(ShowToggleButtonProperty); }
             set { SetValue(ShowToggleButtonProperty, value); }
         }
 
@@ -198,7 +199,7 @@ namespace Hallupa.Library.UI
             }
         }
 
-        private void OnPropertyChanged([CallerMemberName]string propertyName = "")
+        private void OnPropertyChanged([CallerMemberName] string propertyName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
@@ -212,7 +213,7 @@ namespace Hallupa.Library.UI
         {
             if (ShowExpanded)
             {
-                LogRowHeight = new GridLength(300);
+                LogRowHeight = new GridLength(ExpandedHeight);
             }
             else
             {
@@ -223,9 +224,25 @@ namespace Hallupa.Library.UI
         public static readonly DependencyProperty LogRowHeightProperty = DependencyProperty.Register(
             "LogRowHeight", typeof(GridLength), typeof(LogControl), new PropertyMetadata(new GridLength(0)));
 
+
+        public static readonly DependencyProperty ExpandedHeightProperty = DependencyProperty.Register(
+            "ExpandedHeight", typeof(double), typeof(LogControl), new PropertyMetadata(300.0, ExpandedHeightPropertyChangedCallback));
+
+        private static void ExpandedHeightPropertyChangedCallback(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var l = (LogControl)d;
+            l.UpdateLogSize();
+        }
+
+        public double ExpandedHeight
+        {
+            get { return (double)GetValue(ExpandedHeightProperty); }
+            set { SetValue(ExpandedHeightProperty, value); }
+        }
+
         public GridLength LogRowHeight
         {
-            get { return (GridLength) GetValue(LogRowHeightProperty); }
+            get { return (GridLength)GetValue(LogRowHeightProperty); }
             set { SetValue(LogRowHeightProperty, value); }
         }
     }

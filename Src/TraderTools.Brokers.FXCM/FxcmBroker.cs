@@ -10,6 +10,7 @@ using System.Threading;
 using com.fxcm.report;
 using fxcore2;
 using Hallupa.Library;
+using Hallupa.TraderTools.Basics;
 using log4net;
 using Newtonsoft.Json;
 using TraderTools.Basics;
@@ -158,6 +159,11 @@ namespace TraderTools.Brokers.FXCM
             }
 
             return tableManager;
+        }
+
+        public Dictionary<string, AssetBalance> GetBalance(DateTime? dateTimeUtc = null)
+        {
+            throw new NotImplementedException();
         }
 
         public List<string> GetSymbols()

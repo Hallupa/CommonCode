@@ -3,36 +3,61 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Hallupa.Library.Extensions;
+using Hallupa.TraderTools.Basics;
 using log4net;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
 using TraderTools.Core.Extensions;
+using TraderTools.Simulation;
 
-namespace TraderTools.Simulation
+namespace Hallupa.TraderTools.Simulation
 {
     public class StrategyRunner
     {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private readonly IBrokersCandlesService _candleService;
         private readonly IBroker _broker;
+        private readonly IBrokersService _brokersService;
         private readonly Timeframe _runTimeframe;
         private const int LogIntervalSeconds = 5;
 
         public StrategyRunner(
             IBrokersCandlesService candleService,
             IBroker broker,
-            decimal initialBalance,
+            IEnumerable<AssetBalance> initialAssetBalances,
+            IBrokersService brokersService,
             Timeframe runTimeframe = Timeframe.M1)
         {
             _candleService = candleService;
             _broker = broker;
+            _brokersService = brokersService;
             _runTimeframe = runTimeframe;
-            InitialBalance = initialBalance;
+            InitialAssetBalances = initialAssetBalances.ToDictionary(z => z.Asset, z => z);
         }
 
-        public decimal InitialBalance { get; }
-        public decimal Balance { get; private set; }
-        public decimal CurrentValue { get; private set; }
+        public Dictionary<string, AssetBalance> InitialAssetBalances { get; private set; }
+        public Dictionary<string, AssetBalance> CurrentAssetBalances { get; private set; }
+
+        public decimal CalculateUSDTValue(IBroker broker, DateTime currentTime)
+        {
+            var value = 0M;
+
+            foreach (var assetBalance in CurrentAssetBalances)
+            {
+                if (assetBalance.Value.Asset == "USDT")
+                {
+                    value += assetBalance.Value.Balance;
+                    continue;
+                }
+
+                var candles = _candleService.GetCandles(broker, $"{assetBalance.Value.Asset}USDT", Timeframe.H1, false, maxCloseTimeUtc: currentTime);
+                var candle = candles.Last();
+                var assetValue = assetBalance.Value.Balance * (decimal)candle.CloseBid;
+                value += assetValue;
+            }
+
+            return value;
+        }
 
         public List<Trade> Run(
             StrategyBase strategy,
@@ -48,18 +73,26 @@ namespace TraderTools.Simulation
             var smallestNonRunTimeframe = strategy.Timeframes.First();
             var strategyCandles = GetTfOrderedStrategyCandles(strategy, startTime, endTime);
             var trades = new TradeWithIndexingCollection();
-            Balance = InitialBalance;
-            CurrentValue = Balance;
+
+            CurrentAssetBalances = InitialAssetBalances.ToDictionary(
+                x => x.Value.Asset,
+                x => new AssetBalance(x.Value.Asset, x.Value.Balance));
+
             var nextLogTime = DateTime.UtcNow.AddSeconds(LogIntervalSeconds);
 
             strategy.SetSimulationParameters(trades, currentCandles);
             strategy.SetInitialised(
-                () => Balance,
-                () => CurrentValue,
-                (indexing, trade, candle) => ProcessTradeUpdatedOrAddedByStrategy(indexing, trade, trades, candle, strategy));
+                false,
+                () => CurrentAssetBalances,
+                (indexing, trade, candle) => ProcessTradeUpdatedOrAddedByStrategy(indexing, trade, trades, candle, strategy),
+                new TradeFactory(),
+                _brokersService);
 
             var currentBidPrices = new Dictionary<string, float>();
             var currentAskPrices = new Dictionary<string, float>();
+
+            strategy.UpdateBalances();
+            strategy.Starting();
 
             long currentTimeBeforeProgress = 0;
 
@@ -92,11 +125,20 @@ namespace TraderTools.Simulation
                 if (addedCandles.Count == 0)
                 {
                     // Update profit for open trades
-                    foreach (var t in trades.OpenTrades)
+                    if (strategy.BrokerKind == BrokerKind.SpreadBet)
                     {
-                        UpdateTradeNetProfitLossForOpenTrade(t.Trade, currentBidPrices[t.Trade.Market], currentAskPrices[t.Trade.Market], strategy);
+                        foreach (var t in trades.OpenTrades)
+                        {
+                            UpdateTradeNetProfitLossForOpenTrade(t.Trade, currentBidPrices[t.Trade.Market],
+                                currentAskPrices[t.Trade.Market], strategy);
+                        }
                     }
-                    
+                    else
+                    {
+                        // To BrokerKind.Trade, each trade results in something being bought so profit doesn't need to be updated based on the 
+                        // open trade value
+                    }
+
                     break;
                 }
 
@@ -113,7 +155,7 @@ namespace TraderTools.Simulation
                 }
 
                 // Update value
-                CurrentValue = Balance;
+                /*CurrentValue = Balance;
                 foreach (var t in trades.OpenTrades)
                 {
                     var p = t.Trade.TradeDirection == TradeDirection.Long
@@ -121,10 +163,11 @@ namespace TraderTools.Simulation
                         : currentAskPrices[t.Trade.Market];
                     var v = (decimal)p * t.Trade.EntryQuantity.Value;
                     CurrentValue += v - (v * strategy.Commission);
-                }
+                }*/
 
                 // Process strategy
                 strategy.UpdateIndicators(addedCandles);
+                strategy.UpdateBalances();
                 strategy.ProcessCandles(addedCandles);
 
                 /*foreach (var market in strategy.Markets)
@@ -148,7 +191,31 @@ namespace TraderTools.Simulation
 
             LogProgress(trades);
 
+            Log.Info($"End USDT value: ${GetCurrentAssetBalancesUsdtValue(currentCandles):N}");
+
             return ret;
+        }
+
+        private decimal GetCurrentAssetBalancesUsdtValue(
+            Dictionary<string, TimeframeLookup<List<Candle>>> currentCandles)
+        {
+            var value = 0M;
+            foreach (var assetBalance in CurrentAssetBalances)
+            {
+                if (assetBalance.Value.Asset == "USDT")
+                {
+                    value += assetBalance.Value.Balance;
+                    continue;
+                }
+
+                var candles = currentCandles[$"{assetBalance.Value.Asset}USDT"].First(
+                    x => x.Value != null && x.Value.Count > 0);
+                var candle = candles.Value[^1];
+                var assetValue = assetBalance.Value.Balance * (decimal)candle.CloseBid;
+                value += assetValue;
+            }
+
+            return value;
         }
 
         private void RemoveInvalidTrades(string market, List<Trade> newTrades, float latestBidPrice, float latestAskPrice)
@@ -415,7 +482,9 @@ namespace TraderTools.Simulation
         {
             var sellReturn = t.EntryQuantity.Value * t.ClosePrice.Value;
             var fee = sellReturn * strategy.Commission;
-            Balance += sellReturn - fee;
+
+            CurrentAssetBalances[t.BaseAsset]
+                = new AssetBalance(t.BaseAsset, CurrentAssetBalances[t.BaseAsset].Balance + sellReturn - fee);
         }
 
         private void UpdateTradeNetProfitLossForClosedTrade(Trade t, StrategyBase strategy)
@@ -439,25 +508,51 @@ namespace TraderTools.Simulation
 
         private void UpdateNewOpenTradeAmount(Trade t, Candle candle, StrategyBase strategy)
         {
-            var amount = t.EntryQuantity;
-            var cost = (t.EntryQuantity.Value * t.EntryPrice.Value) + (strategy.Commission * (t.EntryQuantity.Value * t.EntryPrice.Value));
-            var fee = strategy.Commission * (t.EntryQuantity * t.EntryPrice);
+            var asset1 = t.Market.Replace(t.BaseAsset, string.Empty);  // e.g. ETH
+            var asset2 = t.BaseAsset; // e.g. USDT
 
-            if (cost > Balance)
+            var asset1Balance = CurrentAssetBalances.ContainsKey(asset1) ? CurrentAssetBalances[asset1].Balance : 0M;
+            var asset2Balance = CurrentAssetBalances.ContainsKey(asset2) ? CurrentAssetBalances[asset2].Balance : 0M;
+
+            var buyCost = t.TradeDirection == TradeDirection.Long
+                ? t.EntryQuantity.Value * t.EntryPrice.Value
+                : t.EntryQuantity.Value;
+
+            var fee = t.TradeDirection == TradeDirection.Long
+                ? (strategy.Commission * (t.EntryQuantity.Value * t.EntryPrice.Value))
+                : t.EntryQuantity.Value - (t.EntryQuantity.Value / (1M + strategy.Commission));
+
+            if (t.TradeDirection == TradeDirection.Long && buyCost + fee > asset2Balance 
+                || t.TradeDirection == TradeDirection.Short && buyCost >= asset1Balance)
             {
-                cost = Balance;
-                fee = cost - (cost / (1M + strategy.Commission));
-                amount = (cost - fee) / t.EntryPrice.Value;
+                fee = t.TradeDirection == TradeDirection.Long
+                    ? asset2Balance - (asset2Balance / (1M + strategy.Commission))
+                    : asset1Balance - (asset1Balance / (1M + strategy.Commission));
+                buyCost = t.TradeDirection == TradeDirection.Long ? asset2Balance - fee : asset1Balance - fee;
+                t.EntryQuantity = t.TradeDirection == TradeDirection.Long ? buyCost / t.EntryPrice.Value : asset1Balance;
             }
 
-            t.RiskAmount = cost;
-            t.RiskPercentOfBalance = t.RiskAmount != 0 ? Balance / t.RiskAmount : 0;
-            t.EntryQuantity = amount;
+            var buyReturn = t.TradeDirection == TradeDirection.Long
+                ? t.EntryQuantity.Value
+                : (t.EntryQuantity.Value - fee) * t.EntryPrice.Value;
 
-            Balance -= cost;
+            CurrentAssetBalances[asset1] = t.TradeDirection == TradeDirection.Long
+                ? new AssetBalance(asset1, asset1Balance + buyReturn)
+                : new AssetBalance(asset1, asset1Balance - t.EntryQuantity.Value);
+            CurrentAssetBalances[asset2] = t.TradeDirection == TradeDirection.Long
+                ? new AssetBalance(asset2, asset2Balance - buyCost - fee)
+                : new AssetBalance(asset2, asset2Balance + buyReturn - fee);
 
-            var tradeValue = t.EntryQuantity.Value * (decimal)(t.TradeDirection == TradeDirection.Long ? candle.CloseBid : candle.CloseAsk);
-            CurrentValue = CurrentValue - cost + tradeValue - (tradeValue * strategy.Commission);
+            if (strategy.BrokerKind == BrokerKind.Trade)
+            {
+                t.RiskAmount = 0;
+            }
+            else
+            {
+                throw new ApplicationException("This needs implementing");
+            }
+
+            //t.RiskPercentOfBalance = t.RiskAmount != 0 ? currentBalance.Balance / t.RiskAmount : 0; // TODO
         }
 
         private Dictionary<string, TimeframeLookup<List<Candle>>> CreateCurrentCandles(string[] markets, Timeframe[] timeframes)

@@ -2,12 +2,16 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Hallupa.TraderTools.Basics;
 using log4net;
+using Microsoft.CodeAnalysis.FlowAnalysis;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
+using TraderTools.Core;
 using TraderTools.Indicators;
+using TraderTools.Simulation;
 
-namespace TraderTools.Simulation
+namespace Hallupa.TraderTools.Simulation
 {
     public abstract class StrategyBase
     {
@@ -17,8 +21,7 @@ namespace TraderTools.Simulation
 
         private static readonly ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private Timeframe _smallestCandleTimeframe;
-        private Func<decimal> _getBalanceFunc;
-        private Func<decimal> _getTotalValueFunc;
+        private Func<Dictionary<string, AssetBalance>> _getBalanceFunc;
         private Dictionary<string, TimeframeLookup<List<(IIndicator Indicator, IndicatorValues IndicatorValues)>>> _indicators 
             = new Dictionary<string, TimeframeLookup<List<(IIndicator Indicator, IndicatorValues IndicatorValues)>>>();
         public DateTime? StartTime { get; private set; }
@@ -31,20 +34,38 @@ namespace TraderTools.Simulation
 
         public string Broker { get; private set; } = "FXCM";
 
-        public decimal Balance => _getBalanceFunc();
-        public decimal TotalValue => _getTotalValueFunc();
-        private Action<TradeWithIndexing, Trade, Candle> _tradeUpdatedAction;
+        public BrokerKind BrokerKind { get; private set; }
 
-        public void SetInitialised(
-            Func<decimal> getBalanceFunc,
-            Func<decimal> getTotalValueFunc,
-            Action<TradeWithIndexing, Trade, Candle> tradeUpdatedAction)
+        public bool EnableTrading { get; set; }
+
+        public virtual void Starting()
+        {
+        }
+
+        private Action<TradeWithIndexing, Trade, Candle> _tradeUpdatedAction;
+        private ITradeFactory _tradeFactory;
+
+        public virtual void SetInitialised(
+            bool isLive,
+            Func<Dictionary<string, AssetBalance>> getBalanceFunc,
+            Action<TradeWithIndexing, Trade, Candle> tradeUpdatedAction,
+            ITradeFactory tradeFactory,
+            IBrokersService brokers)
         {
             Initialised = true;
             _getBalanceFunc = getBalanceFunc;
-            _getTotalValueFunc = getTotalValueFunc;
             _tradeUpdatedAction = tradeUpdatedAction;
+            _tradeFactory = tradeFactory;
+            BrokerKind = brokers.Brokers.First(b => b.Name == Broker).Kind;
+            Initialise();
         }
+
+        public virtual void Initialise()
+        {
+
+        }
+
+        public bool IsLive { get; set; } = false;
 
         public void SetMarkets(params string[] markets)
         {
@@ -93,6 +114,7 @@ namespace TraderTools.Simulation
             if (Initialised) throw new ApplicationException("Cannot set timeframes after strategy is initialised");
 
             Timeframes = timeframes.OrderBy(x => x).ToArray();
+            _log.Info($"Strategy timeframes set to: {string.Join(',', Timeframes)}");
             _smallestCandleTimeframe = Timeframes.First();
         }
 
@@ -100,9 +122,9 @@ namespace TraderTools.Simulation
 
         public TradeWithIndexingCollection Trades { get; private set; }
         
-        public void UpdateIndicators(List<AddedCandleTimeframe> timeframesCandleAdded)
+        public virtual void UpdateIndicators(List<AddedCandleTimeframe> timeframesCandleAdded)
         {
-            foreach (var c in timeframesCandleAdded)
+            foreach (var c in timeframesCandleAdded.OrderBy(x => x.Candle.CloseTimeTicks))
             {
                 if (!_indicators.ContainsKey(c.Market) || _indicators[c.Market][c.Timeframe] == null) continue;
 
@@ -188,7 +210,7 @@ namespace TraderTools.Simulation
 
         }
 
-        public void SetSimulationParameters(
+        public virtual void SetSimulationParameters(
             TradeWithIndexingCollection trades,
             Dictionary<string, TimeframeLookup<List<Candle>>> currentCandles)
         {
@@ -198,20 +220,52 @@ namespace TraderTools.Simulation
 
         public Dictionary<string, TimeframeLookup<List<Candle>>> Candles { get; private set; }
 
+        private Dictionary<string, AssetBalance> _currentBalances;
+
+        public decimal GetCurrentBalance(string asset)
+        {
+            if (!_currentBalances.TryGetValue(asset, out var v)) return 0M;
+
+            return v.Balance;
+        }
+
         protected void Log(string txt)
         {
             _log.Info(txt);
         }
 
+        protected void LogDebug(string txt)
+        {
+            _log.Debug(txt);
+        }
+
+        public virtual void UpdateBalances()
+        {
+            _currentBalances = _getBalanceFunc();
+        }
+
         public abstract void ProcessCandles(List<AddedCandleTimeframe> addedCandleTimeframes);
 
-        protected Trade MarketLong(string market, decimal amount, decimal? stop = null, decimal? limit = null)
+        protected void UpdateTrade(Trade trade)
         {
-            var candle = Candles[market][_smallestCandleTimeframe][Candles[market][_smallestCandleTimeframe].Count - 1];
+            _tradeFactory.UpdateTrade(trade);
+            UpdateBalances();
+        }
+
+        protected Candle GetLatestSmallestTfCandle(string market)
+        {
+            return Candles[market][_smallestCandleTimeframe][Candles[market][_smallestCandleTimeframe].Count - 1];
+        }
+
+        protected Trade MarketLong(string market, string baseAsset, decimal amount, decimal? stop = null, decimal? limit = null)
+        {
+            if (!EnableTrading) return null;
+            var candle = GetLatestSmallestTfCandle(market);
             var entryPrice = candle.CloseAsk != 0 ? candle.CloseAsk : candle.CloseBid; // Take the ask price unless it is unavailable
 
-            var trade = TradeFactory.CreateMarketEntry(
-                Broker, (decimal)entryPrice, candle.CloseTime(), TradeDirection.Long, amount, market, stop, limit,
+            if (IsLive) _log.Info($"Market long: {market} {amount} Stop: {stop} Limit: {limit}");
+            var trade = _tradeFactory.CreateMarketEntry(
+                Broker, (decimal)entryPrice, candle.CloseTime(), TradeDirection.Long, amount, market, baseAsset, stop, limit,
                 calculateOptions: CalculateOptions.ExcludePipsCalculations);
 
             _tradeUpdatedAction(null, trade, candle);
@@ -244,6 +298,11 @@ namespace TraderTools.Simulation
         {
             if (t.Trade.CloseDateTime == null)
             {
+                if (BrokerKind == BrokerKind.Trade)
+                {
+                    throw new ApplicationException("Only spread bet brokers can have trades that can be closed. Other brokers, such as shares accounts, need a trade for every action.");
+                }
+
                 var candle = Candles[t.Trade.Market][_smallestCandleTimeframe][Candles[t.Trade.Market][_smallestCandleTimeframe].Count - 1];
                 t.Trade.SetClose(new DateTime(candle.CloseTimeTicks, DateTimeKind.Utc), (decimal)candle.CloseBid, TradeCloseReason.ManualClose);
 
@@ -284,17 +343,18 @@ namespace TraderTools.Simulation
             }
         }
 
-        protected Trade MarketLong(string market, float amount, float stop, float? limit = null)
+        protected Trade MarketLong(string market, string baseAsset, float amount, float stop, float? limit = null)
         {
-            return MarketLong(market, (decimal)amount, (decimal)stop, (decimal?)limit);
+            return MarketLong(market, baseAsset, (decimal)amount, (decimal)stop, (decimal?)limit);
         }
 
-        protected Trade OrderShort(string market, decimal price, decimal stop, decimal? limit = null, DateTime? expire = null)
+        protected Trade OrderShort(string market, string baseAsset, decimal price, decimal stop, decimal? limit = null, DateTime? expire = null)
         {
+            if (!EnableTrading) return null;
             int? lotSize = 1;
             var candle = Candles[market][_smallestCandleTimeframe][Candles[market][_smallestCandleTimeframe].Count - 1];
-            var trade = TradeFactory.CreateOrder(
-                Broker, price, candle, TradeDirection.Short, lotSize.Value, market, expire, stop,
+            var trade = _tradeFactory.CreateOrder(
+                Broker, price, candle, TradeDirection.Short, lotSize.Value, market, baseAsset, expire, stop,
                 limit, CalculateOptions.ExcludePipsCalculations);
 
             _tradeUpdatedAction(null, trade, candle);
@@ -302,16 +362,17 @@ namespace TraderTools.Simulation
             return trade;
         }
 
-        protected Trade OrderShort(string market, float price, float stop, float? limit = null, DateTime? expire = null)
+        protected Trade OrderShort(string market, string baseAsset, float price, float stop, float? limit = null, DateTime? expire = null)
         {
-            return OrderShort(market, (decimal)price, (decimal)stop, (decimal?)limit, expire);
+            return OrderShort(market, baseAsset, (decimal)price, (decimal)stop, (decimal?)limit, expire);
         }
 
-        protected Trade OrderLong(string market, decimal amount, decimal price, decimal? stop = null, decimal? limit = null, DateTime? expire = null)
+        protected Trade OrderLong(string market, string baseAsset, decimal amount, decimal price, decimal? stop = null, decimal? limit = null, DateTime? expire = null)
         {
+            if (!EnableTrading) return null;
             var candle = Candles[market][_smallestCandleTimeframe][Candles[market][_smallestCandleTimeframe].Count - 1];
-            var trade = TradeFactory.CreateOrder(
-                Broker, price, candle, TradeDirection.Long, amount, market, expire, stop,
+            var trade = _tradeFactory.CreateOrder(
+                Broker, price, candle, TradeDirection.Long, amount, market, baseAsset, expire, stop,
                 limit, CalculateOptions.ExcludePipsCalculations);
 
             _tradeUpdatedAction(null, trade, candle);
@@ -319,18 +380,21 @@ namespace TraderTools.Simulation
             return trade;
         }
 
-        protected Trade OrderLong(string market, float amount, float price, float? stop = null, float? limit = null, DateTime? expire = null)
+        protected Trade OrderLong(string market, string baseAsset, float amount, float price, float? stop = null, float? limit = null, DateTime? expire = null)
         {
-            return OrderLong(market, (decimal)amount, (decimal)price, (decimal?)stop, (decimal?)limit, expire);
+            return OrderLong(market, baseAsset, (decimal)amount, (decimal)price, (decimal?)stop, (decimal?)limit, expire);
         }
 
-        protected Trade MarketShort(string market, decimal amount, decimal stop, decimal? limit = null)
+        protected Trade MarketShort(string market, string baseAsset, decimal amount, decimal? stop = null, decimal? limit = null)
         {
+            if (!EnableTrading) return null;
             var candle = Candles[market][_smallestCandleTimeframe][Candles[market][_smallestCandleTimeframe].Count - 1];
             var entryPrice = candle.CloseBid != 0 ? candle.CloseBid : candle.CloseAsk; // Take the bid price unless it is unavailable
 
-            var trade = TradeFactory.CreateMarketEntry(
-                Broker, (decimal)entryPrice, candle.CloseTime(), TradeDirection.Short, amount, market, stop, limit,
+            if (IsLive) _log.Info($"Market short: {market} {amount} Stop: {stop} Limit: {limit}");
+
+            var trade = _tradeFactory.CreateMarketEntry(
+                Broker, (decimal)entryPrice, candle.CloseTime(), TradeDirection.Short, amount, market, baseAsset, stop, limit,
                 calculateOptions: CalculateOptions.ExcludePipsCalculations);
 
             _tradeUpdatedAction(null, trade, candle);
@@ -338,9 +402,9 @@ namespace TraderTools.Simulation
             return trade;
         }
 
-        protected Trade MarketShort(string market, float amount, float stop, float? limit = null)
+        protected Trade MarketShort(string market, string baseAsset, float amount, float? stop = null, float? limit = null)
         {
-            return MarketShort(market, (decimal)amount, (decimal)stop, (decimal?)limit);
+            return MarketShort(market, baseAsset, (decimal)amount, (decimal?)stop, (decimal?)limit);
         }
 
         /*private bool GetLotSize(string market, decimal entryPrice, decimal stop, decimal riskPercent, out int? lotSize)
