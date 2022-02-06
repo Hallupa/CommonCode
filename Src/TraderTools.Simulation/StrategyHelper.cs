@@ -24,7 +24,7 @@ namespace Hallupa.TraderTools.Simulation
             }
 
             // Get class name
-            var classNameRegex = new Regex("public class ([a-zA-Z0-9]*)");
+            var classNameRegex = new Regex("public class ([a-zA-Z0-9_]*)");
             match = classNameRegex.Match(code);
             var className = match.Groups[1].Captures[0].Value;
 
@@ -48,7 +48,7 @@ namespace Hallupa.TraderTools.Simulation
             var t = a.DefinedTypes.First(x => x.Name == className);
             if (t == null)
             {
-                Log.Error("Unable to create class 'Test'");
+                Log.Error($"Unable to create class '{className}'");
                 return null;
             }
 

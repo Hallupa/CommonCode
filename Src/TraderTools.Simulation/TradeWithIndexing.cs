@@ -1,8 +1,15 @@
-﻿using TraderTools.Basics;
+﻿using System;
+using TraderTools.Basics;
 
 namespace TraderTools.Simulation
 {
-    public class TradeWithIndexing
+    public interface IReadOnlyTrade
+    {
+        public string Market { get; }
+        public DateTime? CloseDateTime { get; }
+    }
+
+    public class TradeWithIndexing : IReadOnlyTrade
     {
         public Trade Trade { get; set; }
         public int LimitIndex { get; set; } = -1;
@@ -10,5 +17,8 @@ namespace TraderTools.Simulation
         public int OrderIndex { get; set; } = -1;
         public TradeWithIndexing Next { get; set; }
         public TradeWithIndexing Prev { get; set; }
+
+        public string Market => Trade.Market;
+        public DateTime? CloseDateTime => Trade.CloseDateTime;
     }
 }

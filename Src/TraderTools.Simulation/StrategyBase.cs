@@ -4,10 +4,8 @@ using System.Linq;
 using System.Reflection;
 using Hallupa.TraderTools.Basics;
 using log4net;
-using Microsoft.CodeAnalysis.FlowAnalysis;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
-using TraderTools.Core;
 using TraderTools.Indicators;
 using TraderTools.Simulation;
 
@@ -34,12 +32,20 @@ namespace Hallupa.TraderTools.Simulation
 
         public string Broker { get; private set; } = "FXCM";
 
+        public Timeframe SimulationGranularity { get; private set; } = Timeframe.M1;
+
         public BrokerKind BrokerKind { get; private set; }
 
-        public bool EnableTrading { get; set; }
+        public bool EnableTrading { get; set; } = true;
+        private TradeWithIndexingCollection _trades;
 
         public virtual void Starting()
         {
+        }
+
+        public void SetSimulationInitialBalance(params AssetBalance[] initialBalances)
+        {
+            InitialSimulationBalances = initialBalances;
         }
 
         private Action<TradeWithIndexing, Trade, Candle> _tradeUpdatedAction;
@@ -65,7 +71,12 @@ namespace Hallupa.TraderTools.Simulation
 
         }
 
+        public virtual void SimulationComplete()
+        {
+        }
+
         public bool IsLive { get; set; } = false;
+        public AssetBalance[] InitialSimulationBalances;
 
         public void SetMarkets(params string[] markets)
         {
@@ -77,6 +88,12 @@ namespace Hallupa.TraderTools.Simulation
         {
             if (Initialised) throw new ApplicationException("Cannot set broker after strategy is initialised");
             Broker = name;
+        }
+
+        public void SetSimulationGranularity(Timeframe tf)
+        {
+            if (Initialised) throw new ApplicationException("Cannot set simulation granularity after strategy is initialised");
+            SimulationGranularity = tf;
         }
 
         public void SetCommission(decimal amount)
@@ -120,7 +137,6 @@ namespace Hallupa.TraderTools.Simulation
 
         public Timeframe[] Timeframes { get; private set; }
 
-        public TradeWithIndexingCollection Trades { get; private set; }
         
         public virtual void UpdateIndicators(List<AddedCandleTimeframe> timeframesCandleAdded)
         {
@@ -214,9 +230,12 @@ namespace Hallupa.TraderTools.Simulation
             TradeWithIndexingCollection trades,
             Dictionary<string, TimeframeLookup<List<Candle>>> currentCandles)
         {
-            Trades = trades;
+            _trades = trades;
+            Trades = new ReadOnlyTradeCollection(_trades);
             Candles = currentCandles;
         }
+
+        public ReadOnlyTradeCollection Trades { get; private set; }
 
         public Dictionary<string, TimeframeLookup<List<Candle>>> Candles { get; private set; }
 
@@ -257,8 +276,10 @@ namespace Hallupa.TraderTools.Simulation
             return Candles[market][_smallestCandleTimeframe][Candles[market][_smallestCandleTimeframe].Count - 1];
         }
 
-        protected Trade MarketLong(string market, string baseAsset, decimal amount, decimal? stop = null, decimal? limit = null)
+        protected Trade MarketBuy(string market, string baseAsset, decimal amount, decimal? stop = null, decimal? limit = null)
         {
+            if (BrokerKind != BrokerKind.Trade)
+                throw new ApplicationException("Cannot do buy trade for this broker kind");
             if (!EnableTrading) return null;
             var candle = GetLatestSmallestTfCandle(market);
             var entryPrice = candle.CloseAsk != 0 ? candle.CloseAsk : candle.CloseBid; // Take the ask price unless it is unavailable
@@ -273,9 +294,43 @@ namespace Hallupa.TraderTools.Simulation
             return trade;
         }
 
+        protected Trade MarketLong(string market, decimal lotSize, decimal stop, decimal? limit = null)
+        {
+            if (BrokerKind != BrokerKind.SpreadBet)
+                throw new ApplicationException("Cannot do long trade for this broker kind");
+
+            var candle = GetLatestSmallestTfCandle(market);
+            var entryPrice = candle.CloseAsk;
+
+            var trade = _tradeFactory.CreateMarketEntry(
+                Broker, (decimal)entryPrice, candle.CloseTime(), TradeDirection.Long, lotSize, market, string.Empty,
+                stop, limit, calculateOptions: CalculateOptions.ExcludePipsCalculations);
+
+            _tradeUpdatedAction(null, trade, candle);
+
+            return trade;
+        }
+
+        protected Trade MarketShort(string market, decimal lotSize, decimal stop, decimal? limit = null)
+        {
+            if (BrokerKind != BrokerKind.SpreadBet)
+                throw new ApplicationException("Cannot do long trade for this broker kind");
+
+            var candle = GetLatestSmallestTfCandle(market);
+            var entryPrice = candle.CloseBid;
+
+            var trade = _tradeFactory.CreateMarketEntry(
+                Broker, (decimal)entryPrice, candle.CloseTime(), TradeDirection.Short, lotSize, market, string.Empty,
+                stop, limit, calculateOptions: CalculateOptions.ExcludePipsCalculations);
+
+            _tradeUpdatedAction(null, trade, candle);
+
+            return trade;
+        }
+
         protected void CloseTrade(Trade t)
         {
-            foreach (var indexedTrade in Trades.OpenTrades)
+            foreach (var indexedTrade in _trades.OpenTrades)
             {
                 if (indexedTrade.Trade == t)
                 {
@@ -284,7 +339,7 @@ namespace Hallupa.TraderTools.Simulation
                 }
             }
 
-            foreach (var indexedTrade in Trades.OrderTradesAsc)
+            foreach (var indexedTrade in _trades.OrderTradesAsc)
             {
                 if (indexedTrade.Trade == t)
                 {
@@ -308,6 +363,11 @@ namespace Hallupa.TraderTools.Simulation
 
                 _tradeUpdatedAction(t, t.Trade, candle);
             }
+        }
+
+        protected void CloseTrade(IReadOnlyTrade t)
+        {
+            CloseTrade((TradeWithIndexing)t);
         }
 
         /*  private int GetLotSize(string market, decimal maxRiskEquity, DateTime dateTimeUtc, decimal entryOrOrder, decimal stop)
@@ -336,16 +396,16 @@ namespace Hallupa.TraderTools.Simulation
 
         protected void UpdateStopsInOpenTradesTrailIndicator(IndicatorValues indicatorValues)
         {
-            foreach (var t in Trades.OpenTrades)
+            foreach (var t in _trades.OpenTrades)
             {
                 var candle = Candles[t.Trade.Market][_smallestCandleTimeframe][Candles[t.Trade.Market][_smallestCandleTimeframe].Count - 1];
                 StopHelper.TrailIndicatorValues(t.Trade, candle, indicatorValues);
             }
         }
 
-        protected Trade MarketLong(string market, string baseAsset, float amount, float stop, float? limit = null)
+        protected Trade MarketBuy(string market, string baseAsset, float amount, float stop, float? limit = null)
         {
-            return MarketLong(market, baseAsset, (decimal)amount, (decimal)stop, (decimal?)limit);
+            return MarketBuy(market, baseAsset, (decimal)amount, (decimal)stop, (decimal?)limit);
         }
 
         protected Trade OrderShort(string market, string baseAsset, decimal price, decimal stop, decimal? limit = null, DateTime? expire = null)
@@ -385,8 +445,11 @@ namespace Hallupa.TraderTools.Simulation
             return OrderLong(market, baseAsset, (decimal)amount, (decimal)price, (decimal?)stop, (decimal?)limit, expire);
         }
 
-        protected Trade MarketShort(string market, string baseAsset, decimal amount, decimal? stop = null, decimal? limit = null)
+        protected Trade MarketSell(string market, string baseAsset, decimal amount, decimal? stop = null, decimal? limit = null)
         {
+            if (BrokerKind != BrokerKind.Trade)
+                throw new ApplicationException("Cannot do sell trade for this broker kind");
+
             if (!EnableTrading) return null;
             var candle = Candles[market][_smallestCandleTimeframe][Candles[market][_smallestCandleTimeframe].Count - 1];
             var entryPrice = candle.CloseBid != 0 ? candle.CloseBid : candle.CloseAsk; // Take the bid price unless it is unavailable
@@ -402,9 +465,9 @@ namespace Hallupa.TraderTools.Simulation
             return trade;
         }
 
-        protected Trade MarketShort(string market, string baseAsset, float amount, float? stop = null, float? limit = null)
+        protected Trade MarketSell(string market, string baseAsset, float amount, float? stop = null, float? limit = null)
         {
-            return MarketShort(market, baseAsset, (decimal)amount, (decimal?)stop, (decimal?)limit);
+            return MarketSell(market, baseAsset, (decimal)amount, (decimal?)stop, (decimal?)limit);
         }
 
         /*private bool GetLotSize(string market, decimal entryPrice, decimal stop, decimal riskPercent, out int? lotSize)

@@ -6,7 +6,7 @@ namespace TraderTools.Basics
 {
     public class TimeframeLookup<T> : IEnumerable<KeyValuePair<Timeframe, T>>
     {
-        private T[] _items = new T[9];
+        private T[] _items = new T[11];
 
         public T this[Timeframe timeframe]
         {
@@ -61,6 +61,10 @@ namespace TraderTools.Basics
                     return 7;
                 case Timeframe.D1:
                     return 8;
+                case Timeframe.D7:
+                    return 9;
+                case Timeframe.D30:
+                    return 10;
             }
 
             throw new ApplicationException($"TimeframeLookup - {timeframe} not supported");
@@ -88,6 +92,10 @@ namespace TraderTools.Basics
                     return Timeframe.H8;
                 case 8:
                     return Timeframe.D1;
+                case 9:
+                    return Timeframe.D7;
+                case 10:
+                    return Timeframe.D30;
             }
 
             throw new ApplicationException($"TimeframeLookup - {index} not supported");

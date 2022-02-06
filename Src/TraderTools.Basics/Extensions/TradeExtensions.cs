@@ -329,5 +329,69 @@ namespace TraderTools.Basics.Extensions
                 updated = true;
             }
         }
+
+        public static void AddLimitPrice(this Trade trade, DateTime date, decimal? price)
+        {
+            trade.AddLimitPrice(string.Empty, date, price);
+        }
+
+        public static void AddLimitPrice(this Trade trade, string id, DateTime date, decimal? price)
+        {
+            if (trade.LimitPrices.Count > 0 && trade.LimitPrices.Last().Price == price)
+            {
+                return;
+            }
+
+            if (trade.LimitPrices.Count > 0 && trade.LimitPrices.Last().Date == date)
+            {
+                trade.LimitPrices.RemoveAt(trade.OrderPrices.Count - 1);
+            }
+
+            if (trade.UpdateMode == TradeUpdateMode.Unchanging) throw new ApplicationException("Trade set to untouched mode cannot change it's limit price after being set");
+
+            trade.LimitPrices.Add(new DatePrice(id, date, price));
+
+            if (trade.LimitPrices.Count > 1)
+            {
+                trade.LimitPrices = trade.LimitPrices.OrderBy(x => x.Date).ToList();
+            }
+
+            TradeCalculator.UpdateLimit(trade);
+
+            if (!trade.CalculateOptions.HasFlag(CalculateOptions.ExcludePipsCalculations))
+            {
+                TradeCalculator.UpdateLimitPips(trade);
+
+                if (trade.LimitPrices.Count == 1)
+                {
+                    TradeCalculator.UpdateInitialLimitPips(trade);
+                }
+            }
+        }
+
+        public static void RemoveLimitPrice(this Trade trade, int index)
+        {
+            if (index >= trade.LimitPrices.Count)
+            {
+                return;
+            }
+
+            if (trade.UpdateMode == TradeUpdateMode.Unchanging) throw new ApplicationException("Trade set to untouched mode cannot change it's stop price after being set");
+
+            trade.LimitPrices.RemoveAt(index);
+        }
+
+        public static void SetClose(this Trade trade, DateTime dateTime, decimal? price, TradeCloseReason reason)
+        {
+            trade.ClosePrice = price;
+            trade.CloseDateTime = dateTime;
+            trade.CloseReason = reason;
+        }
+
+        public static void SetExpired(this Trade trade, DateTime dateTime)
+        {
+            trade.CloseDateTime = dateTime;
+            trade.CloseReason = TradeCloseReason.HitExpiry;
+        }
     }
 }

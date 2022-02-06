@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Hallupa.Library.Extensions;
 
 namespace TraderTools.Basics.Extensions
 {
@@ -23,49 +24,10 @@ namespace TraderTools.Basics.Extensions
                 return null;
             }
 
-            var maxItemsInRange = 20;
-            if (candles.Count <= maxItemsInRange)
-            {
-                for(var i = candles.Count - 1; i >= 0; i--)
-                {
-                    if (candles[i].CloseTimeTicks <= dateTime.Ticks)
-                    {
-                        return candles[i];
-                    }
-                }
-
-                return null;
-            }
-
-            if (candles[candles.Count - 1].CloseTimeTicks <= dateTime.Ticks) return candles[candles.Count - 1];
-
-            var range1Start = 0;
-            var range2End = candles.Count - 1;
-            var range1End = (range2End - range1Start) / 2;
-
-            while (range2End - range1Start + 1 > maxItemsInRange)
-            {
-                var range2Start = range1End + 1;
-                if (candles[range2Start].CloseTimeTicks > dateTime.Ticks)
-                {
-                    range2End = range1End;
-                    range1End = range1Start + (range2End - range1Start) / 2;
-                }
-                else
-                {
-                    range1Start = range1End + 1;
-                    range1End = range1Start + (range2End - range1Start) / 2;
-                }
-            }
-
-            for (var i = range2End; i >= range1Start; i--)
-            {
-                if (candles[i].CloseTimeTicks <= dateTime.Ticks)
-                {
-
-                    return candles[i];
-                }
-            }
+            var index = candles.BinarySearchGetItem(
+                i => candles[i].CloseTimeTicks, 0, dateTime.Ticks,
+                BinarySearchMethod.PrevLowerValueOrValue);
+            if (index != -1) return candles[index];
 
             return null;
         }

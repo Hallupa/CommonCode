@@ -83,7 +83,7 @@ namespace Hallupa.TraderTools.Brokers.Binance
 
                     if (orders.Success)
                     {
-                        AddOrUpdateOrders(account, addedOrUpdatedTrades, orders, symbol);
+                        AddOrUpdateOrders(account, addedOrUpdatedTrades, orders);
                     }
                     else
                     {
@@ -132,7 +132,7 @@ namespace Hallupa.TraderTools.Brokers.Binance
             return trade;
         }
 
-        private void AddOrUpdateOrders(IBrokerAccount account, List<Trade> addedOrUpdatedTrades, WebCallResult<IEnumerable<BinanceOrder>> orders, string s)
+        private void AddOrUpdateOrders(IBrokerAccount account, List<Trade> addedOrUpdatedTrades, WebCallResult<IEnumerable<BinanceOrder>> orders)
         {
             foreach (var o in orders.Data)
             {
@@ -178,9 +178,10 @@ namespace Hallupa.TraderTools.Brokers.Binance
 
             while (true)
             {
-                var retries = 3;
+                var fastRetries = 3;
+                var slowRetries = 10;
                 WebCallResult<IEnumerable<ICommonKline>> binanceCandles = null;
-                while (retries >= 0)
+                while (fastRetries >= 0)
                 {
                     binanceCandles = ((IExchangeClient)_client).GetKlinesAsync(
                         market,
@@ -198,10 +199,18 @@ namespace Hallupa.TraderTools.Brokers.Binance
                         break;
                     }
 
-                    Thread.Sleep(500);
-                    retries--;
+                    if (fastRetries > 0)
+                    {
+                        Thread.Sleep(500);
+                        fastRetries--;
+                    }
+                    else if (slowRetries > 0)
+                    {
+                        Thread.Sleep(30000);
+                        slowRetries--;
+                    }
 
-                    if (retries == 0)
+                    if (fastRetries == 0 && slowRetries == 0)
                     {
                         Log.Error("Binance ran out of attempts");
                     }
@@ -227,7 +236,7 @@ namespace Hallupa.TraderTools.Brokers.Binance
                 }
 
                 if (!binanceCandles.Data.Any()) break;
-                Log.Debug($"Got {binanceCandles.Data.Count()} candles for {market} {timeframe}");
+                Log.Debug($"Got {binanceCandles.Data.Count()} candles for {market} {timeframe} - upto: {((IBinanceKline)binanceCandles.Data.Last()).CloseTime:hh:mm dd-MM-yyyy}");
                 start = binanceCandles.Data.Last().CommonOpenTime.AddSeconds(1);
             }
 

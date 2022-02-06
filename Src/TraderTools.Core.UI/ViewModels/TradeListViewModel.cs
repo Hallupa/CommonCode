@@ -34,21 +34,15 @@ namespace TraderTools.Core.UI.ViewModels
 
         public List<Timeframe> TimeFrameItems { get; set; }
 
-        public TradeListDisplayOptionsFlag TradeListDisplayOptions { get; set; } =
-            TradeListDisplayOptionsFlag.PoundsPerPip | TradeListDisplayOptionsFlag.Stop
-                                                     | TradeListDisplayOptionsFlag.Limit
-                                                     | TradeListDisplayOptionsFlag.OrderPrice
-                                                     | TradeListDisplayOptionsFlag.OrderDate
-                                                     | TradeListDisplayOptionsFlag.Comments
-                                                     | TradeListDisplayOptionsFlag.ResultR
-                                                     | TradeListDisplayOptionsFlag.Broker
-                                                     | TradeListDisplayOptionsFlag.Timeframe
-                                                     | TradeListDisplayOptionsFlag.Strategies
-                                                     | TradeListDisplayOptionsFlag.Risk
-                                                     | TradeListDisplayOptionsFlag.Status
-                                                     | TradeListDisplayOptionsFlag.ClosePrice
-                                                     | TradeListDisplayOptionsFlag.Dates
-                                                     | TradeListDisplayOptionsFlag.Profit;
+        public TradeListDisplayOptionsFlag TradeListDisplayOptions
+        {
+            get => _tradeListDisplayOptions;
+            set
+            {
+                _tradeListDisplayOptions = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(TradeListDisplayOptions)));
+            }
+        }
 
         public ObservableCollectionEx<Trade> Trades { get; } = new ObservableCollectionEx<Trade>();
 
@@ -108,6 +102,20 @@ namespace TraderTools.Core.UI.ViewModels
 
         private Window _parent;
         private Trade _selectedTrade;
+        private TradeListDisplayOptionsFlag _tradeListDisplayOptions = TradeListDisplayOptionsFlag.PoundsPerPip | TradeListDisplayOptionsFlag.Stop
+            | TradeListDisplayOptionsFlag.Limit
+            | TradeListDisplayOptionsFlag.OrderPrice
+            | TradeListDisplayOptionsFlag.OrderDate
+            | TradeListDisplayOptionsFlag.Comments
+            | TradeListDisplayOptionsFlag.ResultR
+            | TradeListDisplayOptionsFlag.Broker
+            | TradeListDisplayOptionsFlag.Timeframe
+            | TradeListDisplayOptionsFlag.Strategies
+            | TradeListDisplayOptionsFlag.Risk
+            | TradeListDisplayOptionsFlag.Status
+            | TradeListDisplayOptionsFlag.ClosePrice
+            | TradeListDisplayOptionsFlag.Dates
+            | TradeListDisplayOptionsFlag.Profit;
 
         public event PropertyChangedEventHandler PropertyChanged;
 

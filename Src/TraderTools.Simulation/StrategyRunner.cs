@@ -18,21 +18,16 @@ namespace Hallupa.TraderTools.Simulation
         private readonly IBrokersCandlesService _candleService;
         private readonly IBroker _broker;
         private readonly IBrokersService _brokersService;
-        private readonly Timeframe _runTimeframe;
         private const int LogIntervalSeconds = 5;
 
         public StrategyRunner(
             IBrokersCandlesService candleService,
             IBroker broker,
-            IEnumerable<AssetBalance> initialAssetBalances,
-            IBrokersService brokersService,
-            Timeframe runTimeframe = Timeframe.M1)
+            IBrokersService brokersService)
         {
             _candleService = candleService;
             _broker = broker;
             _brokersService = brokersService;
-            _runTimeframe = runTimeframe;
-            InitialAssetBalances = initialAssetBalances.ToDictionary(z => z.Asset, z => z);
         }
 
         public Dictionary<string, AssetBalance> InitialAssetBalances { get; private set; }
@@ -67,11 +62,26 @@ namespace Hallupa.TraderTools.Simulation
         {
             if (strategy.Markets == null || strategy.Markets.Length == 0) throw new ArgumentException("Strategy must set markets");
             if (strategy.Timeframes == null || strategy.Timeframes.Length == 0) throw new ArgumentException("Timesframes must set markets");
+            if (strategy.InitialSimulationBalances == null || strategy.InitialSimulationBalances.Length == 0) throw new ArgumentException("Simulation initial asset balances must be set");
 
-            var runCandles = GetRunCandles(strategy, _runTimeframe, startTime, endTime);
+            InitialAssetBalances = strategy.InitialSimulationBalances.ToDictionary(z => z.Asset, z => z);
+
+            var updateCandles = true;
+            var runCandles = GetRunCandles(strategy, strategy.SimulationGranularity, startTime, endTime, updateCandles);
             var currentCandles = CreateCurrentCandles(strategy.Markets, strategy.Timeframes);
-            var smallestNonRunTimeframe = strategy.Timeframes.First();
-            var strategyCandles = GetTfOrderedStrategyCandles(strategy, startTime, endTime);
+            var strategyCandles = GetTfOrderedStrategyCandles(strategy, startTime, endTime, updateCandles);
+
+
+            var candleLatestDateTimes = runCandles.Select(c => (c.Market, c.Timeframe, c.Candles.Last().CloseTime())).ToList();
+            candleLatestDateTimes.AddRange(strategyCandles.Select(x => (x.Market, x.Timeframe, x.Candles.Last().CloseTime())));
+            var latest = candleLatestDateTimes.OrderByDescending(x => x).First();
+            var earliest = candleLatestDateTimes.OrderBy(x => x).First();
+
+            var latestCandleDateTime = latest.Item3;
+            if (latestCandleDateTime > DateTime.UtcNow) latestCandleDateTime = DateTime.UtcNow;
+            if (earliest.Item3 < latestCandleDateTime.AddDays(-1))
+                throw new ApplicationException($"{earliest.Market} {earliest.Timeframe} missing recent candles");
+
             var trades = new TradeWithIndexingCollection();
 
             CurrentAssetBalances = InitialAssetBalances.ToDictionary(
@@ -189,18 +199,21 @@ namespace Hallupa.TraderTools.Simulation
 
             CompleteTradeDetails(ret);
 
+            strategy.SimulationComplete();
+
             LogProgress(trades);
 
-            Log.Info($"End USDT value: ${GetCurrentAssetBalancesUsdtValue(currentCandles):N}");
+            Log.Info($"End USDT value: ${GetUsdtValueUseLatestCandles(currentCandles, CurrentAssetBalances):N} " +
+                     $"Initial USDT value: ${GetUsdtValueUseOldestCandles(currentCandles, InitialAssetBalances):N}");
 
             return ret;
         }
 
-        private decimal GetCurrentAssetBalancesUsdtValue(
-            Dictionary<string, TimeframeLookup<List<Candle>>> currentCandles)
+        private decimal GetUsdtValueUseLatestCandles(
+            Dictionary<string, TimeframeLookup<List<Candle>>> currentCandles, Dictionary<string, AssetBalance> assetBalances)
         {
             var value = 0M;
-            foreach (var assetBalance in CurrentAssetBalances)
+            foreach (var assetBalance in assetBalances)
             {
                 if (assetBalance.Value.Asset == "USDT")
                 {
@@ -211,6 +224,28 @@ namespace Hallupa.TraderTools.Simulation
                 var candles = currentCandles[$"{assetBalance.Value.Asset}USDT"].First(
                     x => x.Value != null && x.Value.Count > 0);
                 var candle = candles.Value[^1];
+                var assetValue = assetBalance.Value.Balance * (decimal)candle.CloseBid;
+                value += assetValue;
+            }
+
+            return value;
+        }
+
+        private decimal GetUsdtValueUseOldestCandles(
+            Dictionary<string, TimeframeLookup<List<Candle>>> currentCandles, Dictionary<string, AssetBalance> assetBalances)
+        {
+            var value = 0M;
+            foreach (var assetBalance in assetBalances)
+            {
+                if (assetBalance.Value.Asset == "USDT")
+                {
+                    value += assetBalance.Value.Balance;
+                    continue;
+                }
+
+                var candles = currentCandles[$"{assetBalance.Value.Asset}USDT"].First(
+                    x => x.Value != null && x.Value.Count > 0);
+                var candle = candles.Value[0];
                 var assetValue = assetBalance.Value.Balance * (decimal)candle.CloseBid;
                 value += assetValue;
             }
@@ -377,8 +412,11 @@ namespace Hallupa.TraderTools.Simulation
                 // New trade
                 if (trade.EntryPrice != null)
                 {
-                    UpdateNewOpenTradeAmount(trade, candle, strategy);
-                    trades.AddOpenTrade(trade);
+                    var tradeUpdater = new TradeAmountUpdater();
+                    tradeUpdater.UpdateTradeAndBalance(trade, strategy.Commission, strategy.BrokerKind, CurrentAssetBalances);
+
+                    if (trade.EntryQuantity != null && trade.EntryQuantity >= 0M)
+                        trades.AddOpenTrade(trade);
                 }
                 else if (trade.OrderPrice != null)
                 {
@@ -466,7 +504,8 @@ namespace Hallupa.TraderTools.Simulation
                         {
                             // Process filled order
                             trades.MoveOrderToOpen(t);
-                            UpdateNewOpenTradeAmount(t.Trade, candle, strategy);
+                            var tradeUpdater = new TradeAmountUpdater();
+                            tradeUpdater.UpdateTradeAndBalance(t.Trade, strategy.Commission, strategy.BrokerKind, CurrentAssetBalances);
                         }
                         else if (t.Trade.CloseDateTime != null)
                         {
@@ -504,55 +543,6 @@ namespace Hallupa.TraderTools.Simulation
             var profit = sellReturn - t.RiskAmount.Value - fee;
 
             t.NetProfitLoss = profit;
-        }
-
-        private void UpdateNewOpenTradeAmount(Trade t, Candle candle, StrategyBase strategy)
-        {
-            var asset1 = t.Market.Replace(t.BaseAsset, string.Empty);  // e.g. ETH
-            var asset2 = t.BaseAsset; // e.g. USDT
-
-            var asset1Balance = CurrentAssetBalances.ContainsKey(asset1) ? CurrentAssetBalances[asset1].Balance : 0M;
-            var asset2Balance = CurrentAssetBalances.ContainsKey(asset2) ? CurrentAssetBalances[asset2].Balance : 0M;
-
-            var buyCost = t.TradeDirection == TradeDirection.Long
-                ? t.EntryQuantity.Value * t.EntryPrice.Value
-                : t.EntryQuantity.Value;
-
-            var fee = t.TradeDirection == TradeDirection.Long
-                ? (strategy.Commission * (t.EntryQuantity.Value * t.EntryPrice.Value))
-                : t.EntryQuantity.Value - (t.EntryQuantity.Value / (1M + strategy.Commission));
-
-            if (t.TradeDirection == TradeDirection.Long && buyCost + fee > asset2Balance 
-                || t.TradeDirection == TradeDirection.Short && buyCost >= asset1Balance)
-            {
-                fee = t.TradeDirection == TradeDirection.Long
-                    ? asset2Balance - (asset2Balance / (1M + strategy.Commission))
-                    : asset1Balance - (asset1Balance / (1M + strategy.Commission));
-                buyCost = t.TradeDirection == TradeDirection.Long ? asset2Balance - fee : asset1Balance - fee;
-                t.EntryQuantity = t.TradeDirection == TradeDirection.Long ? buyCost / t.EntryPrice.Value : asset1Balance;
-            }
-
-            var buyReturn = t.TradeDirection == TradeDirection.Long
-                ? t.EntryQuantity.Value
-                : (t.EntryQuantity.Value - fee) * t.EntryPrice.Value;
-
-            CurrentAssetBalances[asset1] = t.TradeDirection == TradeDirection.Long
-                ? new AssetBalance(asset1, asset1Balance + buyReturn)
-                : new AssetBalance(asset1, asset1Balance - t.EntryQuantity.Value);
-            CurrentAssetBalances[asset2] = t.TradeDirection == TradeDirection.Long
-                ? new AssetBalance(asset2, asset2Balance - buyCost - fee)
-                : new AssetBalance(asset2, asset2Balance + buyReturn - fee);
-
-            if (strategy.BrokerKind == BrokerKind.Trade)
-            {
-                t.RiskAmount = 0;
-            }
-            else
-            {
-                throw new ApplicationException("This needs implementing");
-            }
-
-            //t.RiskPercentOfBalance = t.RiskAmount != 0 ? currentBalance.Balance / t.RiskAmount : 0; // TODO
         }
 
         private Dictionary<string, TimeframeLookup<List<Candle>>> CreateCurrentCandles(string[] markets, Timeframe[] timeframes)
@@ -661,12 +651,12 @@ namespace Hallupa.TraderTools.Simulation
             }
         }
 
-        private List<CandlesWithIndex> GetRunCandles(StrategyBase strategy, Timeframe runTimeframe, DateTime? startTime = null, DateTime? endTime = null)
+        private List<CandlesWithIndex> GetRunCandles(StrategyBase strategy, Timeframe runTimeframe, DateTime? startTime = null, DateTime? endTime = null, bool updateCandles = false)
         {
             var ret = new List<CandlesWithIndex>();
             foreach (var m in strategy.Markets)
             {
-                var candles = _candleService.GetDerivedCandles(_broker, m, runTimeframe, false, minOpenTimeUtc: startTime, maxCloseTimeUtc: endTime, forceCreateDerived: true);
+                var candles = _candleService.GetDerivedCandles(_broker, m, runTimeframe, updateCandles, minOpenTimeUtc: startTime, maxCloseTimeUtc: endTime, forceCreateDerived: true);
                 if (candles.Count == 0) throw new ApplicationException($"No candles found for {m}");
 
                 ret.Add(new CandlesWithIndex(m, runTimeframe, candles));
@@ -675,14 +665,14 @@ namespace Hallupa.TraderTools.Simulation
             return ret;
         }
 
-        private List<CandlesWithIndex> GetTfOrderedStrategyCandles(StrategyBase strategy, DateTime? startTime = null, DateTime? endTime = null)
+        private List<CandlesWithIndex> GetTfOrderedStrategyCandles(StrategyBase strategy, DateTime? startTime = null, DateTime? endTime = null, bool updateCandles = false)
         {
             var ret = new List<CandlesWithIndex>();
             foreach (var tf in strategy.Timeframes.OrderBy(x => x))
             {
                 foreach (var m in strategy.Markets)
                 {
-                    var candles = _candleService.GetDerivedCandles(_broker, m, tf, false, minOpenTimeUtc: startTime, maxCloseTimeUtc: endTime);
+                    var candles = _candleService.GetDerivedCandles(_broker, m, tf, updateCandles, minOpenTimeUtc: startTime, maxCloseTimeUtc: endTime);
                     if (candles.Count == 0) throw new ApplicationException($"No candles found for {m}");
                     ret.Add(new CandlesWithIndex(m, tf, candles));
                 }
