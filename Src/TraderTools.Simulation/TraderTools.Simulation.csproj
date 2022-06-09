@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<TargetFramework>net6.0</TargetFramework>
 		<RootNamespace>Hallupa.TraderTools.Simulation</RootNamespace>
 		<AssemblyName>Hallupa.TraderTools.Simulation</AssemblyName>
 		<Platforms>AnyCPU;x64</Platforms>
@@ -13,12 +13,6 @@
 	  <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
 	  <PackageReference Include="Numpy.Bare" Version="3.6.1.10" />
 	  <PackageReference Include="System.ComponentModel.Composition" Version="5.0.0" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <ProjectReference Include="..\TraderTools.Basics\TraderTools.Basics.csproj" />
-	  <ProjectReference Include="..\TraderTools.Core\TraderTools.Core.csproj" />
-	  <ProjectReference Include="..\TraderTools.Indicators\TraderTools.Indicators.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
