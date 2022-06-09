@@ -15,7 +15,7 @@ namespace Hallupa.TraderTools.Basics
 
         public override string ToString()
         {
-            return $"{Balance:0.000} {Asset}";
+            return $"{Asset} {Balance:0.000}";
         }
     }
 }

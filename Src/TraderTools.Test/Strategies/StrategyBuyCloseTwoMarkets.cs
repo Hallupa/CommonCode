@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Hallupa.TraderTools.Simulation;
 using TraderTools.Basics;
+using TraderTools.Core;
 using TraderTools.Simulation;
 
 namespace TraderTools.Test.Strategies
@@ -25,12 +27,12 @@ namespace TraderTools.Test.Strategies
 
             if (up.CloseAsk == 4030F)
             {
-                MarketLong("UP", Balance, limit: 6000M);
+                MarketLong("UP", 1, stop: 6000M);
             }
 
             if (!Trades.AnyOpen && down.CloseAsk == 8030F)
             {
-                MarketLong("DOWN", Balance, stop: 7000);
+                MarketLong("DOWN", 1, stop: 7000);
             }
         }
     }

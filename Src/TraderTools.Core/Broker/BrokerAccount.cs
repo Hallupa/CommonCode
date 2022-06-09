@@ -102,8 +102,8 @@ namespace TraderTools.Core.Broker
 
             var mainPath = Path.Combine(mainDirectoryWithApplicationName, "BrokerAccounts");
 
-            var t = Task.Run(() =>
-            {
+            //var t = Task.Run(() =>
+           // {
                 try
                 {
                     if (!Directory.Exists(mainPath))
@@ -156,7 +156,7 @@ namespace TraderTools.Core.Broker
 
                     _saveLock.Set();
                 }
-            });
+           // });
         }
 
         public void UpdateBrokerAccount(

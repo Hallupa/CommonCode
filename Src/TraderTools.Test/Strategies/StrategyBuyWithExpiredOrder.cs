@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Hallupa.TraderTools.Simulation;
 using TraderTools.Basics;
 using TraderTools.Simulation;
 
@@ -24,7 +25,7 @@ namespace TraderTools.Test.Strategies
 
             if (!_ordered)
             {
-                OrderLong("UP", 10000M, 6000M, expire: new DateTime(_expireTimeTicks));
+                OrderLong("UP", "BASEASSET", 10000M, 6000M, expire: new DateTime(_expireTimeTicks));
                 _ordered = true;
             }
         }

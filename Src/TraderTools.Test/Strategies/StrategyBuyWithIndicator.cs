@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Hallupa.TraderTools.Simulation;
 using TraderTools.Basics;
+using TraderTools.Core;
 using TraderTools.Simulation;
 
 namespace TraderTools.Test.Strategies
@@ -24,7 +26,7 @@ namespace TraderTools.Test.Strategies
             var candle = candles[candles.Count - 1];
             if (_ema.HasValue && _ema.Value > 4000 && !Trades.AnyOpen && !Trades.AllTrades.Any())
             {
-                MarketLong("UP", Balance);
+                MarketLong("UP", 1, 1);
             }
         }
     }

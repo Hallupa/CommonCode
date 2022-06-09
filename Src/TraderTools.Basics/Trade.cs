@@ -272,6 +272,11 @@ namespace TraderTools.Basics
 
         public string BaseAsset { get; set; }
 
+        public string GetQuoteAsset()
+        {
+            return Market.Replace(BaseAsset, string.Empty);
+        }
+
         public bool Alert { get; set; }
 
         public string CustomText1 { get; set; }
@@ -412,7 +417,7 @@ namespace TraderTools.Basics
         public List<DatePrice> LimitPrices
         {
             get => _limitPrices;
-            private set
+            internal set
             {
                 _limitPrices = value;
                 OnPropertyChanged();
@@ -665,70 +670,6 @@ namespace TraderTools.Basics
 
             StopPrices.RemoveAt(index);
             StopPrice = null;
-        }
-
-        public void AddLimitPrice(DateTime date, decimal? price)
-        {
-            AddLimitPrice(string.Empty, date, price);
-        }
-
-        public void AddLimitPrice(string id, DateTime date, decimal? price)
-        {
-            if (LimitPrices.Count > 0 && LimitPrices.Last().Price == price)
-            {
-                return;
-            }
-
-            if (LimitPrices.Count > 0 && LimitPrices.Last().Date == date)
-            {
-                LimitPrices.RemoveAt(OrderPrices.Count - 1);
-            }
-
-            if (UpdateMode == TradeUpdateMode.Unchanging) throw new ApplicationException("Trade set to untouched mode cannot change it's limit price after being set");
-
-            LimitPrices.Add(new DatePrice(id, date, price));
-
-            if (LimitPrices.Count > 1)
-            {
-                LimitPrices = LimitPrices.OrderBy(x => x.Date).ToList();
-            }
-
-            TradeCalculator.UpdateLimit(this);
-
-            if (!CalculateOptions.HasFlag(CalculateOptions.ExcludePipsCalculations))
-            {
-                TradeCalculator.UpdateLimitPips(this);
-
-                if (LimitPrices.Count == 1)
-                {
-                    TradeCalculator.UpdateInitialLimitPips(this);
-                }
-            }
-        }
-
-        public void RemoveLimitPrice(int index)
-        {
-            if (index >= LimitPrices.Count)
-            {
-                return;
-            }
-
-            if (UpdateMode == TradeUpdateMode.Unchanging) throw new ApplicationException("Trade set to untouched mode cannot change it's stop price after being set");
-
-            LimitPrices.RemoveAt(index);
-        }
-
-        public void SetClose(DateTime dateTime, decimal? price, TradeCloseReason reason)
-        {
-            ClosePrice = price;
-            CloseDateTime = dateTime;
-            CloseReason = reason;
-        }
-
-        public void SetExpired(DateTime dateTime)
-        {
-            CloseDateTime = dateTime;
-            CloseReason = TradeCloseReason.HitExpiry;
         }
 
         public decimal? InitialStopInPips

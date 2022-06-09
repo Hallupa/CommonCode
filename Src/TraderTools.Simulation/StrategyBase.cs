@@ -294,7 +294,7 @@ namespace Hallupa.TraderTools.Simulation
             return trade;
         }
 
-        protected Trade MarketLong(string market, decimal lotSize, decimal stop, decimal? limit = null)
+        protected Trade MarketLong(string market, decimal lotSize, decimal? stop = null, decimal? limit = null)
         {
             if (BrokerKind != BrokerKind.SpreadBet)
                 throw new ApplicationException("Cannot do long trade for this broker kind");

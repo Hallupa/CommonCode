@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Hallupa.TraderTools.Simulation;
 using TraderTools.Basics;
 using TraderTools.Simulation;
 
@@ -25,7 +26,7 @@ namespace TraderTools.Test.Strategies
             var candlesUp = Candles["UP"][Timeframe.H1];
             var up = candlesUp[candlesUp.Count - 1];
 
-            TotalValuesBeforeTrades.Add(up.CloseTimeTicks, TotalValue);
+            TotalValuesBeforeTrades.Add(up.CloseTimeTicks, 1);
 
             if (up.CloseTimeTicks == 3500)
             {
@@ -42,7 +43,7 @@ namespace TraderTools.Test.Strategies
                 CloseTrade(Trade1);
             }
 
-            TotalValuesAfterTrades.Add(up.CloseTimeTicks, TotalValue);
+            TotalValuesAfterTrades.Add(up.CloseTimeTicks, 1);
         }
     }
 }

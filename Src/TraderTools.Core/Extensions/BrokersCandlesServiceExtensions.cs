@@ -37,7 +37,7 @@ namespace TraderTools.Core.Extensions
         {
             if (!forceCreateDerived)
             {
-                var candles = candlesService.GetCandles(broker, pair, timeframe, false, minOpenTimeUtc: minOpenTimeUtc,
+                var candles = candlesService.GetCandles(broker, pair, timeframe, updateCandles, minOpenTimeUtc: minOpenTimeUtc,
                     maxCloseTimeUtc: maxCloseTimeUtc);
                 if (candles != null && candles.Count > 0) return candles;
             }

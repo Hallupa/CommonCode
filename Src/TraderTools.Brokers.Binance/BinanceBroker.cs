@@ -250,7 +250,8 @@ namespace Hallupa.TraderTools.Brokers.Binance
 
         public Dictionary<string, AssetBalance> GetBalance(DateTime? dateTimeUtc = null)
         {
-            var balances = _client.General.GetAccountInfo().Data.Balances;
+            var data = _client.General.GetAccountInfo().Data;
+            var balances = data.Balances;
 
             return balances.Where(x => x.Total > 0).ToDictionary(
                 x => x.Asset,

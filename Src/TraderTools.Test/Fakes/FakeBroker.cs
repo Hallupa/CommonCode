@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Hallupa.TraderTools.Basics;
 using TraderTools.Basics;
 
 namespace TraderTools.Test.Fakes
@@ -7,6 +8,11 @@ namespace TraderTools.Test.Fakes
     public class FakeBroker : IBroker
     {
         public string Name { get; }
+
+        public Dictionary<string, AssetBalance> GetBalance(DateTime? dateTimeUtc = null)
+        {
+            throw new NotImplementedException();
+        }
 
         public List<string> GetSymbols()
         {
