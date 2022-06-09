@@ -2,9 +2,9 @@
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
-using Abt.Controls.SciChart;
-using Abt.Controls.SciChart.ChartModifiers;
-using Abt.Controls.SciChart.Visuals.RenderableSeries;
+using SciChart.Charting.ChartModifiers;
+using SciChart.Charting.Model.ChartData;
+using SciChart.Charting.Visuals.RenderableSeries;
 
 namespace TraderTools.Core.UI.ChartModifiers
 {

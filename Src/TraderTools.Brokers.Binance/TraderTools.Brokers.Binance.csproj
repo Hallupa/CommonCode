@@ -4,6 +4,7 @@
 		<TargetFramework>netstandard2.1</TargetFramework>
 		<RootNamespace>Hallupa.TraderTools.Brokers.Binance</RootNamespace>
 		<AssemblyName>Hallupa.TraderTools.Brokers.Binance</AssemblyName>
+		<Platforms>AnyCPU;x64</Platforms>
 	</PropertyGroup>
 
 	<ItemGroup>

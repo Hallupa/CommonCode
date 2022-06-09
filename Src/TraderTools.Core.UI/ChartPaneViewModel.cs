@@ -3,8 +3,10 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
-using Abt.Controls.SciChart;
-using Abt.Controls.SciChart.Visuals.Annotations;
+using SciChart.Charting.Model.ChartSeries;
+using SciChart.Charting.ViewportManagers;
+using SciChart.Charting.Visuals.Annotations;
+using SciChart.Charting.Visuals.TradeChart;
 
 namespace TraderTools.Core.UI
 {

@@ -412,7 +412,7 @@ namespace TraderTools.Basics
         public List<DatePrice> LimitPrices
         {
             get => _limitPrices;
-            private set
+            set
             {
                 _limitPrices = value;
                 OnPropertyChanged();

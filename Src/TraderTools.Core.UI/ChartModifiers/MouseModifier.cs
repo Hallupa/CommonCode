@@ -1,9 +1,10 @@
 ﻿using System;
 using System.ComponentModel.Composition;
 using System.Windows;
-using Abt.Controls.SciChart.ChartModifiers;
-using Abt.Controls.SciChart.Visuals;
 using Hallupa.Library;
+using SciChart.Charting.ChartModifiers;
+using SciChart.Charting.Visuals;
+using SciChart.Core.Utility.Mouse;
 using TraderTools.Core.UI.Services;
 
 namespace TraderTools.Core.UI.ChartModifiers

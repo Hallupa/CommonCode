@@ -5,7 +5,15 @@
 		<UseWPF>true</UseWPF>
 		<RootNamespace>Hallupa.Library.UI</RootNamespace>
 		<AssemblyName>Hallupa.Library.UI</AssemblyName>
+		<Platforms>AnyCPU;x64</Platforms>
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <Compile Remove="Properties\**" />
+	  <EmbeddedResource Remove="Properties\**" />
+	  <None Remove="Properties\**" />
+	  <Page Remove="Properties\**" />
+	</ItemGroup>
 
 	<ItemGroup>
 	  <PackageReference Include="AvalonEdit" Version="6.1.2.30" />
@@ -16,9 +24,5 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Library\Library.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Properties\" />
 	</ItemGroup>
 </Project>

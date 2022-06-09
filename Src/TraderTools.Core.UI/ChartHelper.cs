@@ -4,11 +4,11 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using Abt.Controls.SciChart;
-using Abt.Controls.SciChart.Common.Extensions;
-using Abt.Controls.SciChart.Model.DataSeries;
-using Abt.Controls.SciChart.Visuals.Annotations;
-using Abt.Controls.SciChart.Visuals.RenderableSeries;
+using SciChart.Charting.Common.Extensions;
+using SciChart.Charting.Model.ChartSeries;
+using SciChart.Charting.Model.DataSeries;
+using SciChart.Charting.Visuals.Annotations;
+using SciChart.Charting.Visuals.RenderableSeries;
 using TraderTools.Basics;
 using TraderTools.Basics.Extensions;
 using TraderTools.Basics.Helpers;
@@ -103,7 +103,7 @@ namespace TraderTools.Core.UI
                 indicatorPane.ChartSeriesViewModels.Add(new ChartSeriesViewModel(indicatorDataSeries, new FastLineRenderableSeries
                 {
                     AntiAliasing = false,
-                    SeriesColor = Colors.DarkBlue,
+                    // TODO SeriesColor = Colors.DarkBlue,
                     StrokeThickness = 2
                 }));
 
@@ -115,7 +115,7 @@ namespace TraderTools.Core.UI
                 var fastLineRenderableSeries = new FastLineRenderableSeries
                 {
                     AntiAliasing = false,
-                    SeriesColor = Colors.DarkBlue,
+                    // TODO SeriesColor = Colors.DarkBlue,
                     StrokeThickness = 2
                 };
 
@@ -160,7 +160,7 @@ namespace TraderTools.Core.UI
 
                 var series = new FastCandlestickRenderableSeries { AntiAliasing = false };
                 series.SetValue(FilteringLegendModifier.IncludeSeriesProperty, false);
-                series.SeriesColor = Colors.DarkBlue;
+                // TODO series.SeriesColor = Colors.DarkBlue;
                 pricePaneVm.ChartSeriesViewModels.Add(new ChartSeriesViewModel(priceDataSeries, series));
                 cvm.ChartPaneViewModels.Add(pricePaneVm);
             }
@@ -209,7 +209,7 @@ namespace TraderTools.Core.UI
             var renderableSeries = new FastLineRenderableSeries
             {
                 AntiAliasing = false,
-                SeriesColor = color,
+                // TODO SeriesColor = color,
                 StrokeThickness = 2
             };
 
@@ -319,8 +319,10 @@ namespace TraderTools.Core.UI
                 // Add dummy series just to add stop to legend
                 if (cvm.ChartPaneViewModels[0].ChartSeriesViewModels.All(x => x.DataSeries.SeriesName != "Stop"))
                 {
-                    var series = new FastLineRenderableSeries() { AntiAliasing = false, SeriesColor = Colors.Red };
-                    series.SetValue(FilteringLegendModifier.IncludeSeriesProperty, true);
+                    var series = new FastLineRenderableSeries() { 
+                        AntiAliasing = false, // TODO SeriesColor = Colors.Red
+                    };
+                        series.SetValue(FilteringLegendModifier.IncludeSeriesProperty, true);
                     var d = new XyDataSeries<DateTime, double>();
                     d.SeriesName = "Stop";
                     cvm.ChartPaneViewModels[0].ChartSeriesViewModels.Add(new ChartSeriesViewModel(d, series));

@@ -6,8 +6,7 @@ using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Hallupa.Library.UI;
-using Keras.Models;
+using Hallupa.Library;
 using Newtonsoft.Json;
 using TraderTools.Basics;
 
@@ -108,8 +107,8 @@ namespace TraderTools.Simulation
             }
         }
 
-        [JsonIgnore]
-        public BaseModel BaseModel { get; set; }
+        //[JsonIgnore]
+        // TODO public BaseModel BaseModel { get; set; }
 
 
         [JsonIgnore]

@@ -1,14 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
 
 	<PropertyGroup>
-		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<TargetFramework>net6.0-windows</TargetFramework>
 		<UseWPF>true</UseWPF>
 		<RootNamespace>Hallupa.TraderTools.Core.UI</RootNamespace>
 		<AssemblyName>Hallupa.TraderTools.Core.UI</AssemblyName>
+		<Platforms>AnyCPU;x64</Platforms>
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Remove="Properties\**" />
+	  <EmbeddedResource Remove="Properties\**" />
+	  <None Remove="Properties\**" />
+	  <Page Remove="Properties\**" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="log4net" Version="2.0.12" />
+		<PackageReference Include="SciChart" Version="6.5.1.26063" />
 		<PackageReference Include="System.ComponentModel.Composition" Version="5.0.0" />
 		<PackageReference Include="System.Reactive" Version="5.0.0" />
 	</ItemGroup>
@@ -17,15 +26,5 @@
 		<ProjectReference Include="..\Library.UI\Library.UI.csproj" />
 		<ProjectReference Include="..\TraderTools.Basics\TraderTools.Basics.csproj" />
 		<ProjectReference Include="..\TraderTools.Indicators\TraderTools.Indicators.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<Reference Include="Abt.Controls.SciChart.Wpf">
-			<HintPath>..\..\..\..\Users\Oliver Wickenden\AppData\Roaming\ABT Software Services Ltd\SciChart_v3.5.0.7128\Lib\net46\Abt.Controls.SciChart.Wpf.dll</HintPath>
-		</Reference>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Properties\" />
 	</ItemGroup>
 </Project>

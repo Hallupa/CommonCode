@@ -1,7 +1,7 @@
 ﻿namespace TraderTools.Core
 {
-    public interface IDoubleCandleWithIsComplete : IDoubleCandle
+    /*public interface IDoubleCandleWithIsComplete : IDoubleCandle
     {
         byte IsComplete { get; }
-    }
+    }*/
 }

@@ -4,6 +4,7 @@
 		<TargetFramework>netstandard2.1</TargetFramework>
 		<RootNamespace>Hallupa.TraderTools.Brokers.FXCM</RootNamespace>
 		<AssemblyName>Hallupa.TraderTools.Brokers.FXCM</AssemblyName>
+		<Platforms>AnyCPU;x64</Platforms>
 	</PropertyGroup>
 	<ItemGroup>
 		<Reference Include="com.fxcm.report">

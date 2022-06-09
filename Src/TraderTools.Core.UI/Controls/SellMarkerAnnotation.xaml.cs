@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Media;
-using Abt.Controls.SciChart.Visuals.Annotations;
+using SciChart.Charting.Visuals.Annotations;
 
 namespace TraderTools.Core.UI.Controls
 {

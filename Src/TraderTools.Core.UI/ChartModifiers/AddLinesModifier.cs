@@ -5,13 +5,15 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using Abt.Controls.SciChart;
-using Abt.Controls.SciChart.ChartModifiers;
-using Abt.Controls.SciChart.Numerics.CoordinateCalculators;
-using Abt.Controls.SciChart.Visuals;
-using Abt.Controls.SciChart.Visuals.Annotations;
 using Hallupa.Library;
 using Hallupa.Library.UI;
+using SciChart.Charting.ChartModifiers;
+using SciChart.Charting.Numerics.CoordinateCalculators;
+using SciChart.Charting.Visuals;
+using SciChart.Charting.Visuals.Annotations;
+using SciChart.Charting.Visuals.Events;
+using SciChart.Charting.Visuals.TradeChart;
+using SciChart.Core.Utility.Mouse;
 using TraderTools.Core.UI.Services;
 
 namespace TraderTools.Core.UI.ChartModifiers

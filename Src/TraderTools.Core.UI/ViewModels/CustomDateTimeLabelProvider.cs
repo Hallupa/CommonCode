@@ -1,5 +1,5 @@
 ﻿using System;
-using Abt.Controls.SciChart.Visuals.Axes;
+using SciChart.Charting.Visuals.Axes.LabelProviders;
 
 namespace TraderTools.Core.UI.ViewModels
 {

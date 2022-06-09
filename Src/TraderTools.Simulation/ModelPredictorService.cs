@@ -6,7 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using Hallupa.Library;
-using Keras.Models;
+//using Keras.Models;
 using log4net;
 using Numpy;
 using Numpy.Models;
@@ -31,7 +31,7 @@ namespace TraderTools.Simulation
         {
             _modelsService = modelsService;
             _dataDirectoryService = dataDirectoryService;
-            _producerConsumer = new ProducerConsumer<Action>(1, ConsumeAction);
+            //_producerConsumer = new ProducerConsumer<Action>(1, ConsumeAction);
             //_producerConsumer.Add(() => _y = Py.GIL());
             //_producerConsumer.Start();
         }
@@ -76,7 +76,7 @@ namespace TraderTools.Simulation
         public IModelDetails LoadModel(string name)
         {
             var model = _modelsService.Models.First(x => x.Name == name);
-            if (model.BaseModel != null) return model;
+            /* TODO if (model.BaseModel != null) return model;
 
             lock (_lock)
             {
@@ -95,7 +95,9 @@ namespace TraderTools.Simulation
 
                 model.BaseModel = baseModel;
                 return model;
-            }
+            }*/
+
+            return null;
         }
     }
 }

@@ -5,10 +5,10 @@ using System.ComponentModel.Composition;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
-using Abt.Controls.SciChart;
 using Hallupa.Library;
 using TraderTools.Basics;
 using TraderTools.Core.UI.Services;
+using TraderTools.Indicators;
 
 namespace TraderTools.Core.UI.ViewModels
 {
@@ -67,7 +67,7 @@ namespace TraderTools.Core.UI.ViewModels
                     {
                         foreach (var l in linked)
                         {
-                            ChartViewModel.ChartPaneViewModels[0].TradeAnnotations.Remove(linked);
+                            // TODO ChartViewModel.ChartPaneViewModels[0].TradeAnnotations.Remove(linked);
                         }
                     }
                 }
@@ -78,7 +78,7 @@ namespace TraderTools.Core.UI.ViewModels
         protected void ViewCandles(string market, Timeframe smallChartTimeframe, List<Candle> smallChartCandles,
             Timeframe largeChartTimeframe, List<Candle> largeChartCandles)
         {
-            LargeChartTimeframe = largeChartTimeframe;
+            /* TODO LargeChartTimeframe = largeChartTimeframe;
             ChartHelper.SetChartViewModelPriceData(largeChartCandles, ChartViewModel);
 
             if (SelectedMainIndicatorsIndex == (int)MainIndicators.EMA8_EMA25_EMA50)
@@ -110,7 +110,7 @@ namespace TraderTools.Core.UI.ViewModels
                     new ExponentialMovingAverage(25), Colors.Blue, smallChartTimeframe, smallChartCandles);
                 ChartHelper.AddIndicator(ChartViewModelSmaller1.ChartPaneViewModels[0], market,
                     new ExponentialMovingAverage(50), Colors.LightBlue, smallChartTimeframe, smallChartCandles);
-            }
+            }*/
         }
 
         /*protected void ShowTrade(Trade trade, Timeframe leftChartTimeframe, Timeframe rightChartTimeframe)

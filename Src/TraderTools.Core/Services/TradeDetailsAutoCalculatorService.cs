@@ -102,7 +102,7 @@ namespace TraderTools.Core.Services
 
                 if (brokerAccount != null)
                 {
-                    var balance = brokerAccount.GetBalance(trade.StartDateTime);
+                    /* TODO var balance = brokerAccount.GetBalance(trade.StartDateTime);
                     if (balance != 0.0M)
                     {
                         trade.RiskPercentOfBalance = (trade.RiskAmount * 100M) / brokerAccount.GetBalance(startTime);
@@ -110,7 +110,7 @@ namespace TraderTools.Core.Services
                     else
                     {
                         trade.RiskPercentOfBalance = null;
-                    }
+                    }*/
                 }
             }
         }

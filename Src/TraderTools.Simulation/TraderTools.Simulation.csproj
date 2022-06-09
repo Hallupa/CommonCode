@@ -4,6 +4,7 @@
 		<TargetFramework>netcoreapp3.1</TargetFramework>
 		<RootNamespace>Hallupa.TraderTools.Simulation</RootNamespace>
 		<AssemblyName>Hallupa.TraderTools.Simulation</AssemblyName>
+		<Platforms>AnyCPU;x64</Platforms>
 	</PropertyGroup>
 
 	<ItemGroup>
