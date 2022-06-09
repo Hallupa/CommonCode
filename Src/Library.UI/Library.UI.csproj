@@ -1,11 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
 
 	<PropertyGroup>
-		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<TargetFramework>net6.0-windows</TargetFramework>
 		<UseWPF>true</UseWPF>
 		<RootNamespace>Hallupa.Library.UI</RootNamespace>
 		<AssemblyName>Hallupa.Library.UI</AssemblyName>
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <Compile Remove="Properties\**" />
+	  <EmbeddedResource Remove="Properties\**" />
+	  <None Remove="Properties\**" />
+	  <Page Remove="Properties\**" />
+	</ItemGroup>
 
 	<ItemGroup>
 	  <PackageReference Include="AvalonEdit" Version="6.1.2.30" />
@@ -16,9 +23,5 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Library\Library.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Properties\" />
 	</ItemGroup>
 </Project>

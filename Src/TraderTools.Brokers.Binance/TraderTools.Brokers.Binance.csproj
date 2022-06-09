@@ -19,9 +19,4 @@
 	  <Folder Include="Properties\" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <ProjectReference Include="..\Library\Library.csproj" />
-	  <ProjectReference Include="..\TraderTools.Basics\TraderTools.Basics.csproj" />
-	</ItemGroup>
-
 </Project>

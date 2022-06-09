@@ -19,9 +19,6 @@
 	  <PackageReference Include="System.ComponentModel.Composition" Version="5.0.0" />
 	</ItemGroup>
 	<ItemGroup>
-	  <ProjectReference Include="..\TraderTools.Basics\TraderTools.Basics.csproj" />
-	</ItemGroup>
-	<ItemGroup>
 	  <Folder Include="Properties\" />
 	</ItemGroup>
 	<PropertyGroup>
