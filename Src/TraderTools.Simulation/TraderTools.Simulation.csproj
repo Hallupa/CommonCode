@@ -10,7 +10,7 @@
 	<ItemGroup>
 	  <PackageReference Include="log4net" Version="2.0.12" />
 	  <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.10.0" />
-	  <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+	  <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
 	  <PackageReference Include="Numpy.Bare" Version="3.6.1.10" />
 	  <PackageReference Include="System.ComponentModel.Composition" Version="5.0.0" />
 	</ItemGroup>
